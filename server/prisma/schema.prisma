@@ -1,0 +1,391 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  CEO_ADMIN
+  PROJECT_MANAGER
+  EMPLOYEE
+}
+
+enum EmploymentStatus {
+  ACTIVE
+  INACTIVE
+  TERMINATED
+  ON_LEAVE
+}
+
+enum DayStatus {
+  OPEN
+  CLOSED
+  FLAGGED_MISSING_CLOCKOUT
+  CORRECTION_PENDING
+  APPROVED
+}
+
+enum SegmentStatus {
+  ACTIVE
+  COMPLETED
+  AUTO_CLOSED
+  FORCE_CLOSED
+}
+
+enum BreakType {
+  REST
+  LUNCH
+  MEDICAL
+  UNPAID
+}
+
+enum CorrectionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  LOGIN
+  LOGOUT
+  CLOCK_IN
+  CLOCK_OUT
+  FORCE_CLOCK_OUT
+  APPROVE_CORRECTION
+  REJECT_CORRECTION
+}
+
+enum LocationType {
+  OFFICE
+  SITE
+  REMOTE
+}
+
+enum VerificationStatus {
+  NORMAL
+  REVIEW
+  INSUFFICIENT_EVIDENCE
+  MISSING_DATA
+  SITE_WORK
+}
+
+enum SessionStatus {
+  ACTIVE
+  IDLE
+  LOCKED
+  OFFLINE
+  UNKNOWN
+}
+
+enum HeartbeatSource {
+  BROWSER
+  DESKTOP_AGENT
+}
+
+// -----------------------------------------------------------------------------
+// USER & RBAC
+// -----------------------------------------------------------------------------
+
+model User {
+  id                 String   @id @default(uuid())
+  email              String   @unique
+  passwordHash       String
+  managedPassword    String?
+  role               Role     @default(EMPLOYEE)
+  isActive           Boolean  @default(true)
+  mustChangePassword Boolean  @default(false)
+  refreshTokenHash   String?
+  createdAt          DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt          DateTime @updatedAt @db.Timestamptz(6)
+
+  employee         Employee?
+  auditLogs        AuditLog[]              @relation("AuditActor")
+  reviewedRequests TimeCorrectionRequest[] @relation("CorrectionReviewer")
+
+  @@index([email])
+}
+
+// -----------------------------------------------------------------------------
+// EMPLOYEE & RESTRICTED COMPENSATION
+// -----------------------------------------------------------------------------
+
+model Employee {
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  employeeCode String           @unique
+  firstName    String
+  lastName     String
+  department   String
+  position     String
+  status       EmploymentStatus @default(ACTIVE)
+  hireDate     DateTime         @db.Date
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+
+  compensation       Compensation?
+  projectMemberships ProjectMember[]
+  workDays           WorkDay[]
+  devices            EmployeeDevice[]
+  activityHeartbeats ActivityHeartbeat[]
+  correctionRequests TimeCorrectionRequest[]
+  payrollRecords     PayrollRecord[]
+
+  @@index([employeeCode])
+  @@index([status])
+}
+
+model Compensation {
+  id         String   @id @default(uuid())
+  employeeId String   @unique
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  baseHourlyRate     Decimal  @db.Decimal(10, 2)
+  overtimeHourlyRate Decimal  @db.Decimal(10, 2)
+  currency           String   @default("USD") @db.VarChar(3)
+  effectiveDate      DateTime @db.Date
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+}
+
+// -----------------------------------------------------------------------------
+// PROJECTS & ASSIGNMENTS
+// -----------------------------------------------------------------------------
+
+model Project {
+  id          String    @id @default(uuid())
+  code        String    @unique
+  name        String
+  description String?
+  isActive    Boolean   @default(true)
+  startDate   DateTime  @db.Date
+  endDate     DateTime? @db.Date
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+
+  members      ProjectMember[]
+  workSegments WorkSegment[]
+  activities   Activity[]
+
+  @@index([code])
+  @@index([isActive])
+}
+
+model ProjectMember {
+  id            String   @id @default(uuid())
+  projectId     String
+  employeeId    String
+  isProjectLead Boolean  @default(false)
+  assignedAt    DateTime @default(now()) @db.Timestamptz(6)
+
+  project  Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, employeeId])
+  @@index([employeeId])
+  @@index([projectId])
+}
+
+// -----------------------------------------------------------------------------
+// EVENT-DRIVEN TIME TRACKING
+// -----------------------------------------------------------------------------
+
+model WorkDay {
+  id                 String             @id @default(uuid())
+  employeeId         String
+  date               DateTime           @db.Date
+  status             DayStatus          @default(OPEN)
+  verificationStatus VerificationStatus @default(NORMAL)
+  totalWorkSeconds   Int                @default(0)
+  totalBreakSeconds  Int                @default(0)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+
+  employee    Employee                @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  segments    WorkSegment[]
+  corrections TimeCorrectionRequest[]
+  heartbeats  ActivityHeartbeat[]
+
+  @@unique([employeeId, date])
+  @@index([employeeId, date])
+}
+
+model WorkSegment {
+  id        String        @id @default(uuid())
+  workDayId String
+  projectId String
+  location  LocationType  @default(OFFICE)
+  status    SegmentStatus @default(ACTIVE)
+
+  clockIn         DateTime  @db.Timestamptz(6)
+  clockOut        DateTime? @db.Timestamptz(6)
+  durationSeconds Int?
+
+  clockInIp  String? @db.VarChar(45)
+  clockOutIp String? @db.VarChar(45)
+
+  workDay    WorkDay    @relation(fields: [workDayId], references: [id], onDelete: Cascade)
+  project    Project    @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  breaks     Break[]
+  activities Activity[]
+
+  @@index([workDayId])
+  @@index([projectId])
+  @@index([status])
+}
+
+model EmployeeDevice {
+  id               String    @id @default(uuid())
+  employeeId       String
+  deviceName       String    @db.VarChar(100)
+  deviceIdentifier String    @unique @db.VarChar(128)
+  platform         String    @db.VarChar(50) // e.g., Windows 11, macOS, Linux
+  apiKeyHash       String    @db.VarChar(64) // For agent authentication
+  isActive         Boolean   @default(true)
+  lastSeenAt       DateTime? @db.Timestamptz(6)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+
+  employee   Employee            @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  heartbeats ActivityHeartbeat[]
+
+  @@index([employeeId])
+  @@index([deviceIdentifier])
+}
+
+model Break {
+  id            String    @id @default(uuid())
+  workSegmentId String
+  breakType     BreakType @default(REST)
+  isPaid        Boolean   @default(false)
+
+  startTime       DateTime  @db.Timestamptz(6)
+  endTime         DateTime? @db.Timestamptz(6)
+  durationSeconds Int?
+
+  workSegment WorkSegment @relation(fields: [workSegmentId], references: [id], onDelete: Cascade)
+
+  @@index([workSegmentId])
+}
+
+model Activity {
+  id            String  @id @default(uuid())
+  workSegmentId String
+  projectId     String
+  title         String
+  notes         String?
+
+  startTime DateTime  @db.Timestamptz(6)
+  endTime   DateTime? @db.Timestamptz(6)
+
+  workSegment WorkSegment @relation(fields: [workSegmentId], references: [id], onDelete: Cascade)
+  project     Project     @relation(fields: [projectId], references: [id], onDelete: Restrict)
+
+  @@index([workSegmentId])
+  @@index([projectId])
+}
+
+// -----------------------------------------------------------------------------
+// IMMUTABLE ACTIVITY HEARTBEATS
+// -----------------------------------------------------------------------------
+
+model ActivityHeartbeat {
+  id         String          @id @default(uuid())
+  employeeId String
+  workDayId  String?
+  deviceId   String?
+  source     HeartbeatSource @default(BROWSER)
+
+  receivedAt      DateTime  @default(now()) @db.Timestamptz(6) // Trusted server timestamp
+  clientTimestamp DateTime? @db.Timestamptz(6) // Client timestamp for drift detection
+
+  sessionStatus SessionStatus @default(ACTIVE)
+  idleSeconds   Int           @default(0)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+
+  employee Employee        @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  workDay  WorkDay?        @relation(fields: [workDayId], references: [id], onDelete: SetNull)
+  device   EmployeeDevice? @relation(fields: [deviceId], references: [id], onDelete: SetNull)
+
+  @@index([employeeId, receivedAt])
+  @@index([workDayId])
+  @@index([deviceId])
+}
+
+// -----------------------------------------------------------------------------
+// CORRECTIONS & AUDIT TRAIL
+// -----------------------------------------------------------------------------
+
+model TimeCorrectionRequest {
+  id           String  @id @default(uuid())
+  workDayId    String
+  employeeId   String
+  reviewedById String?
+
+  status           CorrectionStatus @default(PENDING)
+  reason           String           @db.Text
+  reviewNotes      String?          @db.Text
+  requestedChanges Json             @db.JsonB
+
+  reviewedAt DateTime? @db.Timestamptz(6)
+  createdAt  DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt  DateTime  @updatedAt @db.Timestamptz(6)
+
+  workDay  WorkDay  @relation(fields: [workDayId], references: [id], onDelete: Cascade)
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  reviewer User?    @relation("CorrectionReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@index([workDayId])
+  @@index([employeeId])
+  @@index([status])
+}
+
+model AuditLog {
+  id          String      @id @default(uuid())
+  actorId     String?
+  action      AuditAction
+  entityName  String      @db.VarChar(50)
+  entityId    String      @db.VarChar(64)
+  ipAddress   String?     @db.VarChar(45)
+  userAgent   String?
+  beforeState Json?       @db.JsonB
+  afterState  Json?       @db.JsonB
+  timestamp   DateTime    @default(now()) @db.Timestamptz(6)
+
+  actor User? @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([actorId])
+  @@index([entityName, entityId])
+  @@index([timestamp])
+}
+
+model PayrollRecord {
+  id            String   @id @default(uuid())
+  employeeId    String
+  periodStart   DateTime @db.Date
+  periodEnd     DateTime @db.Date
+  regularHours  Decimal  @db.Decimal(8, 2)
+  overtimeHours Decimal  @db.Decimal(8, 2)
+  grossPay      Decimal  @db.Decimal(12, 2)
+  currency      String   @default("USD") @db.VarChar(3)
+  generatedAt   DateTime @default(now()) @db.Timestamptz(6)
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, periodStart, periodEnd])
+  @@index([employeeId])
+}
