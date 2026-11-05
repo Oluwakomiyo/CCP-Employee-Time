@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
+import { invalidateAllTimeQueries } from '../lib/sync';
 import { useAuth } from '../context/AuthContext';
 import { Clock, ArrowRight, Pencil, Trash2 } from 'lucide-react';
 
@@ -66,14 +67,6 @@ export const CorrectionsPage: React.FC = () => {
     },
   });
 
-  // Cancel own request mutation
-  const cancelMutation = useMutation({
-    mutationFn: (id: string) => api.delete(`/corrections/${id}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['correctionsList'] });
-    },
-  });
-
   if (isLoading) return <div className="p-8 text-slate-500 font-medium">Loading requests...</div>;
 
   return (
@@ -117,7 +110,12 @@ export const CorrectionsPage: React.FC = () => {
         ) : (
           corrections?.map((req: any) => {
             const changes = req.requestedChanges || {};
-            const isOwnRequest = user?.employee.id === req.employee.id;
+            const isOwnRequest = user?.employee?.id === req.employee?.id || user?.employee?.id === req.employeeId;
+            const isCeo = user?.role === 'CEO_ADMIN';
+
+            // 🔴 CEO can edit/delete any request; employees can edit/delete their own
+            const canEdit = (isOwnRequest || isCeo) && req.status === 'PENDING';
+            const canDelete = isOwnRequest || isCeo;
 
             return (
               <div
@@ -177,36 +175,38 @@ export const CorrectionsPage: React.FC = () => {
 
                 {/* Actions */}
                 <div className="flex items-center gap-2 shrink-0">
-                  {/* Edit & Delete for own pending request */}
-                  {isOwnRequest && req.status === 'PENDING' && (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => openEditModal(req)}
-                        className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition"
-                        title="Edit Correction Details"
-                      >
-                        <Pencil size={15} />
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (confirm('Permanently delete this correction request?')) {
-                            deleteCorrectionMutation.mutate(req.id);
-                          }
-                        }}
-                        className="p-1.5 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
-                        title="Delete Request"
-                      >
-                        <Trash2 size={15} />
-                      </button>
-                    </>
+                  {/* Edit Button */}
+                  {canEdit && (
+                    <button
+                      type="button"
+                      onClick={() => openEditModal(req)}
+                      className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition"
+                      title="Edit Correction Details"
+                    >
+                      <Pencil size={15} />
+                    </button>
                   )}
 
-                  {/* Management Review button */}
+                  {/* Delete Button */}
+                  {canDelete && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (confirm('Permanently delete this correction request?')) {
+                          deleteCorrectionMutation.mutate(req.id);
+                        }
+                      }}
+                      className="p-1.5 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                      title="Delete Request"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  )}
+
+                  {/* Management Review Button */}
                   {isManagement && req.status === 'PENDING' && !isOwnRequest && (
                     <button
+                      type="button"
                       onClick={() => setReviewModalRequest(req)}
                       className="px-4 py-2 bg-ccp-700 hover:bg-ccp-800 text-white text-xs font-bold rounded-lg shadow-sm transition"
                     >

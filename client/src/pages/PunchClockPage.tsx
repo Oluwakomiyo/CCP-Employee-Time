@@ -165,7 +165,7 @@ export const PunchClockPage: React.FC = () => {
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center gap-1.5">
                   <MapPin size={14} />
-                  Work Location Context (Section 99)
+                  Work Location Context
                 </label>
                 <div className="grid grid-cols-3 gap-2">
                   {(['OFFICE', 'SITE', 'REMOTE'] as const).map((loc) => (
@@ -250,7 +250,7 @@ export const PunchClockPage: React.FC = () => {
               <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
                 <div className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                   <ListTodo size={15} />
-                  Log Task Activity (Section 98)
+                  Log Task Activity
                 </div>
                 <div className="flex gap-2">
                   <input

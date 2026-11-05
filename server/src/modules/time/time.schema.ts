@@ -27,6 +27,7 @@ export const timeHistoryQuerySchema = z.object({
     .regex(/^\d{4}-\d{2}-\d{2}$/, 'endDate must be in YYYY-MM-DD format')
     .optional(),
   employeeId: z.string().uuid().optional(),
+  all: z.enum(['true', 'false']).optional(),
 });
 
 export type ClockInInput = z.infer<typeof clockInSchema>;

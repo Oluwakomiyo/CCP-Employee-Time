@@ -152,10 +152,16 @@ export class ActivityService {
     const lastClockOut =
       segments.length > 0 ? segments[segments.length - 1].clockOut : null;
 
-    const grossClockedSeconds = segments.reduce(
-      (sum, s) => sum + (s.durationSeconds || 0),
-      0
-    );
+    // 🔴 Calculate live elapsed seconds if the segment is still active (clockOut is null)
+    const nowMs = Date.now();
+    const grossClockedSeconds = segments.reduce((sum, s) => {
+      if (s.durationSeconds !== null && s.durationSeconds !== undefined) {
+        return sum + s.durationSeconds;
+      }
+      // Segment is currently ongoing: calculate live elapsed time
+      const liveElapsed = Math.max(0, Math.floor((nowMs - new Date(s.clockIn).getTime()) / 1000));
+      return sum + liveElapsed;
+    }, 0);
     const recordedBreakSeconds = workDay.totalBreakSeconds;
     const netClockedSeconds = Math.max(0, grossClockedSeconds - recordedBreakSeconds);
 

@@ -9,7 +9,6 @@ export const useBrowserHeartbeat = (isClockedIn: boolean) => {
   useEffect(() => {
     if (!isAuthenticated || !isClockedIn) return;
 
-    // Reset idle timer on user mouse or keyboard activity
     const recordUserActivity = () => {
       lastActivityRef.current = Date.now();
     };
@@ -18,8 +17,7 @@ export const useBrowserHeartbeat = (isClockedIn: boolean) => {
     window.addEventListener('keydown', recordUserActivity);
     window.addEventListener('scroll', recordUserActivity);
 
-    // Transmit browser heartbeat every 60 seconds
-    const interval = setInterval(async () => {
+    const sendPulse = async () => {
       try {
         const idleSeconds = Math.floor((Date.now() - lastActivityRef.current) / 1000);
         await api.post('/time/heartbeat', {
@@ -29,7 +27,13 @@ export const useBrowserHeartbeat = (isClockedIn: boolean) => {
       } catch (err) {
         console.warn('[Heartbeat] Failed to transmit session pulse:', err);
       }
-    }, 60 * 1000);
+    };
+
+    // 🔴 Send immediate initial pulse upon clock-in
+    sendPulse();
+
+    // Transmit regular pulses every 60 seconds
+    const interval = setInterval(sendPulse, 60 * 1000);
 
     return () => {
       window.removeEventListener('mousemove', recordUserActivity);

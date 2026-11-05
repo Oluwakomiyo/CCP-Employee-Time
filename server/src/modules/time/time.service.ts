@@ -410,13 +410,13 @@ export class TimeService {
         isOnBreak: activeBreak !== null,
         activeBreak: activeBreak
           ? {
-              id: activeBreak.id,
-              breakType: activeBreak.breakType,
-              startTime: activeBreak.startTime,
-              breakElapsedSeconds: Math.floor(
-                (now.getTime() - new Date(activeBreak.startTime).getTime()) / 1000
-              ),
-            }
+            id: activeBreak.id,
+            breakType: activeBreak.breakType,
+            startTime: activeBreak.startTime,
+            breakElapsedSeconds: Math.floor(
+              (now.getTime() - new Date(activeBreak.startTime).getTime()) / 1000
+            ),
+          }
           : null,
       },
     };
@@ -430,17 +430,15 @@ export class TimeService {
     userRole: Role,
     userEmployeeId: string
   ) {
-    const targetEmployeeId =
-      userRole === Role.EMPLOYEE ? userEmployeeId : query.employeeId || userEmployeeId;
+    const where: Prisma.WorkDayWhereInput = {};
 
-    const where: Prisma.WorkDayWhereInput = {
-      employeeId: targetEmployeeId,
-    };
-
-    if (query.startDate || query.endDate) {
-      where.date = {};
-      if (query.startDate) where.date.gte = new Date(query.startDate);
-      if (query.endDate) where.date.lte = new Date(query.endDate);
+    // 🔴 Default is ALWAYS the caller's own personal shifts
+    if (query.all === 'true' && userRole !== Role.EMPLOYEE) {
+      // Management requested company-wide shifts (e.g. for Work Evidence)
+      if (query.employeeId) where.employeeId = query.employeeId;
+    } else {
+      // Personal timesheet view
+      where.employeeId = userEmployeeId;
     }
 
     const workDays = await prisma.workDay.findMany({

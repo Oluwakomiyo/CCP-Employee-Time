@@ -4,19 +4,20 @@ import { api } from '../lib/api';
 import { ShieldCheck, Laptop, Clock } from 'lucide-react';
 
 export const WorkEvidencePage: React.FC = () => {
-  // Fetch available timesheets
+  // Fetch all company timesheets with auto-refresh
   const { data: timesheets } = useQuery({
     queryKey: ['managementTimesheets'],
     queryFn: async () => {
-      const res = await api.get('/time/history');
-      return res.data.data.history;
+      const res = await api.get('/time/history?all=true');
+      return res.data.data.history || [];
     },
+    refetchOnWindowFocus: true,
   });
 
   const [selectedDayId, setSelectedDayId] = useState<string>('');
 
   // Fetch neutral telemetry evidence for selected workday
-  const { data: evidence, isLoading } = useQuery({
+  const { data: evidence } = useQuery({
     queryKey: ['workEvidence', selectedDayId],
     queryFn: async () => {
       if (!selectedDayId) return null;
@@ -70,13 +71,12 @@ export const WorkEvidencePage: React.FC = () => {
                 <div className="text-lg font-bold text-slate-900">
                   Status:{' '}
                   <span
-                    className={`font-black ${
-                      evidence.verification.status === 'NORMAL'
+                    className={`font-black ${evidence.verification.status === 'NORMAL'
                         ? 'text-emerald-600'
                         : evidence.verification.status === 'SITE_WORK'
-                        ? 'text-blue-600'
-                        : 'text-amber-600'
-                    }`}
+                          ? 'text-blue-600'
+                          : 'text-amber-600'
+                      }`}
                   >
                     {evidence.verification.status}
                   </span>

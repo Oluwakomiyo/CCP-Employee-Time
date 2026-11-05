@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
+import { useAuth } from '../context/AuthContext';
 import { FileEdit, } from 'lucide-react';
 
 export const TimesheetsPage: React.FC = () => {
@@ -9,6 +10,7 @@ export const TimesheetsPage: React.FC = () => {
   const [reason, setReason] = useState('');
   const [proposedClockIn, setProposedClockIn] = useState('');
   const [proposedClockOut, setProposedClockOut] = useState('');
+  const { user } = useAuth();
 
   const { data: timesheets, isLoading } = useQuery({
     queryKey: ['timesheetsHistory'],
@@ -16,7 +18,16 @@ export const TimesheetsPage: React.FC = () => {
       const res = await api.get('/time/history');
       return res.data.data.history;
     },
+    refetchInterval: 10000,
   });
+
+  // 🔴 ADD LIVE CLOCK TICKER
+  const [currentTime, setCurrentTime] = useState(Date.now());
+
+  useEffect(() => {
+    const ticker = setInterval(() => setCurrentTime(Date.now()), 1000);
+    return () => clearInterval(ticker);
+  }, []);
 
   const submitCorrectionMutation = useMutation({
     mutationFn: (data: any) => api.post('/corrections', data),
@@ -70,6 +81,7 @@ export const TimesheetsPage: React.FC = () => {
           <thead className="bg-slate-50 text-slate-700 text-xs uppercase font-bold border-b border-slate-200">
             <tr>
               <th className="px-6 py-4">Date</th>
+              <th className="px-6 py-4">Recorded Shift Times</th>
               <th className="px-6 py-4">Total Work Time</th>
               <th className="px-6 py-4">Recorded Breaks</th>
               <th className="px-6 py-4">Status</th>
@@ -78,43 +90,105 @@ export const TimesheetsPage: React.FC = () => {
           </thead>
           <tbody className="divide-y divide-slate-100">
             {timesheets?.map((day: any) => {
-              const hours = (day.totalWorkSeconds / 3600).toFixed(2);
+              // 🔴 CALCULATE LIVE ELAPSED WORK TIME IF CURRENTLY CLOCKED IN
+              const activeSegment = day.segments?.find((s: any) => !s.clockOut);
+              let totalSeconds = day.totalWorkSeconds;
+
+              if (activeSegment) {
+                const segElapsed = Math.max(0, Math.floor((currentTime - new Date(activeSegment.clockIn).getTime()) / 1000));
+                // Subtract open break time if currently on break
+                const openBreak = activeSegment.breaks?.find((b: any) => !b.endTime);
+                const breakElapsed = openBreak
+                  ? Math.max(0, Math.floor((currentTime - new Date(openBreak.startTime).getTime()) / 1000))
+                  : 0;
+                totalSeconds += Math.max(0, segElapsed - breakElapsed);
+              }
+
+              const hours = (totalSeconds / 3600).toFixed(2);
               const breakMins = Math.round(day.totalBreakSeconds / 60);
+              const firstSegment = day.segments?.[0];
+              const lastSegment = day.segments?.[day.segments.length - 1];
+
+              const recordedClockIn = firstSegment?.clockIn
+                ? new Date(firstSegment.clockIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                : '--';
+
+              const recordedClockOut = lastSegment?.clockOut
+                ? new Date(lastSegment.clockOut).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                : (day.status === 'OPEN' ? 'In Progress' : '--');
 
               return (
                 <tr key={day.id} className="hover:bg-slate-50/80 transition">
-                  <td className="px-6 py-4 font-semibold text-slate-900">
-                    {new Date(day.date).toLocaleDateString(undefined, {
-                      weekday: 'short',
-                      year: 'numeric',
-                      month: 'short',
-                      day: 'numeric',
-                    })}
+                  <td className="px-6 py-4">
+                    <div className="font-semibold text-slate-900">
+                      {new Date(day.date).toLocaleDateString(undefined, {
+                        weekday: 'short',
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                      })}
+                    </div>
+                    <div className="text-[11px] text-slate-400">
+                      Recorded on {new Date(day.createdAt).toLocaleDateString(undefined, {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                      })}{' '}
+                      {new Date(day.createdAt).toLocaleTimeString([], {
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        hour12: true,
+                      })}
+                    </div>
                   </td>
-                  <td className="px-6 py-4 font-mono font-bold text-slate-800">{hours} hrs</td>
+
+                  {/* 🔴 RECORDED TIMES CELL */}
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-2 font-mono text-xs text-slate-700 font-semibold bg-slate-50 border px-2.5 py-1 rounded-lg w-fit">
+                      <span>{recordedClockIn}</span>
+                      <span className="text-slate-400">→</span>
+                      <span className={recordedClockOut === 'In Progress' ? 'text-emerald-600 font-bold' : ''}>
+                        {recordedClockOut}
+                      </span>
+                    </div>
+                  </td>
+
+                  <td className="px-6 py-4 font-mono font-bold text-slate-800">
+                    <span>{hours} hrs</span>
+                    {/* 🔴 PULSING LIVE INDICATOR */}
+                    {activeSegment && (
+                      <span className="ml-2 inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                        Live
+                      </span>
+                    )}
+                  </td>
                   <td className="px-6 py-4 text-slate-500">{breakMins} mins</td>
                   <td className="px-6 py-4">
                     <span
-                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
-                        day.status === 'APPROVED'
-                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                          : day.status === 'FLAGGED_MISSING_CLOCKOUT'
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${day.status === 'APPROVED'
+                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                        : day.status === 'FLAGGED_MISSING_CLOCKOUT'
                           ? 'bg-rose-50 text-rose-700 border border-rose-200'
                           : 'bg-amber-50 text-amber-700 border border-amber-200'
-                      }`}
+                        }`}
                     >
                       {day.status}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <button
-                      onClick={() => openCorrectionModal(day)}
-                      className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-ccp-700 hover:bg-ccp-50 border border-ccp-200 rounded-lg transition"
-                    >
-                      <FileEdit size={14} />
-                      <span>Request Correction</span>
-                    </button>
+                    {/* 🔴 Only show Request Correction if this workday belongs to the logged-in user */}
+                    {user?.employee?.id === day.employeeId && (
+                      <button
+                        onClick={() => openCorrectionModal(day)}
+                        className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-ccp-700 hover:bg-ccp-50 border border-ccp-200 rounded-lg transition"
+                      >
+                        <FileEdit size={14} />
+                        <span>Request Correction</span>
+                      </button>
+                    )}
                   </td>
+                  Summ
                 </tr>
               );
             })}
