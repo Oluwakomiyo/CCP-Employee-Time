@@ -21,15 +21,14 @@ export const AppLayout: React.FC = () => {
   const isPmOrCeo = user?.role === 'CEO_ADMIN' || user?.role === 'PROJECT_MANAGER';
 
   const navClass = ({ isActive }: { isActive: boolean }) =>
-    `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
-      isActive
-        ? 'bg-ccp-700 text-white shadow-sm'
-        : 'text-slate-300 hover:bg-ccp-900 hover:text-white'
+    `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${isActive
+      ? 'bg-ccp-700 text-white shadow-sm'
+      : 'text-slate-300 hover:bg-ccp-900 hover:text-white'
     }`;
 
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden font-sans">
-      
+
       {/* Sidebar styled with CCP Deep Wine / Maroon */}
       <aside className="w-64 bg-ccp-950 text-white flex flex-col justify-between border-r border-ccp-900">
         <div>
@@ -53,6 +52,11 @@ export const AppLayout: React.FC = () => {
 
           {/* Nav Links */}
           <nav className="px-3 space-y-1 mt-2">
+            {/* Personal Attendance */}
+            <div className="pb-1 px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+              Personal
+            </div>
+
             <NavLink to="/punch" className={navClass}>
               <Clock size={18} />
               <span>Punch Clock</span>
@@ -63,22 +67,37 @@ export const AppLayout: React.FC = () => {
               <span>My Timesheets</span>
             </NavLink>
 
-            <NavLink to="/projects" className={navClass}>
-              <FolderKanban size={18} />
-              <span>Projects</span>
-            </NavLink>
+            {/* Regular Employees keep access to their own projects & correction requests */}
+            {!isPmOrCeo && (
+              <>
+                <NavLink to="/projects" className={navClass}>
+                  <FolderKanban size={18} />
+                  <span>My Projects</span>
+                </NavLink>
 
-            <NavLink to="/corrections" className={navClass}>
-              <FileCheck2 size={18} />
-              <span>Corrections</span>
-            </NavLink>
+                <NavLink to="/corrections" className={navClass}>
+                  <FileCheck2 size={18} />
+                  <span>My Corrections</span>
+                </NavLink>
+              </>
+            )}
 
-            {/* Management Routes */}
+            {/* 🔴 MANAGEMENT SECTION (CEO_ADMIN & PROJECT_MANAGER) */}
             {isPmOrCeo && (
               <>
                 <div className="pt-4 pb-1 px-3 text-[10px] font-bold uppercase tracking-wider text-ccp-400">
                   Management
                 </div>
+
+                <NavLink to="/projects" className={navClass}>
+                  <FolderKanban size={18} />
+                  <span>Projects & Teams</span>
+                </NavLink>
+
+                <NavLink to="/corrections" className={navClass}>
+                  <FileCheck2 size={18} />
+                  <span>Correction Requests</span>
+                </NavLink>
 
                 <NavLink to="/team-activity" className={navClass}>
                   <Activity size={18} />
@@ -97,7 +116,7 @@ export const AppLayout: React.FC = () => {
               </>
             )}
 
-            {/* CEO Admin Only: Financial Payroll */}
+            {/* Financials (CEO Admin Only) */}
             {isCeo && (
               <>
                 <div className="pt-4 pb-1 px-3 text-[10px] font-bold uppercase tracking-wider text-ccp-400">
