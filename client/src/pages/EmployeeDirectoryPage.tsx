@@ -271,13 +271,13 @@ export const EmployeeDirectoryPage: React.FC = () => {
               <th className="px-6 py-4">Department & Position</th>
               {isCeo && <th className="px-6 py-4">Sign-In Password</th>}
               {isCeo && <th className="px-6 py-4">Hourly Rates</th>}
-              <th className="px-6 py-4 text-right">Actions</th>
+              {isCeo && <th className="px-6 py-4 text-right">Actions</th>}
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {employees.length === 0 ? (
               <tr>
-                <td colSpan={isCeo ? 6 : 4} className="text-center py-10 text-slate-400 text-sm">
+                <td colSpan={isCeo ? 6 : 3} className="text-center py-10 text-slate-400 text-sm">
                   No employees found matching the specified filters.
                 </td>
               </tr>
@@ -359,65 +359,67 @@ export const EmployeeDirectoryPage: React.FC = () => {
                       </td>
                     )}
 
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        {isCeo && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setEditingPasswordEmp(emp);
-                              setNewPasswordVal('');
-                            }}
-                            className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition"
-                            title="Change / Correct Password"
-                          >
-                            <Key size={16} />
-                          </button>
-                        )}
+                    {isCeo && (
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          {isCeo && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingPasswordEmp(emp);
+                                setNewPasswordVal('');
+                              }}
+                              className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition"
+                              title="Change / Correct Password"
+                            >
+                              <Key size={16} />
+                            </button>
+                          )}
 
-                        {isCeo && (
-                          <button
-                            type="button"
-                            onClick={() => openEditEmployeeModal(emp)}
-                            className="p-1.5 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition"
-                            title="Edit Employee Details"
-                          >
-                            <Pencil size={15} />
-                          </button>
-                        )}
+                          {isCeo && (
+                            <button
+                              type="button"
+                              onClick={() => openEditEmployeeModal(emp)}
+                              className="p-1.5 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition"
+                              title="Edit Employee Details"
+                            >
+                              <Pencil size={15} />
+                            </button>
+                          )}
 
-                        {isCeo && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setSelectedCompEmployee(emp);
-                              if (emp.compensation) {
-                                setEditBaseRate(parseFloat(emp.compensation.baseHourlyRate) || 45);
-                                setEditOtRate(parseFloat(emp.compensation.overtimeHourlyRate) || 67.5);
-                              }
-                            }}
-                            className="px-2.5 py-1 text-xs font-semibold text-ccp-700 hover:bg-ccp-50 border border-ccp-200 rounded-lg transition"
-                          >
-                            Rates
-                          </button>
-                        )}
+                          {isCeo && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedCompEmployee(emp);
+                                if (emp.compensation) {
+                                  setEditBaseRate(parseFloat(emp.compensation.baseHourlyRate) || 45);
+                                  setEditOtRate(parseFloat(emp.compensation.overtimeHourlyRate) || 67.5);
+                                }
+                              }}
+                              className="px-2.5 py-1 text-xs font-semibold text-ccp-700 hover:bg-ccp-50 border border-ccp-200 rounded-lg transition"
+                            >
+                              Rates
+                            </button>
+                          )}
 
-                        {isCeo && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (confirm(`Are you sure you want to remove ${emp.firstName} ${emp.lastName}?`)) {
-                                deleteEmployeeMutation.mutate(emp.id);
-                              }
-                            }}
-                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
-                            title="Delete Employee"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        )}
-                      </div>
-                    </td>
+                          {isCeo && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (confirm(`Are you sure you want to remove ${emp.firstName} ${emp.lastName}?`)) {
+                                  deleteEmployeeMutation.mutate(emp.id);
+                                }
+                              }}
+                              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                              title="Delete Employee"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 );
               })
