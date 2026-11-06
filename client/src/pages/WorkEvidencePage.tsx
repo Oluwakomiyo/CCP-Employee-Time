@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../lib/api';
-import { ShieldCheck, Laptop, Clock } from 'lucide-react';
+import { ShieldCheck, Laptop, Clock, ListTodo } from 'lucide-react';
 
 export const WorkEvidencePage: React.FC = () => {
   // Fetch all company timesheets with auto-refresh
