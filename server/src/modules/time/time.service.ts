@@ -76,6 +76,12 @@ export class TimeService {
             status: DayStatus.OPEN,
           },
         });
+      } else if (workDay.status === DayStatus.CLOSED) {
+        // 🔴 Re-open workday if starting another segment today
+        await tx.workDay.update({
+          where: { id: workDay.id },
+          data: { status: DayStatus.OPEN },
+        });
       }
 
       const segment = await tx.workSegment.create({
@@ -342,7 +348,10 @@ export class TimeService {
 
       await tx.workDay.update({
         where: { id: activeSegment.workDayId },
-        data: { totalWorkSeconds },
+        data: {
+          totalWorkSeconds,
+          status: DayStatus.CLOSED, // 🔴 Sets status to CLOSED upon clock-out
+        },
       });
 
       await tx.auditLog.create({

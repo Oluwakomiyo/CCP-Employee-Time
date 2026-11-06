@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
+import { invalidateAllTimeQueries } from '../lib/sync';
 import { useBrowserHeartbeat } from '../hooks/useBrowserHeartbeat';
 import {
   Play,
@@ -64,12 +65,12 @@ export const PunchClockPage: React.FC = () => {
   const clockInMutation = useMutation({
     mutationFn: (data: { projectId: string; location: string }) =>
       api.post('/time/clock-in', data),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['timeStatus'] }),
+    onSuccess: () => invalidateAllTimeQueries(queryClient),
   });
 
   const clockOutMutation = useMutation({
     mutationFn: () => api.post('/time/clock-out'),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['timeStatus'] }),
+    onSuccess: () => invalidateAllTimeQueries(queryClient),
   });
 
   const startBreakMutation = useMutation({
