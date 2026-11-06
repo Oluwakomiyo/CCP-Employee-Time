@@ -188,7 +188,6 @@ export const TimesheetsPage: React.FC = () => {
                       </button>
                     )}
                   </td>
-                  Summ
                 </tr>
               );
             })}

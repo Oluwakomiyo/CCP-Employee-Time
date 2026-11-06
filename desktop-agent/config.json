@@ -1,0 +1,7 @@
+{
+  "apiUrl": "http://localhost:5000/api/v1",
+  "deviceIdentifier": "HW-SARAH-CAD-01",
+  "deviceKey": "dev_57fc8ce3ee960f6e4cc7f496c14a619f45fdbd65f6aa0b27",
+  "heartbeatIntervalSeconds": 60,
+  "idleThresholdSeconds": 300
+}
