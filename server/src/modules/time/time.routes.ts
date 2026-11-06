@@ -38,4 +38,6 @@ router.post(
   timeController.triggerAutoClose
 );
 
+router.post('/switch', timeController.switchContext);
+
 export const timeRouter = router;

@@ -19,6 +19,9 @@ export const PunchClockPage: React.FC = () => {
   const [breakType, setBreakType] = useState('REST');
   const [activityTitle, setActivityTitle] = useState('');
   const [elapsed, setElapsed] = useState(0);
+  const [showSwitchModal, setShowSwitchModal] = useState(false);
+  const [switchProjectId, setSwitchProjectId] = useState('');
+  const [switchLocation, setSwitchLocation] = useState<'OFFICE' | 'SITE' | 'REMOTE'>('OFFICE');
 
   // 1. Fetch live punch clock status
   const { data: statusData, isLoading: statusLoading } = useQuery({
@@ -93,6 +96,16 @@ export const PunchClockPage: React.FC = () => {
     },
   });
 
+  const switchMutation = useMutation({
+    mutationFn: (data: any) => api.post('/time/switch', data),
+    onSuccess: () => {
+      invalidateAllTimeQueries(queryClient);
+      setShowSwitchModal(false);
+      alert('Project/Location context switched successfully!');
+    },
+    onError: (err: any) => alert(err.response?.data?.message || 'Failed to switch project'),
+  });
+
   const formatTimer = (totalSeconds: number) => {
     const hrs = Math.floor(totalSeconds / 3600);
     const mins = Math.floor((totalSeconds % 3600) / 60);
@@ -121,13 +134,12 @@ export const PunchClockPage: React.FC = () => {
           </div>
 
           <div
-            className={`font-mono text-6xl font-black tracking-tight mb-4 ${
-              isOnBreak
-                ? 'text-amber-500'
-                : isClockedIn
+            className={`font-mono text-6xl font-black tracking-tight mb-4 ${isOnBreak
+              ? 'text-amber-500'
+              : isClockedIn
                 ? 'text-ccp-600'
                 : 'text-slate-400'
-            }`}
+              }`}
           >
             {formatTimer(elapsed)}
           </div>
@@ -174,11 +186,10 @@ export const PunchClockPage: React.FC = () => {
                       key={loc}
                       type="button"
                       onClick={() => setLocation(loc)}
-                      className={`py-2 text-xs font-semibold rounded-lg border transition ${
-                        location === loc
-                          ? 'border-ccp-500 bg-ccp-50 text-ccp-700'
-                          : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-                      }`}
+                      className={`py-2 text-xs font-semibold rounded-lg border transition ${location === loc
+                        ? 'border-ccp-500 bg-ccp-50 text-ccp-700'
+                        : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                        }`}
                     >
                       {loc}
                     </button>
@@ -211,8 +222,8 @@ export const PunchClockPage: React.FC = () => {
                     <div className="text-xs text-slate-500">
                       {isOnBreak
                         ? `Elapsed break time: ${formatTimer(
-                            activeSegment.activeBreak?.breakElapsedSeconds || 0
-                          )}`
+                          activeSegment.activeBreak?.breakElapsedSeconds || 0
+                        )}`
                         : 'Official breaks are deducted from gross work time'}
                     </div>
                   </div>
@@ -271,28 +282,118 @@ export const PunchClockPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Clock Out Button */}
-              <div>
+              {/* Actions: Switch Context or Clock Out */}
+              <div className="space-y-2">
                 {isOnBreak && (
-                  <div className="mb-2 p-2 bg-amber-50 border border-amber-200 text-amber-700 text-xs rounded-lg flex items-center gap-2">
+                  <div className="p-2.5 bg-amber-50 border border-amber-200 text-amber-700 text-xs rounded-lg flex items-center gap-2">
                     <AlertTriangle size={15} />
-                    <span>You must end your ongoing break before you can clock out.</span>
+                    <span>You must end your ongoing break before you can switch projects or clock out.</span>
                   </div>
                 )}
 
-                <button
-                  onClick={() => clockOutMutation.mutate()}
-                  disabled={isOnBreak || clockOutMutation.isPending}
-                  className="w-full bg-slate-800 hover:bg-slate-900 disabled:opacity-30 text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2 shadow transition"
-                >
-                  <Square size={16} fill="currentColor" />
-                  <span>Clock Out & End Shift</span>
-                </button>
+                <div className="flex gap-3">
+                  {/* 1. SWITCH PROJECT OR LOCATION */}
+                  <button
+                    type="button"
+                    disabled={isOnBreak || switchMutation.isPending}
+                    onClick={() => {
+                      setSwitchProjectId(activeSegment.projectId);
+                      setSwitchLocation(activeSegment.location || 'OFFICE');
+                      setShowSwitchModal(true);
+                    }}
+                    className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-3 rounded-lg text-xs transition border border-slate-300 flex items-center justify-center gap-1.5 disabled:opacity-50"
+                  >
+                    <MapPin size={15} />
+                    <span>Switch Project / Location</span>
+                  </button>
+
+                  {/* 2. SINGLE UNIFIED CLOCK OUT */}
+                  <button
+                    type="button"
+                    onClick={() => clockOutMutation.mutate()}
+                    disabled={isOnBreak || clockOutMutation.isPending}
+                    className="flex-1 bg-slate-800 hover:bg-slate-900 disabled:opacity-30 text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2 shadow transition text-xs"
+                  >
+                    <Square size={15} fill="currentColor" />
+                    <span>Clock Out & End Shift</span>
+                  </button>
+                </div>
               </div>
             </div>
           )}
         </div>
       </div>
+
+      {/* 🔴 SWITCH PROJECT / LOCATION MODAL */}
+      {showSwitchModal && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4">
+            <h2 className="text-base font-bold text-slate-900">Switch Project / Location</h2>
+            <p className="text-xs text-slate-500">
+              Seamlessly transition to another project or change between Site, Office and Remote without ending your workday.
+            </p>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Select Project</label>
+                <select
+                  value={switchProjectId}
+                  onChange={(e) => setSwitchProjectId(e.target.value)}
+                  className="w-full px-3 py-2 text-xs border rounded-lg"
+                >
+                  {projectsData?.map((p: any) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name} ({p.code})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">New Location Context</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {(['OFFICE', 'SITE', 'REMOTE'] as const).map((loc) => (
+                    <button
+                      key={loc}
+                      type="button"
+                      onClick={() => setSwitchLocation(loc)}
+                      className={`py-2 text-xs font-bold rounded-lg border transition ${switchLocation === loc
+                        ? 'border-ccp-500 bg-ccp-50 text-ccp-700'
+                        : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                        }`}
+                    >
+                      {loc}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowSwitchModal(false)}
+                className="px-3 py-2 text-xs text-slate-600 hover:bg-slate-100 rounded-lg"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  switchMutation.mutate({
+                    projectId: switchProjectId,
+                    location: switchLocation,
+                  })
+                }
+                disabled={switchMutation.isPending}
+                className="px-4 py-2 bg-ccp-700 hover:bg-ccp-800 text-white text-xs font-bold rounded-lg shadow"
+              >
+                {switchMutation.isPending ? 'Switching...' : 'Confirm Switch'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

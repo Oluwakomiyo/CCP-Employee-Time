@@ -4,6 +4,7 @@ import {
   AuditAction,
   Role,
   Prisma,
+  LocationType,
 } from '@prisma/client';
 import { prisma } from '../../config/prisma';
 import { AppError } from '../../errors/AppError';
@@ -88,6 +89,7 @@ export class TimeService {
         data: {
           workDayId: workDay.id,
           projectId: input.projectId,
+          location: input.location ?? LocationType.OFFICE,
           status: SegmentStatus.ACTIVE,
           clockIn: now,
           clockInIp: ipAddress,
@@ -474,6 +476,30 @@ export class TimeService {
     });
 
     return workDays;
+  }
+
+  // 🔴 1-CLICK SEAMLESS SWITCH OF PROJECT OR LOCATION
+  async switchProjectOrLocation(
+    employeeId: string,
+    newProjectId: string,
+    newLocation: LocationType,
+    userRole: Role,
+    userId: string,
+    ipAddress?: string
+  ) {
+    // 1. Clock out of current segment
+    await this.clockOut(employeeId, userId, ipAddress);
+
+    // 2. Immediately clock into new segment with new context
+    const newSegment = await this.clockIn(
+      employeeId,
+      { projectId: newProjectId, location: newLocation },
+      userRole,
+      userId,
+      ipAddress
+    );
+
+    return newSegment;
   }
 }
 

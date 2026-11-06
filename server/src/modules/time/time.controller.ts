@@ -170,6 +170,22 @@ export class TimeController {
       next(error);
     }
   };
+
+  switchContext = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const ipAddress = req.ip || req.socket.remoteAddress;
+      const { projectId, location } = req.body;
+      const segment = await timeService.switchProjectOrLocation(
+        req.user!.employeeId,
+        projectId,
+        location,
+        req.user!.role,
+        req.user!.userId,
+        ipAddress
+      );
+      res.status(200).json({ status: 'success', message: 'Switched project context', data: { segment } });
+    } catch (error) { next(error); }
+  };
 }
 
 export const timeController = new TimeController();

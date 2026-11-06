@@ -1,8 +1,9 @@
 import { z } from 'zod';
-import { BreakType } from '@prisma/client';
+import { BreakType, LocationType } from '@prisma/client';
 
 export const clockInSchema = z.object({
   projectId: z.string().uuid('Valid project UUID is required'),
+  location: z.nativeEnum(LocationType).optional().default(LocationType.OFFICE),
 });
 
 export const startBreakSchema = z.object({
