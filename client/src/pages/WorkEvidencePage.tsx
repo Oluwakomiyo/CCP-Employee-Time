@@ -72,10 +72,10 @@ export const WorkEvidencePage: React.FC = () => {
                   Status:{' '}
                   <span
                     className={`font-black ${evidence.verification.status === 'NORMAL'
-                        ? 'text-emerald-600'
-                        : evidence.verification.status === 'SITE_WORK'
-                          ? 'text-blue-600'
-                          : 'text-amber-600'
+                      ? 'text-emerald-600'
+                      : evidence.verification.status === 'SITE_WORK'
+                        ? 'text-blue-600'
+                        : 'text-amber-600'
                       }`}
                   >
                     {evidence.verification.status}
@@ -150,6 +150,38 @@ export const WorkEvidencePage: React.FC = () => {
                 </div>
               </div>
             </div>
+          </div>
+          {/* 🔴 LOGGED TASKS & ACTIVITIES TIMELINE (Sections 98 & 101) */}
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+            <div className="flex items-center justify-between border-b pb-3">
+              <div className="flex items-center gap-2 text-sm font-bold text-slate-800">
+                <ListTodo size={18} className="text-ccp-600" />
+                <span>Employee Task Activities ({evidence.context?.activityCount || 0})</span>
+              </div>
+              <span className="text-xs text-slate-400 font-semibold">
+                Projects Worked: {evidence.context?.projectCount || 0}
+              </span>
+            </div>
+
+            {(!evidence.context?.activities || evidence.context.activities.length === 0) ? (
+              <div className="text-xs text-slate-400 italic py-3 text-center">
+                No specific task activities logged for this shift.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {evidence.context.activities.map((act: any, idx: number) => (
+                  <div
+                    key={idx}
+                    className="p-3 bg-slate-50 border border-slate-200/70 rounded-xl flex items-start gap-2.5"
+                  >
+                    <span className="w-2 h-2 rounded-full bg-ccp-500 mt-1.5 shrink-0"></span>
+                    <div className="text-xs">
+                      <span className="font-bold text-slate-800">{act.title}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}
