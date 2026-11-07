@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
 import { invalidateAllTimeQueries } from '../lib/sync';
-import { useBrowserHeartbeat } from '../hooks/useBrowserHeartbeat';
 import {
   Play,
   Square,
@@ -47,8 +46,7 @@ export const PunchClockPage: React.FC = () => {
   const isOnBreak = activeSegment?.isOnBreak || false;
 
   // Run automated browser session heartbeat while clocked in
-  useBrowserHeartbeat(isClockedIn);
-
+  
   // Live seconds ticker
   useEffect(() => {
     if (!isClockedIn || !activeSegment) {

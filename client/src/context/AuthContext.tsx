@@ -56,17 +56,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string) => {
     const res = await api.post('/auth/login', { email, password });
     const { accessToken, refreshToken, user: authUser } = res.data.data;
-    
+
     localStorage.setItem('accessToken', accessToken);
     localStorage.setItem('refreshToken', refreshToken);
     localStorage.setItem('user', JSON.stringify(authUser));
     setUser(authUser);
+
+    // 🔴 Notify Desktop Agent to begin native OS tracking
+    if ((window as any).electronAPI) {
+      (window as any).electronAPI.notifyLogin({
+        token: accessToken,
+        employee: authUser.employee,
+      });
+    }
   };
 
   const logout = async () => {
     try {
       await api.post('/auth/logout');
     } finally {
+      if ((window as any).electronAPI) {
+        (window as any).electronAPI.notifyLogout();
+      }
       localStorage.clear();
       setUser(null);
       window.location.href = '/login';

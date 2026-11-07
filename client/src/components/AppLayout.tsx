@@ -34,7 +34,7 @@ export const AppLayout: React.FC = () => {
         <div>
           {/* Logo Header */}
           <div className="h-16 flex items-center px-6 bg-ccp-950/80 border-b border-ccp-900">
-            <CcpLogo size={34} />
+            <CcpLogo size={45} />
           </div>
 
           {/* User Badge */}
