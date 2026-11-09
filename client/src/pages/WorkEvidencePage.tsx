@@ -142,11 +142,29 @@ export const WorkEvidencePage: React.FC = () => {
                     {Math.round(evidence.activityEvidence.significantIdleSeconds / 60)} mins
                   </span>
                 </div>
-                <div className="flex justify-between border-t pt-2 text-xs text-slate-500">
-                  <span>Registered Device:</span>
-                  <span className="font-semibold text-slate-800">
-                    {evidence.activityEvidence.registeredDevicesSeen[0] || 'Browser Client'}
-                  </span>
+                {/* 🔴 DESKTOP AGENT TELEMETRY DETAILS */}
+                <div className="border-t pt-2 space-y-1.5 text-xs text-slate-500">
+                  <div className="flex justify-between items-center">
+                    <span>Agent Status:</span>
+                    <span className="inline-flex items-center gap-1.5 font-bold">
+                      <span
+                        className={`w-2 h-2 rounded-full ${evidence.activityEvidence.isDeviceAgentOnline
+                            ? 'bg-emerald-500 animate-pulse'
+                            : 'bg-slate-300'
+                          }`}
+                      ></span>
+                      <span className={evidence.activityEvidence.isDeviceAgentOnline ? 'text-emerald-700' : 'text-slate-500'}>
+                        {evidence.activityEvidence.isDeviceAgentOnline ? 'Desktop Agent Online' : 'Agent Offline'}
+                      </span>
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between">
+                    <span>Monitored Workstation:</span>
+                    <span className="font-semibold text-slate-800">
+                      {evidence.activityEvidence.registeredDevicesSeen[0] || 'Desktop Workstation'}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>

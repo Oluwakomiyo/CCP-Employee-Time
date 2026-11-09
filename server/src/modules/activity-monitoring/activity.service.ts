@@ -25,15 +25,26 @@ export class ActivityService {
     const now = new Date();
     const todayDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
 
-    // Link to today's active WorkDay if one exists
-    const workDay = await prisma.workDay.findUnique({
-      where: { employeeId_date: { employeeId, date: todayDate } },
+    // 🔴 Link directly to the employee's currently active shift segment
+    const activeSegment = await prisma.workSegment.findFirst({
+      where: {
+        workDay: { employeeId },
+        status: SegmentStatus.ACTIVE,
+      },
+      select: { workDayId: true },
     });
+
+    const todayWorkDay = activeSegment ? null : await prisma.workDay.findUnique({
+      where: { employeeId_date: { employeeId, date: todayDate } },
+      select: { id: true },
+    });
+
+    const targetWorkDayId = activeSegment?.workDayId || todayWorkDay?.id || null;
 
     const heartbeat = await prisma.activityHeartbeat.create({
       data: {
         employeeId,
-        workDayId: workDay?.id || null,
+        workDayId: targetWorkDayId,
         source: HeartbeatSource.BROWSER,
         receivedAt: now,
         clientTimestamp: input.clientTimestamp ? new Date(input.clientTimestamp) : null,
@@ -63,16 +74,28 @@ export class ActivityService {
     const now = new Date();
     const todayDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
 
-    const workDay = await prisma.workDay.findUnique({
-      where: { employeeId_date: { employeeId: device.employeeId, date: todayDate } },
+    const activeSegment = await prisma.workSegment.findFirst({
+      where: {
+        workDay: { employeeId: device.employeeId },
+        status: SegmentStatus.ACTIVE,
+      },
+      select: { workDayId: true },
     });
 
-    // Record heartbeat and update device's lastSeenAt
+    const todayWorkDay = activeSegment
+      ? null
+      : await prisma.workDay.findUnique({
+        where: { employeeId_date: { employeeId: device.employeeId, date: todayDate } },
+        select: { id: true },
+      });
+
+    const targetWorkDayId = activeSegment?.workDayId || todayWorkDay?.id || null;
+
     const [heartbeat] = await prisma.$transaction([
       prisma.activityHeartbeat.create({
         data: {
           employeeId: device.employeeId,
-          workDayId: workDay?.id || null,
+          workDayId: targetWorkDayId,
           deviceId: device.id,
           source: HeartbeatSource.DESKTOP_AGENT,
           receivedAt: now,
