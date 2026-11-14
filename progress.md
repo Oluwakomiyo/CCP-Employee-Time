@@ -153,6 +153,11 @@ Seed logins (dev only, all `Password123!`): `ceo@example.com` (CEO), `manager@ex
 ---
 
 ## Known gaps / follow-ups
+- **Electron activity tracking can't work as built (owner decision needed).** `electron/main.cjs` waits for the web app to call `window.electronAPI.notifyLogin({ token, employee })`, but nothing in `web/` calls it. Login no longer returns tokens, and Electron's self-registration (`POST /activity/devices`) is CEO-only, so an employee gets a 403. The separate `desktop-agent/` (device key from Settings) is the working path. Options: (a) Electron stops doing telemetry and the desktop agent is installed beside it; or (b) Electron reads a device key issued in Settings, like the agent does. Don't add an employee-facing token or self-registration.
+- **Notification bell quirks:**
+  - "Mark all read" sends one request per item instead of `POST /me/notifications/read-all`.
+  - "Mark unread" and "Dismiss" are local only and revert on the next poll.
+  - The unread badge counts only the 30 loaded items, not the server's `meta.unread`.
 - Payroll: 8h/day overtime threshold is hard-coded (no policy yet). Days with no rate are skipped and returned as `daysWithoutRate`.
 - Dashboard "hours today" counts the date's segments; employees with no visible projects show only themselves to a PM.
 - Estimate uses current rates for cost (future rates are unknown by definition).
@@ -161,6 +166,7 @@ Seed logins (dev only, all `Password123!`): `ceo@example.com` (CEO), `manager@ex
 ## Session log
 | Date | Work |
 |---|---|
+| 2026-11-14 | Review of phases 7–10: rates saved 100× too high fixed (MoneyInput kobo), duplicate stale job in compose fixed, Employees/Projects UI improved, `hoursWorked` on the project list; 89 tests |
 | 2026-11-14 | Phase 7: corrections review, employees, projects, payroll, audit log, settings (+ device list/revoke API, unknown departments rejected; 81 tests) |
 | 2026-11-14 | Phase 7: work evidence screen + workday lookup API, reports screen + shared report blocks, legacy cleanup (client/ deleted, time aliases and isActive toggle dropped, tokens cookie-only; 86 tests) |
 | 2026-11-14 | Phase 8 web (notification bell, 60 s polling, deep links; verified CEO + employee end to end), Phase 9 (server heartbeat dedup, agent rewrite, electron wrapper), Phase 10 (dockerfiles, compose, CI, docs, backup; 88 tests) |

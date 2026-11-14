@@ -123,6 +123,18 @@ The seed includes the following, so screens have data:
 
 ## 5. Done this session (latest first)
 
+- **Review of phases 7–10 (2026-11-14, evening):**
+  - **Fixed: rates were saved 100× too high.** Arc `MoneyInput` reports **kobo**; forms now convert with `koboToNaira` (`lib/employees.ts`). Any rate entered through the UI before this fix is wrong: re-seed, or correct it on the Compensation tab.
+  - **Fixed:** in compose, the missing clock-out job ran in both the api and the worker (`RUN_STALE_WORKER=false` on the api).
+  - **Improved Employees and Projects:**
+    - Avatar header with status and role badges.
+    - Last-30-day numbers on the employee overview.
+    - The projects list shows hours against each estimate (the API now sends `hoursWorked` for management only, tested).
+    - A project details card.
+    - Readable dates and sentence-case statuses.
+    - Metric cards sit two per row on phones.
+  - 89 server tests pass.
+
 - **Phase 7 (most of it):**
   - Corrections review.
   - Employees list and detail.
@@ -231,6 +243,12 @@ Read each service file for the exact response shape before building.
 ---
 
 ## 8. Known gaps (also listed in `progress.md`)
+
+- **Electron activity tracking can't work as built (owner decision needed).** `electron/main.cjs` waits for the web app to call `window.electronAPI.notifyLogin({ token, employee })`, but nothing in `web/` calls it. Login no longer returns tokens, and Electron's self-registration (`POST /activity/devices`) is CEO-only, so an employee gets a 403. The separate `desktop-agent/` (device key from Settings) is the working path. Options: (a) Electron stops doing telemetry and the desktop agent is installed beside it; or (b) Electron reads a device key issued in Settings, like the agent does. Don't add an employee-facing token or self-registration.
+- **Notification bell quirks:**
+  - "Mark all read" sends one request per item instead of `POST /me/notifications/read-all`.
+  - "Mark unread" and "Dismiss" are local only and revert on the next poll.
+  - The unread badge counts only the 30 loaded items, not the server's `meta.unread`.
 
 - PMs can list and open **any** employee's profile (`GET /employees`, `GET /employees/:id`): name, email, department, no money. It's needed to add people to projects. Ask the owner whether PMs should see only their team.
 - The payroll **successful finalize** was never clicked through in the browser (dev data always has an open day); the server tests cover it.
