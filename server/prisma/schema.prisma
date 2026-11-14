@@ -117,6 +117,7 @@ model User {
   employee         Employee?
   auditLogs        AuditLog[]              @relation("AuditActor")
   reviewedRequests TimeCorrectionRequest[] @relation("CorrectionReviewer")
+  notifications      Notification[]
 
 }
 
@@ -424,4 +425,34 @@ model PayrollRecord {
   employee Employee @relation(fields: [employeeId], references: [id], onDelete: Restrict)
 
   @@unique([employeeId, periodStart, periodEnd])
+}
+
+// -----------------------------------------------------------------------------
+// NOTIFICATIONS (spec §52): in-app first; delivery channels can be added later.
+// -----------------------------------------------------------------------------
+
+enum NotificationType {
+  MISSING_CLOCK_OUT
+  CORRECTION_SUBMITTED
+  CORRECTION_APPROVED
+  CORRECTION_REJECTED
+  PROJECT_ASSIGNED
+  ACCOUNT_CREATED
+  PASSWORD_RESET
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  title     String           @db.VarChar(200)
+  body      String?
+  // Small payload for deep links (e.g. { workDayId }); never compensation data.
+  data      Json?            @db.JsonB
+  readAt    DateTime?        @db.Timestamptz(6)
+  createdAt DateTime         @default(now()) @db.Timestamptz(6)
+
+  @@index([userId, readAt])
+  @@index([createdAt])
 }
