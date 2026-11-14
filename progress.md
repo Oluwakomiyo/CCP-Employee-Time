@@ -121,6 +121,7 @@ Seed logins (dev only, all `Password123!`): `ceo@example.com` (CEO), `manager@ex
 ### 🔄 Phase 7: Management screens ← **NEXT**
 - [x] Dashboard (`web/app/(app)/dashboard/` + `web/lib/dashboard.ts`): metric cards, hours by project/over time/estimated-vs-actual bars, location/activity donuts, 7/30/90-day ranges; no money anywhere; browser-checked as CEO and PM, 390px, dark, loading skeleton, range switch
 - [x] Live status (`web/app/(app)/live/` + `web/lib/live.ts`): avatar + badge table polled every 15 s with ticking elapsed; browser-checked as CEO, 390px
+- [x] Review fixes: live board times a break from its start (`sinceSeconds` from the API) and sorts numerically; dashboard fills empty days, shows estimates as per-project progress (over-budget badge), adds Not clocked in / Finished cards, keeps the old range on screen while switching, fixes chart and card labels
 - [ ] Employees (+ detail), Projects (+ detail/report/estimate), Corrections review, Payroll, Reports, Work evidence, Audit log, Settings
 - [ ] Delete `client/`; drop the legacy time aliases and the body tokens in login
 
