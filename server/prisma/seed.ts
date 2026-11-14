@@ -23,6 +23,11 @@ async function main() {
   await prisma.employee.deleteMany();
   await prisma.user.deleteMany();
 
+  // Departments must exist before employees reference them.
+  for (const name of ['Executive', 'Engineering', 'Design']) {
+    await prisma.department.upsert({ where: { name }, create: { name }, update: {} });
+  }
+
   const saltRounds = 10;
 
   // 2. Create CEO / Admin

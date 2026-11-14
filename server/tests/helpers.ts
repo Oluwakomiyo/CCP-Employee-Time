@@ -18,6 +18,7 @@ export const resetDb = async () => {
 let seq = 0;
 export const createUser = async (role: Role, opts: { mustChangePassword?: boolean; rate?: number } = {}) => {
   seq += 1;
+  await prisma.department.upsert({ where: { name: 'Design' }, create: { name: 'Design' }, update: {} });
   const user = await prisma.user.create({
     data: {
       email: `user${seq}@test.local`,

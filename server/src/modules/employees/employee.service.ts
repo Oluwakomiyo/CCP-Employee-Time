@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs';
 import { Prisma, Role, EmploymentStatus, AuditAction } from '@prisma/client';
-import { prisma } from '../../config/prisma';
+import { prisma, DbClient } from '../../config/prisma';
 import { AppError } from '../../errors/AppError';
 import {
   CreateEmployeeInput,
@@ -10,6 +10,13 @@ import {
 } from './employee.schema';
 import { generateTemporaryPassword } from '../../utils/password';
 import { CURRENT_RATE, dayBefore } from './compensation';
+
+/**
+ * shortcut: unknown department names are created on the fly so existing forms keep working.
+ * Once the Settings screen manages departments (Phase 7), reject unknown names instead.
+ */
+const ensureDepartment = (tx: DbClient, name: string) =>
+  tx.department.upsert({ where: { name }, create: { name }, update: {} });
 
 /** Current rate only, for CEO views. */
 const currentRateSelect = {
@@ -182,6 +189,7 @@ export class EmployeeService {
         },
       });
 
+      await ensureDepartment(tx, input.department);
       const employee = await tx.employee.create({
         data: {
           userId: user.id,
@@ -262,6 +270,7 @@ export class EmployeeService {
       }
 
       // 2. Update Employee record
+      if (employeeData.department) await ensureDepartment(tx, employeeData.department);
       const result = await tx.employee.update({
         where: { id: employeeId },
         data: employeeData,
