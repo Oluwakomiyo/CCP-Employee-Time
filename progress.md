@@ -132,7 +132,8 @@ Seed logins (dev only, all `Password123!`): `ceo@example.com` (CEO), `manager@ex
 - [x] Reports (`web/app/(app)/reports/` + shared `web/components/reports/`): employee/project pickers with date range; Report/HoursList moved out of the detail pages and reused; project report hook takes an optional range; browser-checked as CEO (labour cost) and PM (hours only), 390px; employee denied
 - [x] Work evidence (`web/app/(app)/evidence/` + `web/lib/evidence.ts`): employee + date pickers, new `GET /management/employees/:id/workdays?date=` (tested, PM-scoped); metric cards, assessment, segment timeline; browser-checked as CEO, PM (scoped, 403 path renders), 390px; employee denied; fixed a stuck skeleton on disabled lookups
 - [x] Delete `client/` (electron wrapper moved to `/electron` for Phase 9); drop the legacy time aliases and the `isActive` update toggle; login/refresh keep tokens in httpOnly cookies only (tests read the session cookie; new security test locks it)
-- [ ] Phase 8: notifications UI, Phase 9: desktop, Phase 10: ship
+- [x] Phase 8 web, Phase 9, Phase 10 all done — see below
+- [ ] Owner action: revoke `HW-SARAH-CAD-01` wherever it was issued (not in this dev DB)
 
 ### 🔄 Phase 8: Notifications
 - [x] Server: `notify()` inside the event's transaction; correction submitted (CEO + lead PMs), approved/rejected (employee), missing clock-out (employee), project assigned (employee); `GET /me/notifications`, `POST /me/notifications/:id/read`, `POST /me/notifications/read-all`; tests (79 total)
@@ -142,7 +143,12 @@ Seed logins (dev only, all `Password123!`): `ceo@example.com` (CEO), `manager@ex
 - [x] Agent: async idle reads, macOS (`ioreg`) + Linux (`xprintidle`) readers, UNKNOWN when unreadable (verified: stored UNKNOWN), HTTPS enforced off-localhost; error log shows the server message
 - [x] Electron (`electron/`): loads `CCP_WEB_URL` (default localhost:3000), single tray instance, before-quit flag + tray destroy, heartbeats only while `/time/today` reports WORKING/ON_BREAK; icon path fixed to `web/public`; runnable `package.json`
 - [ ] Owner action: revoke `HW-SARAH-CAD-01` — confirmed **not** in this dev DB; revoke it wherever it was issued
-### ⏳ Phase 10: Docker, CI, docs, backups
+### ✅ Phase 10: Docker, CI, docs, backups
+- [x] `server/Dockerfile` (+ entrypoint running `prisma migrate deploy` on start) and `web/Dockerfile` (standalone build, verified locally); compose runs db, api, worker (`src/worker.ts` entrypoint), web
+- [x] CI (`.github/workflows/ci.yml`): web typecheck + lint, server tests on postgres
+- [x] Docs: README, ARCHITECTURE, API, DATABASE, SECURITY, DEPLOYMENT (short)
+- [x] Nightly `pg_dump` backup (`server/scripts/backup.sh`, 14-day retention, cron line documented)
+- [ ] Docker is not installed on the dev machine: build the images once where Docker exists before relying on them
 
 ---
 
@@ -157,6 +163,7 @@ Seed logins (dev only, all `Password123!`): `ceo@example.com` (CEO), `manager@ex
 |---|---|
 | 2026-11-14 | Phase 7: corrections review, employees, projects, payroll, audit log, settings (+ device list/revoke API, unknown departments rejected; 81 tests) |
 | 2026-11-14 | Phase 7: work evidence screen + workday lookup API, reports screen + shared report blocks, legacy cleanup (client/ deleted, time aliases and isActive toggle dropped, tokens cookie-only; 86 tests) |
+| 2026-11-14 | Phase 8 web (notification bell, 60 s polling, deep links; verified CEO + employee end to end), Phase 9 (server heartbeat dedup, agent rewrite, electron wrapper), Phase 10 (dockerfiles, compose, CI, docs, backup; 88 tests) |
 | 2026-11-14 | Phase 8 server (notifications), Today punch clock, `SIGNOFF.md` hand-over |
 | 2026-11-14 | Spec and code audit; plan agreed; Phases 0–2 done (23 commits, 37 tests) |
 | 2026-11-14 | Phase 5 done (Next.js 16 + Arc shell, auth screens, theme, maroon accent) |
