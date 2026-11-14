@@ -1,4 +1,5 @@
-import { Prisma, Role, AuditAction, ProjectStatus } from '@prisma/client';
+import { notify } from '../notifications/notification.service';
+import { Prisma, Role, AuditAction, ProjectStatus, NotificationType } from '@prisma/client';
 import { prisma } from '../../config/prisma';
 import { AppError } from '../../errors/AppError';
 import { reportService } from '../reports/report.service';
@@ -411,6 +412,11 @@ export class ProjectService {
             isProjectLead: input.isProjectLead,
           },
         },
+      });
+      await notify(tx, [employee.userId], {
+        type: NotificationType.PROJECT_ASSIGNED,
+        title: `You were added to ${project.code} ${project.name}`,
+        data: { projectId },
       });
 
       return member;
