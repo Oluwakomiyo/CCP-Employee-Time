@@ -13,7 +13,8 @@
     "prisma:seed": "tsx prisma/seed.ts",
     "test": "vitest run",
     "test:watch": "vitest",
-    "worker": "node dist/worker.js"
+    "worker": "node dist/worker.js",
+    "create-admin": "tsx src/scripts/create-admin.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.19.0",
