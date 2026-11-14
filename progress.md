@@ -80,17 +80,20 @@ Seed logins (dev only, all `Password123!`): `ceo@example.com` (CEO), `manager@ex
 - [x] Seed: spec §66 accounts, PRJ-001/002/003, rate history, 10 working days, one missing clock-out, one pending correction
 - [x] Tests: `tests/compensation.unit.test.ts`, `tests/data-model.test.ts`
 
-### 🔄 Phase 4: Missing API surface ← **NEXT**
+### ✅ Phase 4: Missing API surface
+- [x] Shared aggregation from source records: `modules/reports/aggregate.ts` (net = segment − breaks inside it; activity time minus overlapping breaks; running time measured to now; unresolved missing clock-outs count 0)
+- [x] `GET /management/dashboard?from&to`: cards (working, on break, not clocked in, finished, hours today, active projects, missing clock-outs, pending corrections) + charts (by project, department, employee, over time, location, activity, estimated vs actual)
+- [x] `GET /management/status`: live board (WORKING / ON_BREAK / FINISHED / NOT_STARTED)
+- [x] `GET /management/projects/:id/report`, `GET /management/employees/:id/report`, `GET /me/report` (no money for PMs or employees; labour cost CEO only, priced per day)
+- [x] `GET /management/estimate?projectId&employeeIds=a,b`: remaining estimate (or completed-project average) ÷ team daily average (90 days; 8h assumed + flagged when no history); cost CEO only
+- [x] PM scoping on every management endpoint (`visibleEmployeeIds`, `pmLeadsProject`)
+- [x] Payroll: atomic DRAFT runs, `POST /payroll/finalize` (blocked by unresolved days; locks records), `GET /payroll/export` CSV (formula-injection safe), overlap guard, 3-month max period; list no longer loads every workday ever
+- [x] Lists: shared `utils/listing.ts`; sort allow-lists on employees, projects, corrections; corrections date filter; `/me/time` paginated + project/location filters
+- [x] Corrections that overlap another work period are rejected
+- [x] Legacy cost breakdown derived from the project report (net of breaks)
+- [x] Tests: `aggregate.unit`, `reports`, `payroll`, `listing` (76 total)
 
-- [ ] `GET /management/dashboard` (KPI counts) and `GET /management/status` (live board)
-- [ ] `GET /management/projects/:id/report`, `GET /management/employees/:id/report`, `GET /me/report`
-- [ ] `GET /management/estimate` (duration and cost estimate, cost CEO only)
-- [ ] Payroll: period-aware rates, finalize/lock, CSV export; fix paid-break deduction
-- [ ] Pagination, sort and filters on every list
-- [ ] Reject corrections that overlap other segments
-- [ ] Tests: report math (§31), payroll finalize
-
-### ⏳ Phase 5: Next.js app + design system (`web/`)
+### 🔄 Phase 5: Next.js app + design system (`web/`) ← **NEXT**
 - [ ] App Router + TS + Tailwind (layout only) + TanStack Query + zod; rewrite `/api/v1/*` to Express (same origin, so cookies work)
 - [ ] Plus Jakarta Sans via `next/font`, mapped onto Arc's `--font-geist` / `--font-inter`
 - [ ] Arc set up (`components.json` registry `@uiarc`, `foundation.css`), install the full primitive set (see the plan's table)
@@ -112,9 +115,9 @@ Seed logins (dev only, all `Password123!`): `ceo@example.com` (CEO), `manager@ex
 ## Known gaps / follow-ups
 - The legacy `client/` punch screen has no activity-type picker (its entries save as OTHER); its error toasts read the old error shape. It will be replaced, not fixed.
 - Unknown department names are auto-created on employee create/edit (shortcut until the Settings screen exists; then reject them).
-- Payroll: 8h/day overtime threshold is hard-coded; no finalize/lock or CSV yet (Phase 4). Days with no rate are skipped and logged.
-- Project cost breakdown counts segment time including breaks inside the segment (fix with the Phase 4 reports).
-- `GET /me/time` is capped at 366 days instead of paginated (Phase 4).
+- Payroll: 8h/day overtime threshold is hard-coded (no policy yet). Days with no rate are skipped and returned as `daysWithoutRate`.
+- Dashboard "hours today" counts the date's segments; employees with no visible projects show only themselves to a PM.
+- Estimate uses current rates for cost (future rates are unknown by definition).
 - Login returns tokens in the body as well as cookies, for the legacy client and Electron (remove in Phase 7).
 - Failed logins are not audited.
 
@@ -122,4 +125,5 @@ Seed logins (dev only, all `Password123!`): `ceo@example.com` (CEO), `manager@ex
 | Date | Work |
 |---|---|
 | 2026-11-14 | Spec and code audit; plan agreed; Phases 0–2 done (23 commits, 37 tests) |
+| 2026-11-14 | Phase 4 done (reports, dashboard, live status, estimate, payroll finalize/CSV, lists; 76 tests) |
 | 2026-11-14 | Phase 3 done (data model: rate history, soft membership, project status, departments, notifications table, new seed; 51 tests) |
