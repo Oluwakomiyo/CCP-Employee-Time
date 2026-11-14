@@ -112,7 +112,8 @@ Seed logins (dev only, all `Password123!`): `ceo@example.com` (CEO), `manager@ex
 - [x] Today punch clock (`web/app/(app)/today/`, hooks in `web/lib/time.ts`): start, break, change project/location/activity in a drawer, hold to end; polls every 15 s; browser-checked
 - [x] `GET /projects?mine=true` (the caller's own projects, for pickers)
 - [x] My time (`web/app/(app)/my-time/` + `web/lib/history.ts`): paginated workdays with date-range, project and location filters, day timeline detail, missing clock-out correction link; browser-checked (light/dark, 390px)
-- [ ] My projects, My corrections, Profile
+- [x] My projects (`web/app/(app)/my-projects/` + `web/lib/my-projects.ts`): card grid with team, lead, my hours in range and progress against estimate, summary stats; no money anywhere; browser-checked (390px)
+- [ ] My corrections, Profile
 
 ### ⏳ Phase 7: Management screens
 - [ ] Dashboard, Live status, Employees (+ detail), Projects (+ detail/report/estimate), Corrections review, Payroll, Reports, Work evidence, Audit log, Settings
