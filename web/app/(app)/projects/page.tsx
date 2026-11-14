@@ -1,8 +1,14 @@
 import type { Metadata } from "next";
-import { ComingSoon } from "@/components/shell/coming-soon";
+import { PageHeading } from "@/components/shell/page-heading";
+import { ProjectList } from "./project-list";
 
 export const metadata: Metadata = { title: "Projects" };
 
 export default function ProjectsPage() {
-  return <ComingSoon title="Projects" description="Projects, teams, estimates and progress." />;
+  return (
+    <>
+      <PageHeading title="Projects" description="Status, team and hours against each estimate." />
+      <ProjectList />
+    </>
+  );
 }
