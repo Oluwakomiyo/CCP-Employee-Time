@@ -146,3 +146,5 @@ Seed logins (dev only, all `Password123!`): `ceo@example.com` (CEO), `manager@ex
 | 2026-11-14 | Phase 5 done (Next.js 16 + Arc shell, auth screens, theme, maroon accent) |
 | 2026-11-14 | Phase 4 done (reports, dashboard, live status, estimate, payroll finalize/CSV, lists; 76 tests) |
 | 2026-11-14 | Phase 3 done (data model: rate history, soft membership, project status, departments, notifications table, new seed; 51 tests) |
+| 2026-11-14 | Phase 6 done (my time, my projects, my corrections, profile); employee access-denied re-verified |
+| 2026-11-14 | Skeleton audit and rebuild: every loading state mirrors its real UI (shared Block + TableSkeleton primitives, colocated skeletons reusing layout classes); verified live, 390px, dark, reduced-motion; real UI untouched |
