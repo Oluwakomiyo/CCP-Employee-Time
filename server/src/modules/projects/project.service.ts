@@ -90,8 +90,11 @@ export class ProjectService {
       }),
     ]);
 
+    // Management sees hours against each estimate; employees only ever see their own hours.
+    const worked = userRole === Role.EMPLOYEE ? null : await reportService.hoursForProjects(items.map((p) => p.id));
+
     return {
-      data: items,
+      data: worked ? items.map((p) => ({ ...p, hoursWorked: worked.get(p.id) ?? 0 })) : items,
       meta: {
         page,
         limit,

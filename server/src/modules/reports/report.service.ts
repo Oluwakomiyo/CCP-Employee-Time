@@ -86,6 +86,17 @@ const projectNames = (segments: LoadedSegment[]) =>
 
 export class ReportService {
   /**
+   * Net hours worked per project (all time), with the same maths as the project report.
+   * shortcut: loads every segment of the listed projects; fine at CCP's size, move to SQL
+   * aggregation if a project list page ever spans thousands of segments.
+   */
+  async hoursForProjects(projectIds: string[]) {
+    if (!projectIds.length) return new Map<string, number>();
+    const byProject = summarise(await loadSegments({ projectId: { in: projectIds } }), new Date()).byProject;
+    return new Map(projectIds.map((id) => [id, hours(byProject.get(id) ?? 0)]));
+  }
+
+  /**
    * GET /management/employees/:id/workdays?date=: one day with its segments,
    * so the evidence screen can resolve a workday id for an employee and date.
    */

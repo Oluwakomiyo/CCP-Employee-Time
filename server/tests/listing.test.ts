@@ -2,15 +2,17 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import request from 'supertest';
 import { Role, DayStatus } from '@prisma/client';
 import { prisma } from '../src/config/prisma';
-import { app, auth, createUser, login, resetDb } from './helpers';
+import { app, auth, createProject, createUser, login, resetDb } from './helpers';
 
 let tCeo: string;
 let tEmp: string;
+let empId: string;
 
 beforeAll(async () => {
   await resetDb();
   const ceo = await createUser(Role.CEO_ADMIN);
   const emp = await createUser(Role.EMPLOYEE);
+  empId = emp.employeeId;
   await createUser(Role.EMPLOYEE);
   [tCeo, tEmp] = await Promise.all([login(ceo.email), login(emp.email)]);
   await prisma.workDay.createMany({
@@ -44,5 +46,24 @@ describe('list endpoints (spec §59)', () => {
 
   it('caps page size', async () => {
     expect((await request(app).get('/api/v1/employees?limit=1000').set(auth(tCeo))).status).toBe(400);
+  });
+
+  it('project list carries net hours for management only', async () => {
+    const proj = await createProject('HRS-1', [{ employeeId: empId }]);
+    const day = await prisma.workDay.findFirstOrThrow({ where: { employeeId: empId } });
+    await prisma.workSegment.create({
+      data: {
+        workDayId: day.id,
+        projectId: proj.id,
+        status: 'COMPLETED',
+        clockIn: new Date('2026-11-02T08:00:00Z'),
+        clockOut: new Date('2026-11-02T11:00:00Z'),
+        durationSeconds: 3 * 3600,
+      },
+    });
+    const ceoList = await request(app).get('/api/v1/projects').set(auth(tCeo));
+    expect(ceoList.body.data.find((p: { code: string }) => p.code === 'HRS-1').hoursWorked).toBe(3);
+    const empList = await request(app).get('/api/v1/projects').set(auth(tEmp));
+    expect(empList.body.data.find((p: { code: string }) => p.code === 'HRS-1')).not.toHaveProperty('hoursWorked');
   });
 });
