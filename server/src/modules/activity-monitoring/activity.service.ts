@@ -9,6 +9,7 @@ import {
 } from '@prisma/client';
 import { prisma } from '../../config/prisma';
 import { AppError } from '../../errors/AppError';
+import { workDateFor } from '../../utils/time';
 import {
   BrowserHeartbeatInput,
   AgentHeartbeatInput,
@@ -23,7 +24,7 @@ export class ActivityService {
    */
   async recordBrowserHeartbeat(employeeId: string, input: BrowserHeartbeatInput) {
     const now = new Date();
-    const todayDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    const todayDate = workDateFor(now);
 
     // 🔴 Link directly to the employee's currently active shift segment
     const activeSegment = await prisma.workSegment.findFirst({
@@ -72,7 +73,7 @@ export class ActivityService {
     }
 
     const now = new Date();
-    const todayDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    const todayDate = workDateFor(now);
 
     const activeSegment = await prisma.workSegment.findFirst({
       where: {
