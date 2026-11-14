@@ -127,7 +127,7 @@ model User {
 model Employee {
   id     String @id @default(uuid())
   userId String @unique
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Restrict)
 
   employeeCode String           @unique
   firstName    String
@@ -217,7 +217,7 @@ model ProjectMember {
   removedAt     DateTime? @db.Timestamptz(6)
 
   project  Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Restrict)
 
   @@index([employeeId])
   @@index([projectId])
@@ -239,7 +239,7 @@ model WorkDay {
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @db.Timestamptz(6)
 
-  employee    Employee                @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  employee    Employee                @relation(fields: [employeeId], references: [id], onDelete: Restrict)
   segments    WorkSegment[]
   corrections TimeCorrectionRequest[]
   heartbeats  ActivityHeartbeat[]
@@ -262,7 +262,7 @@ model WorkSegment {
   clockInIp  String? @db.VarChar(45)
   clockOutIp String? @db.VarChar(45)
 
-  workDay    WorkDay    @relation(fields: [workDayId], references: [id], onDelete: Cascade)
+  workDay    WorkDay    @relation(fields: [workDayId], references: [id], onDelete: Restrict)
   project    Project    @relation(fields: [projectId], references: [id], onDelete: Restrict)
   breaks     Break[]
   activities Activity[]
@@ -285,7 +285,7 @@ model EmployeeDevice {
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @db.Timestamptz(6)
 
-  employee   Employee            @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  employee   Employee            @relation(fields: [employeeId], references: [id], onDelete: Restrict)
   heartbeats ActivityHeartbeat[]
 
   @@index([employeeId])
@@ -301,7 +301,7 @@ model Break {
   endTime         DateTime? @db.Timestamptz(6)
   durationSeconds Int?
 
-  workSegment WorkSegment @relation(fields: [workSegmentId], references: [id], onDelete: Cascade)
+  workSegment WorkSegment @relation(fields: [workSegmentId], references: [id], onDelete: Restrict)
 
   @@index([workSegmentId])
 }
@@ -317,7 +317,7 @@ model Activity {
   startTime DateTime  @db.Timestamptz(6)
   endTime   DateTime? @db.Timestamptz(6)
 
-  workSegment WorkSegment @relation(fields: [workSegmentId], references: [id], onDelete: Cascade)
+  workSegment WorkSegment @relation(fields: [workSegmentId], references: [id], onDelete: Restrict)
   project     Project     @relation(fields: [projectId], references: [id], onDelete: Restrict)
 
   @@index([workSegmentId])
@@ -343,7 +343,7 @@ model ActivityHeartbeat {
 
   createdAt DateTime @default(now()) @db.Timestamptz(6)
 
-  employee Employee        @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  employee Employee        @relation(fields: [employeeId], references: [id], onDelete: Restrict)
   workDay  WorkDay?        @relation(fields: [workDayId], references: [id], onDelete: SetNull)
   device   EmployeeDevice? @relation(fields: [deviceId], references: [id], onDelete: SetNull)
 
@@ -371,8 +371,8 @@ model TimeCorrectionRequest {
   createdAt  DateTime  @default(now()) @db.Timestamptz(6)
   updatedAt  DateTime  @updatedAt @db.Timestamptz(6)
 
-  workDay  WorkDay  @relation(fields: [workDayId], references: [id], onDelete: Cascade)
-  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  workDay  WorkDay  @relation(fields: [workDayId], references: [id], onDelete: Restrict)
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Restrict)
   reviewer User?    @relation("CorrectionReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
 
   @@index([workDayId, status])
@@ -410,7 +410,7 @@ model PayrollRecord {
   currency      String   @default("USD") @db.VarChar(3)
   generatedAt   DateTime @default(now()) @db.Timestamptz(6)
 
-  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Restrict)
 
   @@unique([employeeId, periodStart, periodEnd])
 }
