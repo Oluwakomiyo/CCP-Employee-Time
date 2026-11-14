@@ -42,8 +42,8 @@ export class TimeController {
   getHistory = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const query = timeHistoryQuerySchema.parse(req.query);
-      const history = await timeService.getTimesheetHistory(query, req.user!.role, req.user!.employeeId);
-      res.status(200).json({ success: true, data: { history } });
+      const { history, meta } = await timeService.getTimesheetHistory(query, req.user!.role, req.user!.employeeId);
+      res.status(200).json({ success: true, data: { history }, meta });
     } catch (error) {
       next(error);
     }

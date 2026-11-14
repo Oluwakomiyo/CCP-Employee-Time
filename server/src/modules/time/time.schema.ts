@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { ActivityType, BreakType, LocationType } from '@prisma/client';
+import { pageQuery } from '../../utils/listing';
 
 const description = z.string().trim().max(500).optional();
 
@@ -48,6 +49,10 @@ export const startBreakSchema = z.object({
 });
 
 export const timeHistoryQuerySchema = z.object({
+  // Pages of workdays, newest first.
+  ...pageQuery(31, 366),
+  projectId: z.string().uuid().optional(),
+  location: z.nativeEnum(LocationType).optional(),
   startDate: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, 'startDate must be in YYYY-MM-DD format')

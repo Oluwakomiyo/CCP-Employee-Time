@@ -11,6 +11,7 @@ import {
 import { prisma, DbClient } from '../../config/prisma';
 import { AppError } from '../../errors/AppError';
 import { workDateFor } from '../../utils/time';
+import { pageMeta } from '../../utils/listing';
 import { withEmployeeLock, recomputeDayTotals, secondsBetween } from './time.totals';
 import {
   StartWorkInput,
@@ -377,23 +378,37 @@ export class TimeService {
       };
     }
 
-    // shortcut: capped at 366 days instead of real pagination; Phase 4 adds page/limit.
-    return prisma.workDay.findMany({
-      where,
-      orderBy: { date: 'desc' },
-      take: 366,
-      include: {
-        segments: {
-          orderBy: { clockIn: 'asc' },
-          include: {
-            project: { select: { id: true, code: true, name: true } },
-            breaks: { orderBy: { startTime: 'asc' } },
-            activities: { orderBy: { startTime: 'asc' } },
-          },
+    // Filter days by what was worked on them.
+    if (query.projectId || query.location) {
+      where.segments = {
+        some: {
+          ...(query.projectId ? { projectId: query.projectId } : {}),
+          ...(query.location ? { location: query.location } : {}),
         },
-        employee: { select: { id: true, employeeCode: true, firstName: true, lastName: true } },
-      },
-    });
+      };
+    }
+
+    const [total, history] = await Promise.all([
+      prisma.workDay.count({ where }),
+      prisma.workDay.findMany({
+        where,
+        orderBy: { date: 'desc' },
+        skip: (query.page - 1) * query.limit,
+        take: query.limit,
+        include: {
+          segments: {
+            orderBy: { clockIn: 'asc' },
+            include: {
+              project: { select: { id: true, code: true, name: true } },
+              breaks: { orderBy: { startTime: 'asc' } },
+              activities: { orderBy: { startTime: 'asc' } },
+            },
+          },
+          employee: { select: { id: true, employeeCode: true, firstName: true, lastName: true } },
+        },
+      }),
+    ]);
+    return { history, meta: pageMeta(query.page, query.limit, total) };
   }
 }
 
