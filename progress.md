@@ -113,7 +113,8 @@ Seed logins (dev only, all `Password123!`): `ceo@example.com` (CEO), `manager@ex
 - [x] `GET /projects?mine=true` (the caller's own projects, for pickers)
 - [x] My time (`web/app/(app)/my-time/` + `web/lib/history.ts`): paginated workdays with date-range, project and location filters, day timeline detail, missing clock-out correction link; browser-checked (light/dark, 390px)
 - [x] My projects (`web/app/(app)/my-projects/` + `web/lib/my-projects.ts`): card grid with team, lead, my hours in range and progress against estimate, summary stats; no money anywhere; browser-checked (390px)
-- [ ] My corrections, Profile
+- [x] My corrections (`web/app/(app)/my-corrections/` + `web/lib/corrections.ts`): status filter, table with review notes, dialog with workday/entry/time pickers and reason, edit pending, withdraw via confirm; deep link `?workDayId=` auto-opens; server messages shown; browser-checked as employee (create, overlap error, withdraw)
+- [ ] Profile
 
 ### ⏳ Phase 7: Management screens
 - [ ] Dashboard, Live status, Employees (+ detail), Projects (+ detail/report/estimate), Corrections review, Payroll, Reports, Work evidence, Audit log, Settings
