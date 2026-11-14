@@ -80,11 +80,11 @@ export interface ProjectInput {
   endDate?: string | null;
 }
 
-export const useProjects = (opts: { search: string; status: ProjectStatus | null; page: number; mine: boolean }) =>
+export const useProjects = (opts: { search: string; status: ProjectStatus | null; page: number; mine: boolean; limit?: number }) =>
   useQuery({
     queryKey: ["projects", "list", opts],
     queryFn: () => {
-      const p = new URLSearchParams({ page: String(opts.page), limit: "20", sort: "code", order: "asc" });
+      const p = new URLSearchParams({ page: String(opts.page), limit: String(opts.limit ?? 20), sort: "code", order: "asc" });
       if (opts.search.trim()) p.set("search", opts.search.trim());
       if (opts.status) p.set("status", opts.status);
       if (opts.mine) p.set("mine", "true");
@@ -93,8 +93,18 @@ export const useProjects = (opts: { search: string; status: ProjectStatus | null
     placeholderData: keepPreviousData,
   });
 
-export const useProjectReport = (id: string) =>
-  useQuery({ queryKey: ["management", "project-report", id], queryFn: () => api.get<ProjectReport>(`/management/projects/${id}/report`) });
+export const useProjectReport = (id: string, from?: string, to?: string) =>
+  useQuery({
+    queryKey: ["management", "project-report", id, from ?? null, to ?? null],
+    queryFn: () => {
+      const p = new URLSearchParams();
+      if (from) p.set("from", from);
+      if (to) p.set("to", to);
+      const q = p.toString();
+      return api.get<ProjectReport>(`/management/projects/${id}/report${q ? `?${q}` : ""}`);
+    },
+    placeholderData: keepPreviousData,
+  });
 
 export const useEstimate = (projectId: string, employeeIds: string[]) =>
   useQuery({
