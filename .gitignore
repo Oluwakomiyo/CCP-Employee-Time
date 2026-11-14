@@ -4,3 +4,4 @@ dist/
 .DS_Store
 *.log
 desktop-agent/config.json
+.playwright-mcp/
