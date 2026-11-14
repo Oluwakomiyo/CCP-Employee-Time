@@ -487,6 +487,14 @@ export class CorrectionService {
     if (status) {
       where.status = status;
     }
+    if (query.from || query.to) {
+      where.workDay = {
+        date: {
+          ...(query.from ? { gte: new Date(`${query.from}T00:00:00Z`) } : {}),
+          ...(query.to ? { lte: new Date(`${query.to}T00:00:00Z`) } : {}),
+        },
+      };
+    }
 
     const [total, items] = await prisma.$transaction([
       prisma.timeCorrectionRequest.count({ where }),
@@ -494,7 +502,7 @@ export class CorrectionService {
         where,
         skip,
         take: limit,
-        orderBy: { createdAt: 'desc' },
+        orderBy: { [query.sort]: query.order },
         include: {
           employee: {
             select: {

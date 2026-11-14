@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { pageQuery, sortQuery } from '../../utils/listing';
 import { CorrectionStatus } from '@prisma/client';
 
 export const createCorrectionSchema = z.object({
@@ -27,11 +28,16 @@ export const reviewCorrectionSchema = z.object({
   reviewNotes: z.string().max(500).trim().optional(),
 });
 
+const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Dates must be YYYY-MM-DD');
+
 export const queryCorrectionsSchema = z.object({
+  ...pageQuery(),
+  ...sortQuery(['createdAt', 'status'] as const, 'createdAt'),
   status: z.nativeEnum(CorrectionStatus).optional(),
   employeeId: z.string().uuid().optional(),
-  page: z.coerce.number().int().positive().default(1),
-  limit: z.coerce.number().int().positive().max(100).default(20),
+  // Filter by the workday's date
+  from: date.optional(),
+  to: date.optional(),
 });
 
 export const updateCorrectionSchema = z.object({
