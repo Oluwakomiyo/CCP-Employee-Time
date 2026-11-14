@@ -95,12 +95,8 @@ export class EmployeeController {
   getCompensation = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { id } = req.params;
-      const compensation = await employeeService.getCompensation(id);
-
-      res.status(200).json({
-        success: true,
-        data: { compensation },
-      });
+      // { employee, current, history }
+      res.status(200).json({ success: true, data: await employeeService.getCompensation(id) });
     } catch (error) {
       next(error);
     }
