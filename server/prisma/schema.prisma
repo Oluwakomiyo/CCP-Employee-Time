@@ -118,7 +118,6 @@ model User {
   auditLogs        AuditLog[]              @relation("AuditActor")
   reviewedRequests TimeCorrectionRequest[] @relation("CorrectionReviewer")
 
-  @@index([email])
 }
 
 // -----------------------------------------------------------------------------
@@ -149,7 +148,6 @@ model Employee {
   correctionRequests TimeCorrectionRequest[]
   payrollRecords     PayrollRecord[]
 
-  @@index([employeeCode])
   @@index([status])
 }
 
@@ -187,7 +185,6 @@ model Project {
   workSegments WorkSegment[]
   activities   Activity[]
 
-  @@index([code])
   @@index([isActive])
 }
 
@@ -228,7 +225,7 @@ model WorkDay {
   heartbeats  ActivityHeartbeat[]
 
   @@unique([employeeId, date])
-  @@index([employeeId, date])
+  @@index([status])
 }
 
 model WorkSegment {
@@ -250,7 +247,7 @@ model WorkSegment {
   breaks     Break[]
   activities Activity[]
 
-  @@index([workDayId])
+  @@index([workDayId, status])
   @@index([projectId])
   @@index([status])
 }
@@ -272,7 +269,6 @@ model EmployeeDevice {
   heartbeats ActivityHeartbeat[]
 
   @@index([employeeId])
-  @@index([deviceIdentifier])
 }
 
 model Break {
@@ -359,7 +355,7 @@ model TimeCorrectionRequest {
   employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   reviewer User?    @relation("CorrectionReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
 
-  @@index([workDayId])
+  @@index([workDayId, status])
   @@index([employeeId])
   @@index([status])
 }
@@ -397,5 +393,4 @@ model PayrollRecord {
   employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
   @@unique([employeeId, periodStart, periodEnd])
-  @@index([employeeId])
 }
