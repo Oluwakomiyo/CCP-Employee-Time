@@ -45,8 +45,9 @@ describe('employee cannot reach management data (spec §4, §61)', () => {
     expect((await request(app).get(`/api/v1/projects/${projA.id}/cost-breakdown`).set(auth(tEmp1))).status).toBe(403);
   });
 
-  it('pay-slip endpoint is gone', async () => {
-    expect((await request(app).get('/api/v1/payroll/my-slips').set(auth(tEmp1))).status).toBe(404);
+  it('nothing under /payroll is reachable, including the old pay-slip path', async () => {
+    expect((await request(app).get('/api/v1/payroll/my-slips').set(auth(tEmp1))).status).toBe(403);
+    expect((await request(app).get('/api/v1/payroll/export?periodStart=2026-11-01&periodEnd=2026-11-30').set(auth(tEmp1))).status).toBe(403);
   });
 
   it('own profile contains no compensation fields', async () => {
