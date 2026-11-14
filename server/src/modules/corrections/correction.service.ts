@@ -1,3 +1,4 @@
+import { notify, reviewerUserIds } from '../notifications/notification.service';
 import {
   CorrectionStatus,
   DayStatus,
@@ -5,6 +6,7 @@ import {
   AuditAction,
   Role,
   Prisma,
+  NotificationType,
 } from '@prisma/client';
 import { prisma, DbClient } from '../../config/prisma';
 import { AppError } from '../../errors/AppError';
@@ -141,6 +143,12 @@ export class CorrectionService {
             requestedChanges: input.requestedChanges,
           },
         },
+      });
+      await notify(tx, await reviewerUserIds(tx, employeeId), {
+        type: NotificationType.CORRECTION_SUBMITTED,
+        title: 'A time correction is waiting for review',
+        body: `Workday ${workDay.date.toISOString().slice(0, 10)}: ${input.reason}`.slice(0, 500),
+        data: { correctionId: req.id, workDayId: workDay.id },
       });
 
       return req;
@@ -291,6 +299,12 @@ export class CorrectionService {
             },
           },
         });
+        await notify(tx, [correction.employee.userId], {
+          type: NotificationType.CORRECTION_REJECTED,
+          title: `Your correction for ${correction.workDay.date.toISOString().slice(0, 10)} was rejected`,
+          body: input.reviewNotes,
+          data: { correctionId, workDayId: correction.workDayId },
+        });
 
         return updated;
       });
@@ -385,6 +399,12 @@ export class CorrectionService {
             requestedChanges: changes,
           },
         },
+      });
+      await notify(tx, [correction.employee.userId], {
+        type: NotificationType.CORRECTION_APPROVED,
+        title: `Your correction for ${correction.workDay.date.toISOString().slice(0, 10)} was approved`,
+        body: input.reviewNotes,
+        data: { correctionId, workDayId: correction.workDayId },
       });
 
       return updatedReq;
