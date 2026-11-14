@@ -9,7 +9,7 @@ export class PayrollController {
       const records = await payrollService.generatePayroll(input, req.user!.userId);
 
       res.status(201).json({
-        status: 'success',
+        success: true,
         message: `Successfully generated ${records.length} payroll records`,
         data: { payrollRecords: records },
       });
@@ -24,7 +24,7 @@ export class PayrollController {
       const result = await payrollService.listPayrollRecords(query);
 
       res.status(200).json({
-        status: 'success',
+        success: true,
         ...result,
       });
     } catch (error) {
@@ -32,21 +32,6 @@ export class PayrollController {
     }
   };
 
-  getMyPaySlips = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const page = req.query.page ? parseInt(req.query.page as string, 10) : 1;
-      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 20;
-
-      const result = await payrollService.getMyPaySlips(req.user!.employeeId, page, limit);
-
-      res.status(200).json({
-        status: 'success',
-        ...result,
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
 }
 
 export const payrollController = new PayrollController();

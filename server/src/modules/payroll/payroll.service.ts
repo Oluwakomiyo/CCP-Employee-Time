@@ -1,4 +1,4 @@
-import { Prisma, DayStatus, AuditAction, Role } from '@prisma/client';
+import { Prisma, DayStatus, AuditAction } from '@prisma/client';
 import { prisma } from '../../config/prisma';
 import { AppError } from '../../errors/AppError';
 import { GeneratePayrollInput, QueryPayrollInput } from './payroll.schema';
@@ -215,34 +215,6 @@ export class PayrollService {
     return {
       data: enriched,
       meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
-    };
-  }
-
-  /**
-   * Employee self-service: View own pay stubs.
-   */
-  async getMyPaySlips(employeeId: string, page = 1, limit = 20) {
-    const skip = (page - 1) * limit;
-    const where: Prisma.PayrollRecordWhereInput = { employeeId };
-
-    const [total, items] = await prisma.$transaction([
-      prisma.payrollRecord.count({ where }),
-      prisma.payrollRecord.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: { periodStart: 'desc' },
-      }),
-    ]);
-
-    return {
-      data: items,
-      meta: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
     };
   }
 }
