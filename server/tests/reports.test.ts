@@ -159,6 +159,27 @@ describe('dashboard and live status (spec §46, §47)', () => {
     expect(dash.charts.hoursByProject.find((p: { code: string }) => p.code === 'XYZ').hours).toBe(3);
   });
 
+  it('on a break, sinceSeconds counts from the break start, not from clock-in', async () => {
+    const lena = await createUser(Role.EMPLOYEE);
+    await prisma.projectMember.create({ data: { projectId: abc.id, employeeId: lena.employeeId } });
+    const tLena = await login(lena.email);
+    await request(app).post('/api/v1/time/start').set(auth(tLena)).send({ projectId: abc.id, locationType: 'OFFICE' });
+    // Clock in an hour ago, break starts now.
+    await prisma.workSegment.updateMany({
+      where: { workDay: { employeeId: lena.employeeId } },
+      data: { clockIn: new Date(Date.now() - 3600_000) },
+    });
+    await request(app).post('/api/v1/time/breaks/start').set(auth(tLena)).send({ breakType: 'LUNCH' });
+
+    const status = (await request(app).get('/api/v1/management/status').set(auth(tCeo))).body.data;
+    const row = status.find((s: { employee: { id: string } }) => s.employee.id === lena.employeeId);
+    expect(row.state).toBe('ON_BREAK');
+    expect(row.segmentSeconds).toBeGreaterThanOrEqual(3600);
+    expect(row.sinceSeconds).toBeLessThan(60);
+    await request(app).post('/api/v1/time/breaks/end').set(auth(tLena));
+    await request(app).post('/api/v1/time/end').set(auth(tLena));
+  });
+
   it('a PM only sees employees on projects they lead', async () => {
     const status = (await request(app).get('/api/v1/management/status').set(auth(tOtherPm))).body.data;
     expect(status.map((s: { employee: { id: string } }) => s.employee.id)).not.toContain(john.employeeId);

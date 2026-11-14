@@ -1,5 +1,6 @@
 import { DayStatus, Prisma, ProjectStatus, Role, SegmentStatus, CorrectionStatus } from '@prisma/client';
 import { prisma } from '../../config/prisma';
+import { secondsBetween } from '../time/time.totals';
 import { AppError } from '../../errors/AppError';
 import { TokenPayload } from '../../utils/token';
 import { workDateFor } from '../../utils/time';
@@ -228,16 +229,21 @@ export class ReportService {
         workDay: { select: { employee: { select: { id: true, firstName: true, lastName: true, department: true } } } },
       },
     });
-    return active.map((s) => ({
-      employee: s.workDay.employee,
-      state: s.breaks.length ? 'ON_BREAK' : 'WORKING',
-      project: s.project,
-      location: s.location,
-      activity: s.activities[0]?.activityType ?? null,
-      breakType: s.breaks[0]?.breakType ?? null,
-      since: s.breaks[0]?.startTime ?? s.clockIn,
-      segmentSeconds: Math.max(0, Math.floor((now.getTime() - s.clockIn.getTime()) / 1000)),
-    }));
+    return active.map((s) => {
+      const since = s.breaks[0]?.startTime ?? s.clockIn;
+      return {
+        employee: s.workDay.employee,
+        state: s.breaks.length ? 'ON_BREAK' : 'WORKING',
+        project: s.project,
+        location: s.location,
+        activity: s.activities[0]?.activityType ?? null,
+        breakType: s.breaks[0]?.breakType ?? null,
+        since,
+        // Time in the current state: on a break, since the break started; working, since the segment started.
+        sinceSeconds: secondsBetween(since, now),
+        segmentSeconds: secondsBetween(s.clockIn, now),
+      };
+    });
   }
 
   /** GET /management/status: every visible active employee with a state (spec §47). */
@@ -269,6 +275,7 @@ export class ReportService {
         activity: null,
         breakType: null,
         since: null,
+        sinceSeconds: 0,
         segmentSeconds: 0,
       };
     });
