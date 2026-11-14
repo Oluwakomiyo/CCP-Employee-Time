@@ -9,6 +9,9 @@ FROM node:22-alpine AS build
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+# The /api/v1 rewrite is fixed at build time, so the API address is a build argument.
+ARG API_ORIGIN=http://api:5000
+ENV API_ORIGIN=$API_ORIGIN
 RUN npm run build
 
 FROM node:22-alpine AS runner

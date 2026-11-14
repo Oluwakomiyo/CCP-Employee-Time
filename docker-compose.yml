@@ -57,9 +57,11 @@ services:
     command: ["node", "dist/worker.js"]
 
   web:
-    build: ./web
-    environment:
-      API_ORIGIN: http://api:5000
+    build:
+      context: ./web
+      # Used at build time: Next.js fixes the /api/v1 rewrite when it builds.
+      args:
+        API_ORIGIN: http://api:5000
     ports:
       - "3000:3000"
     depends_on:
