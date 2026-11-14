@@ -1,0 +1,313 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import { Alert } from "@/components/arc/alert/alert";
+import { ActionButton } from "@/components/arc/action-button/action-button";
+import Badge from "@/components/arc/badge/badge";
+import { Button } from "@/components/arc/button/button";
+import ConfirmMorph from "@/components/arc/confirm-morph/confirm-morph";
+import { DatePicker } from "@/components/arc/date-picker/date-picker";
+import { Drawer } from "@/components/arc/drawer/drawer";
+import EmptyState from "@/components/arc/empty-state/empty-state";
+import { MetricCard } from "@/components/arc/metric-card/metric-card";
+import MoneyInput from "@/components/arc/money-input/money-input";
+import SegmentedControl from "@/components/arc/segmented-control/segmented-control";
+import { Skeleton } from "@/components/arc/skeleton/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/arc/tabs/tabs";
+import { PageHeading } from "@/components/shell/page-heading";
+import { errorMessage } from "@/lib/api";
+import { useMe } from "@/lib/auth";
+import { rangeFor, type DashboardRange } from "@/lib/dashboard";
+import { lagosDay } from "@/lib/history";
+import { formatMoney, fullName, ROLES, useCompensation, useEmployee, useEmployeeMutations, useEmployeeReport, type Employee } from "@/lib/employees";
+import { ACTIVITIES, labelOf, LOCATIONS } from "@/lib/time";
+import { isCeo } from "@/lib/types";
+import { EmployeeForm } from "../employee-form";
+import { TempPasswordDialog } from "../temp-password-dialog";
+import styles from "../../manage.module.css";
+
+const RANGES = [
+  { value: "30", label: "30 days" },
+  { value: "90", label: "90 days" },
+];
+
+export function EmployeeDetail({ id }: { id: string }) {
+  const me = useMe();
+  const ceo = isCeo(me.data?.role);
+  const employee = useEmployee(id);
+  const [editing, setEditing] = useState(false);
+
+  if (employee.isPending) return <Skeleton lines={8} label="Loading employee" />;
+  if (employee.isError)
+    return (
+      <Alert tone="danger" title="Could not load this employee">
+        {errorMessage(employee.error)}
+      </Alert>
+    );
+
+  const e = employee.data;
+  return (
+    <div className={styles.layout}>
+      <Link href="/employees" className={styles.back}>
+        Back to employees
+      </Link>
+      <PageHeading
+        title={fullName(e)}
+        description={`${e.position} · ${e.department} · ${e.employeeCode}`}
+        actions={
+          ceo && (
+            <Button variant="secondary" onClick={() => setEditing(true)}>
+              Edit
+            </Button>
+          )
+        }
+      />
+
+      <Tabs defaultValue="overview">
+        <TabsList aria-label="Employee sections">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="report">Report</TabsTrigger>
+          {ceo && <TabsTrigger value="pay">Compensation</TabsTrigger>}
+        </TabsList>
+        <TabsContent value="overview">
+          <Overview employee={e} ceo={ceo} self={me.data?.employee?.id === e.id} />
+        </TabsContent>
+        <TabsContent value="report">
+          <Report id={e.id} />
+        </TabsContent>
+        {ceo && (
+          <TabsContent value="pay">
+            <Compensation employee={e} />
+          </TabsContent>
+        )}
+      </Tabs>
+
+      <Drawer open={editing} onOpenChange={setEditing}>
+        {editing && <EmployeeForm employee={e} onSaved={() => setEditing(false)} />}
+      </Drawer>
+    </div>
+  );
+}
+
+function Overview({ employee: e, ceo, self }: { employee: Employee; ceo: boolean; self: boolean }) {
+  const { update, deactivate, resetPassword } = useEmployeeMutations();
+  const [password, setPassword] = useState<string | null>(null);
+  const active = e.status === "ACTIVE";
+
+  return (
+    <div className={styles.layout}>
+      <section className={styles.card} aria-labelledby="profile">
+        <h2 id="profile">Profile</h2>
+        <dl className={styles.details}>
+          <div>
+            <dt>Email</dt>
+            <dd>{e.user.email}</dd>
+          </div>
+          <div>
+            <dt>Role</dt>
+            <dd>{ROLES.find((r) => r.value === e.user.role)?.label}</dd>
+          </div>
+          <div>
+            <dt>Status</dt>
+            <dd>
+              <Badge tone={active ? "success" : "neutral"} dot>
+                {e.status.toLowerCase().replace("_", " ")}
+              </Badge>
+            </dd>
+          </div>
+          <div>
+            <dt>Hired</dt>
+            <dd>{e.hireDate.slice(0, 10)}</dd>
+          </div>
+        </dl>
+      </section>
+
+      <section className={styles.card} aria-labelledby="projects">
+        <h2 id="projects">Projects</h2>
+        {e.projectMemberships?.length ? (
+          <ul className={styles.list}>
+            {e.projectMemberships.map((m) => (
+              <li key={m.id}>
+                <Link href={`/projects/${m.project.id}`}>
+                  {m.project.code} {m.project.name}
+                </Link>
+                {m.isProjectLead && <Badge tone="info">Lead</Badge>}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className={styles.hint}>Not assigned to any project.</p>
+        )}
+      </section>
+
+      {ceo && !self && (
+        <section className={styles.card} aria-labelledby="account">
+          <h2 id="account">Account</h2>
+          <p className={styles.hint}>
+            A reset signs them out everywhere and shows a new temporary password once. Deactivating keeps all their history; they can no longer sign in.
+          </p>
+          <div className={styles.rowActions}>
+            <ConfirmMorph
+              label="Reset password"
+              prompt="Create a new temporary password?"
+              confirmLabel="Reset"
+              pendingLabel="Resetting"
+              doneLabel="Password reset"
+              tone="neutral"
+              onConfirm={() => resetPassword.mutateAsync(e.id).then((r) => setPassword(r.temporaryPassword))}
+            />
+            {active ? (
+              <ConfirmMorph label="Deactivate" prompt={`Deactivate ${e.firstName}?`} confirmLabel="Deactivate" pendingLabel="Deactivating" doneLabel="Deactivated" tone="danger" onConfirm={() => deactivate.mutateAsync(e.id)} />
+            ) : (
+              <ConfirmMorph
+                label="Reactivate"
+                prompt={`Let ${e.firstName} sign in again?`}
+                confirmLabel="Reactivate"
+                pendingLabel="Reactivating"
+                doneLabel="Reactivated"
+                tone="neutral"
+                onConfirm={() => update.mutateAsync({ id: e.id, body: { status: "ACTIVE" } })}
+              />
+            )}
+          </div>
+        </section>
+      )}
+      <TempPasswordDialog who={e.firstName} password={password} onClose={() => setPassword(null)} />
+    </div>
+  );
+}
+
+function Report({ id }: { id: string }) {
+  const [range, setRange] = useState<DashboardRange>("30");
+  const { from, to } = rangeFor(range);
+  const report = useEmployeeReport(id, from, to);
+
+  return (
+    <div className={styles.layout}>
+      <div className={styles.toolbar}>
+        <SegmentedControl label="Range" options={RANGES} value={range} onValueChange={(v: string) => setRange(v as DashboardRange)} />
+      </div>
+      {report.isPending ? (
+        <Skeleton lines={6} label="Loading report" />
+      ) : report.isError ? (
+        <Alert tone="danger" title="Could not load the report">
+          {errorMessage(report.error)}
+        </Alert>
+      ) : (
+        <>
+          <div className={styles.kpis}>
+            <MetricCard label="Hours worked" value={report.data.totalWorkingHours} suffix="h" context={`last ${range} days`} />
+            <MetricCard label="Average day" value={report.data.averageDailyHours} suffix="h" context={`over ${report.data.validWorkingDays} full days`} />
+            <MetricCard label="Breaks" value={report.data.breakHours} suffix="h" context="not counted as work" />
+            <MetricCard label="Missing clock-outs" value={report.data.missingClockOuts} context="need a correction" />
+          </div>
+          <div className={styles.grid2}>
+            <HoursList title="By project" items={report.data.hoursByProject.map((p) => ({ key: p.projectId, label: `${p.code} ${p.name}`, hours: p.hours }))} />
+            <HoursList title="By activity" items={report.data.hoursByActivity.map((a) => ({ key: a.activityType, label: labelOf(ACTIVITIES, a.activityType), hours: a.hours }))} />
+            <HoursList title="By location" items={report.data.hoursByLocation.map((l) => ({ key: l.location, label: labelOf(LOCATIONS, l.location), hours: l.hours }))} />
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function HoursList({ title, items }: { title: string; items: { key: string; label: string; hours: number }[] }) {
+  return (
+    <section className={styles.card} aria-label={title}>
+      <h3>{title}</h3>
+      {items.length === 0 ? (
+        <p className={styles.hint}>No hours in this range.</p>
+      ) : (
+        <ul className={styles.list}>
+          {items.map((i) => (
+            <li key={i.key}>
+              <span>{i.label}</span>
+              <span className={styles.muted}>{i.hours}h</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+function Compensation({ employee: e }: { employee: Employee }) {
+  const comp = useCompensation(e.id, true);
+  const { changeRate } = useEmployeeMutations();
+  const [base, setBase] = useState<number | null>(null);
+  const [overtime, setOvertime] = useState<number | null>(null);
+  const [from, setFrom] = useState<Date | undefined>(undefined);
+  const [error, setError] = useState<string | null>(null);
+
+  if (comp.isPending) return <Skeleton lines={4} label="Loading compensation" />;
+  if (comp.isError)
+    return (
+      <Alert tone="danger" title="Could not load compensation">
+        {errorMessage(comp.error)}
+      </Alert>
+    );
+
+  const save = () => {
+    setError(null);
+    return changeRate
+      .mutateAsync({ id: e.id, body: { baseHourlyRate: base!, overtimeHourlyRate: overtime!, currency: "NGN", effectiveDate: lagosDay(from!) } })
+      .then(() => comp.refetch())
+      .then(() => {
+        setBase(null);
+        setOvertime(null);
+        setFrom(undefined);
+      })
+      .catch((err: unknown) => {
+        setError(errorMessage(err));
+        throw err;
+      });
+  };
+
+  return (
+    <div className={styles.layout}>
+      <section className={styles.card} aria-labelledby="rates">
+        <h2 id="rates">Rate history</h2>
+        {comp.data.history.length === 0 ? (
+          <EmptyState title="No rate on file" description="Add one below; days without a rate are left out of payroll." />
+        ) : (
+          <ul className={styles.list}>
+            {comp.data.history.map((r) => (
+              <li key={r.effectiveFrom}>
+                <span>
+                  {formatMoney(r.baseHourlyRate, r.currency)}/h, overtime {formatMoney(r.overtimeHourlyRate, r.currency)}/h
+                  {!r.effectiveTo && (
+                    <>
+                      {" "}
+                      <Badge tone="success">Current</Badge>
+                    </>
+                  )}
+                </span>
+                <span className={styles.muted}>
+                  {r.effectiveFrom.slice(0, 10)} to {r.effectiveTo ? r.effectiveTo.slice(0, 10) : "now"}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className={styles.card} aria-labelledby="new-rate">
+        <h2 id="new-rate">Change rate</h2>
+        <p className={styles.hint}>The current rate ends the day before the new one starts. Past days keep the rate that applied then.</p>
+        {error && (
+          <Alert tone="danger" title="Could not change the rate" onDismiss={() => setError(null)}>
+            {error}
+          </Alert>
+        )}
+        <div className={styles.formRow}>
+          <MoneyInput label="New hourly rate" currency="NGN" currencies={["NGN"]} quickAdd={[]} min={0} value={base} onValueChange={(v) => setBase(v)} />
+          <MoneyInput label="New overtime rate" currency="NGN" currencies={["NGN"]} quickAdd={[]} min={0} value={overtime} onValueChange={(v) => setOvertime(v)} />
+          <DatePicker label="Starts on" value={from} onChange={setFrom} />
+        </div>
+        <ActionButton label="Save new rate" pendingLabel="Saving" successLabel="Rate saved" disabled={!base || !overtime || !from} onAction={save} onActionError={() => undefined} />
+      </section>
+    </div>
+  );
+}
