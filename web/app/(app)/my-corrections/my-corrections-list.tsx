@@ -6,9 +6,7 @@ import { Alert } from "@/components/arc/alert/alert";
 import { ActionButton } from "@/components/arc/action-button/action-button";
 import Badge from "@/components/arc/badge/badge";
 import { Button } from "@/components/arc/button/button";
-import ConfirmMorph from "@/components/arc/confirm-morph/confirm-morph";
-import { Dialog, DialogContent } from "@/components/arc/dialog/dialog";
-import { Pagination } from "@/components/arc/pagination/pagination";
+import { Dialog, DialogContent } from "@/components/arc/dialog/dialog";import { Pagination } from "@/components/arc/pagination/pagination";
 import { Select } from "@/components/arc/select/select";
 import SegmentedControl from "@/components/arc/segmented-control/segmented-control";
 import { MyCorrectionsSkeleton, CorrectionFormSkeleton } from "./my-corrections-skeleton";
@@ -47,6 +45,8 @@ export function MyCorrectionsList() {
   const [dialog, setDialog] = useState<{ correction?: Correction; dayId?: string } | null>(
     initialDay ? { dayId: initialDay } : null,
   );
+  const [withdrawing, setWithdrawing] = useState<Correction | null>(null);
+  const [withdrawError, setWithdrawError] = useState<string | null>(null);
   const list = useCorrections(filter === "ALL" ? null : (filter as CorrectionStatus), page);
   const mutations = useCorrectionMutations();
   const projects = useMyProjects();
@@ -92,20 +92,15 @@ export function MyCorrectionsList() {
               <Button variant="ghost" size="sm" onClick={() => setDialog({ correction, dayId: correction.workDayId })}>
                 Edit
               </Button>
-              <ConfirmMorph
-                label="Cancel"
-                prompt="Withdraw this request?"
-                confirmLabel="Withdraw"
-                pendingLabel="Withdrawing"
-                doneLabel="Withdrawn"
-                onConfirm={() => mutations.cancel.mutateAsync(correction.id).then(() => undefined)}
-              />
+              <Button variant="ghost" size="sm" onClick={() => setWithdrawing(correction)}>
+                Withdraw
+              </Button>
             </span>
           );
         },
       },
     ],
-    [list.data, mutations.cancel],
+    [list.data],
   );
 
   if (list.isPending) return <MyCorrectionsSkeleton />;
@@ -151,6 +146,37 @@ export function MyCorrectionsList() {
         <DialogContent title={dialog?.correction ? "Edit correction" : "Request correction"} description="Times are in Lagos time. The server rejects overlaps and entries on projects you are not assigned to.">
           {dialog && <CorrectionForm key={dialog.correction?.id ?? dialog.dayId ?? "new"} correction={dialog.correction} dayId={dialog.dayId} onDone={() => setDialog(null)} />}
         </DialogContent>
+      </Dialog>
+
+      <Dialog open={withdrawing !== null} onOpenChange={(open) => { if (!open) { setWithdrawing(null); setWithdrawError(null); } }}>
+        {withdrawing && (
+          <DialogContent title="Withdraw this request?" description={`${withdrawing.workDay.date.slice(0, 10)} · ${withdrawing.reason}`}>
+            <div className={styles.form}>
+              {withdrawError && (
+                <Alert tone="danger" title="Could not withdraw" onDismiss={() => setWithdrawError(null)}>
+                  {withdrawError}
+                </Alert>
+              )}
+              <div className={styles.rowActions}>
+                <Button variant="secondary" onClick={() => { setWithdrawing(null); setWithdrawError(null); }}>
+                  Keep it
+                </Button>
+                <Button
+                  variant="danger"
+                  loading={mutations.cancel.isPending}
+                  onClick={() =>
+                    mutations.cancel
+                      .mutateAsync(withdrawing.id)
+                      .then(() => { setWithdrawing(null); setWithdrawError(null); })
+                      .catch((e: unknown) => setWithdrawError(errorMessage(e)))
+                  }
+                >
+                  Withdraw
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        )}
       </Dialog>
     </div>
   );
