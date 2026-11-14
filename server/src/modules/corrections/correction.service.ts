@@ -539,6 +539,18 @@ export class CorrectionService {
               date: true,
               status: true,
               totalWorkSeconds: true,
+              // The recorded entries, so a reviewer can compare them with the requested change.
+              segments: {
+                orderBy: { clockIn: 'asc' },
+                select: {
+                  id: true,
+                  clockIn: true,
+                  clockOut: true,
+                  status: true,
+                  location: true,
+                  project: { select: { id: true, code: true, name: true } },
+                },
+              },
             },
           },
           reviewer: {
