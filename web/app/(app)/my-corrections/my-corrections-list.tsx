@@ -11,7 +11,7 @@ import { Dialog, DialogContent } from "@/components/arc/dialog/dialog";
 import { Pagination } from "@/components/arc/pagination/pagination";
 import { Select } from "@/components/arc/select/select";
 import SegmentedControl from "@/components/arc/segmented-control/segmented-control";
-import { Skeleton } from "@/components/arc/skeleton/skeleton";
+import { MyCorrectionsSkeleton, CorrectionFormSkeleton } from "./my-corrections-skeleton";
 import SortableDataTable, { type DataColumn } from "@/components/arc/sortable-data-table/sortable-data-table";
 import { Textarea } from "@/components/arc/textarea/textarea";
 import { TimePicker } from "@/components/arc/time-picker/time-picker";
@@ -106,6 +106,8 @@ export function MyCorrectionsList() {
     [list.data, mutations.cancel],
   );
 
+  if (list.isPending) return <MyCorrectionsSkeleton />;
+
   return (
     <div className={styles.layout}>
       <div className={styles.toolbar}>
@@ -120,9 +122,7 @@ export function MyCorrectionsList() {
         </Button>
       </div>
 
-      {list.isPending ? (
-        <Skeleton lines={5} label="Loading corrections" />
-      ) : list.isError ? (
+      {list.isError ? (
         <Alert tone="danger" title="Could not load corrections">
           {errorMessage(list.error)}
         </Alert>
@@ -203,7 +203,7 @@ function CorrectionForm({ correction, dayId, onDone }: { correction?: Correction
     }
   };
 
-  if (days.isPending) return <Skeleton lines={4} label="Loading workdays" />;
+  if (days.isPending) return <CorrectionFormSkeleton />;
   if (days.isError)
     return (
       <Alert tone="danger" title="Could not load workdays">
