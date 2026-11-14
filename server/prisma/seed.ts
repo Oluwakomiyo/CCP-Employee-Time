@@ -1,4 +1,4 @@
-import { PrismaClient, Role, EmploymentStatus, Prisma } from '@prisma/client';
+import { PrismaClient, Role, EmploymentStatus, Prisma, ProjectStatus } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
@@ -119,7 +119,7 @@ async function main() {
       code: 'PRJ-CORE',
       name: 'Internal Operations Platform',
       description: 'Core company time tracking and resource planning engine.',
-      isActive: true,
+      status: ProjectStatus.ACTIVE,
       startDate: new Date('2024-01-01'),
     },
   });
@@ -129,7 +129,7 @@ async function main() {
       code: 'PRJ-PORTAL',
       name: 'Client Self-Service Portal',
       description: 'Customer facing billing and analytics dashboard.',
-      isActive: true,
+      status: ProjectStatus.ACTIVE,
       startDate: new Date('2024-03-01'),
     },
   });

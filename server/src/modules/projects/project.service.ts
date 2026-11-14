@@ -1,4 +1,4 @@
-import { Prisma, Role, AuditAction } from '@prisma/client';
+import { Prisma, Role, AuditAction, ProjectStatus } from '@prisma/client';
 import { prisma } from '../../config/prisma';
 import { AppError } from '../../errors/AppError';
 import {
@@ -19,13 +19,15 @@ export class ProjectService {
     userRole: Role,
     userEmployeeId?: string
   ) {
-    const { page, limit, search, isActive } = query;
+    const { page, limit, search, isActive, status } = query;
     const skip = (page - 1) * limit;
 
     const where: Prisma.ProjectWhereInput = {};
 
-    if (isActive !== undefined) {
-      where.isActive = isActive;
+    if (status) {
+      where.status = status;
+    } else if (isActive !== undefined) {
+      where.status = isActive ? ProjectStatus.ACTIVE : { not: ProjectStatus.ACTIVE };
     }
 
     if (search) {
@@ -33,6 +35,7 @@ export class ProjectService {
         { name: { contains: search, mode: 'insensitive' } },
         { code: { contains: search, mode: 'insensitive' } },
         { description: { contains: search, mode: 'insensitive' } },
+        { clientName: { contains: search, mode: 'insensitive' } },
       ];
     }
 
@@ -155,8 +158,13 @@ export class ProjectService {
           code: input.code,
           name: input.name,
           description: input.description,
+          clientName: input.clientName,
+          location: input.location,
+          estimatedHours: input.estimatedHours,
+          status: input.status,
           startDate: new Date(input.startDate),
           endDate: input.endDate ? new Date(input.endDate) : null,
+          createdById: actorUserId,
         },
       });
 
@@ -225,7 +233,12 @@ export class ProjectService {
         data: {
           name: input.name,
           description: input.description,
-          isActive: input.isActive,
+          clientName: input.clientName,
+          location: input.location,
+          estimatedHours: input.estimatedHours,
+          status:
+            input.status ??
+            (input.isActive === undefined ? undefined : input.isActive ? ProjectStatus.ACTIVE : ProjectStatus.COMPLETED),
           startDate: input.startDate ? new Date(input.startDate) : undefined,
           endDate:
             input.endDate === null
@@ -254,22 +267,23 @@ export class ProjectService {
   }
 
   /**
- * Delete a project. Checks that no active work segment is running.
- */
+   * Deletes a project only if no time was ever recorded against it (e.g. created by mistake).
+   * Projects with history are kept: change their status to COMPLETED or CANCELLED instead.
+   */
   async deleteProject(projectId: string, actorUserId: string) {
-    const activeSegments = await prisma.workSegment.findFirst({
-      where: { projectId, status: 'ACTIVE' },
-    });
+    const project = await prisma.project.findUnique({ where: { id: projectId } });
+    if (!project) throw AppError.notFound('Project not found');
 
-    if (activeSegments) {
-      throw AppError.conflict('Cannot delete project while an employee is actively clocked into it.');
+    const hasTime = await prisma.workSegment.count({ where: { projectId } });
+    if (hasTime > 0) {
+      throw AppError.conflict(
+        'This project has recorded time and cannot be deleted. Set its status to Completed or Cancelled instead.',
+        'PROJECT_HAS_HISTORY'
+      );
     }
 
     await prisma.$transaction(async (tx) => {
-      // Delete memberships & segments
       await tx.projectMember.deleteMany({ where: { projectId } });
-      await tx.activity.deleteMany({ where: { projectId } });
-      await tx.workSegment.deleteMany({ where: { projectId } });
       await tx.project.delete({ where: { id: projectId } });
 
       await tx.auditLog.create({

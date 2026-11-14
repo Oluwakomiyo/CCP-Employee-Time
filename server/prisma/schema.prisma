@@ -169,14 +169,26 @@ model Compensation {
 // PROJECTS & ASSIGNMENTS
 // -----------------------------------------------------------------------------
 
+enum ProjectStatus {
+  PLANNED
+  ACTIVE
+  ON_HOLD
+  COMPLETED
+  CANCELLED
+}
+
 model Project {
-  id          String    @id @default(uuid())
-  code        String    @unique
-  name        String
-  description String?
-  isActive    Boolean   @default(true)
-  startDate   DateTime  @db.Date
-  endDate     DateTime? @db.Date
+  id             String        @id @default(uuid())
+  code           String        @unique
+  name           String
+  description    String?
+  clientName     String?
+  location       String?
+  estimatedHours Decimal?      @db.Decimal(10, 2)
+  status         ProjectStatus @default(ACTIVE)
+  startDate      DateTime      @db.Date
+  endDate        DateTime?     @db.Date
+  createdById    String?
 
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @db.Timestamptz(6)
@@ -185,7 +197,7 @@ model Project {
   workSegments WorkSegment[]
   activities   Activity[]
 
-  @@index([isActive])
+  @@index([status])
 }
 
 model ProjectMember {

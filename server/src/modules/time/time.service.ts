@@ -6,6 +6,7 @@ import {
   Prisma,
   LocationType,
   ActivityType,
+  ProjectStatus,
 } from '@prisma/client';
 import { prisma, DbClient } from '../../config/prisma';
 import { AppError } from '../../errors/AppError';
@@ -59,7 +60,7 @@ const assertCanWorkOn = async (tx: DbClient, actor: TimeActor, projectId: string
     include: { members: { where: { employeeId: actor.employeeId } } },
   });
   if (!project) throw AppError.badRequest('Project does not exist');
-  if (!project.isActive) throw AppError.badRequest('Project is not active');
+  if (project.status !== ProjectStatus.ACTIVE) throw AppError.badRequest('Project is not active');
   if (actor.role !== Role.CEO_ADMIN && project.members.length === 0) {
     throw AppError.forbidden('You are not assigned to this project');
   }

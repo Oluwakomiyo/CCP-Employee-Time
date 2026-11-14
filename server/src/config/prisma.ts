@@ -23,6 +23,12 @@ const createClient = () =>
   new PrismaClient({
     log: process.env.NODE_ENV === 'development' ? ['warn', 'error'] : ['error'],
   }).$extends({
+    result: {
+      // shortcut: derived flag kept for existing API consumers (legacy client); prefer `status`.
+      project: {
+        isActive: { needs: { status: true }, compute: (p) => p.status === 'ACTIVE' },
+      },
+    },
     // Every audit write, wherever it comes from, is scrubbed of credential fields.
     query: {
       auditLog: {
