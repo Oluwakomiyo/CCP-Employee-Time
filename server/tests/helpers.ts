@@ -59,11 +59,17 @@ export const createProject = async (code: string, members: { employeeId: string;
     },
   });
 
-/** Logs in and returns a bearer token. */
+/** Logs in and returns a bearer token, read from the session cookie (tokens never appear in bodies). */
 export const login = async (email: string, password = PASSWORD) => {
   const res = await request(app).post('/api/v1/auth/login').send({ email, password });
   if (res.status !== 200) throw new Error(`login failed for ${email}: ${res.status} ${JSON.stringify(res.body)}`);
-  return res.body.data.accessToken as string;
+  const cookies = (res.headers['set-cookie'] as unknown as string[] | undefined) ?? [];
+  const access = cookies
+    .find((c) => c.startsWith('ccp_at='))
+    ?.split(';')[0]
+    ?.slice('ccp_at='.length);
+  if (!access) throw new Error(`no session cookie for ${email}`);
+  return access;
 };
 
 export const auth = (token: string) => ({ Authorization: `Bearer ${token}` });

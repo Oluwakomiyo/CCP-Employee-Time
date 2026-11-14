@@ -111,6 +111,19 @@ describe('passwords (spec §5)', () => {
     expect(JSON.stringify(res.body)).not.toMatch(/password(Hash)?"|managedPassword|refreshTokenHash/);
   });
 
+  it('login and refresh keep tokens in httpOnly cookies, never in the body', async () => {
+    const res = await request(app).post('/api/v1/auth/login').send({ email: emp1.email, password: PASSWORD });
+    expect(res.status).toBe(200);
+    expect(JSON.stringify(res.body)).not.toMatch(/accessToken|refreshToken/);
+    expect(res.body.data.user.email).toBe(emp1.email);
+    const cookies = (res.headers['set-cookie'] as unknown as string[]).join(';');
+    expect(cookies).toMatch(/ccp_at=[^;]+/);
+
+    const refreshed = await request(app).post('/api/v1/auth/refresh').set('Cookie', cookies);
+    expect(refreshed.status).toBe(200);
+    expect(JSON.stringify(refreshed.body)).not.toMatch(/accessToken|refreshToken/);
+  });
+
   it('reset issues a new temp password and revokes the refresh token', async () => {
     const res = await request(app).patch(`/api/v1/employees/${emp2.employeeId}/password`).set(auth(tCeo)).send({});
     expect(res.status).toBe(200);

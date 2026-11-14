@@ -32,9 +32,8 @@ export class AuthController {
     try {
       const result = await authService.login(req.body, req.ip, req.headers['user-agent']);
       setSessionCookies(res, result);
-      // shortcut: tokens are also returned in the body for the legacy Vite client, Electron and agents.
-      // Drop them from the body once the old client is deleted (plan Phase 7).
-      res.status(200).json({ success: true, data: result });
+      // Tokens travel in httpOnly cookies only; the body carries the signed-in user.
+      res.status(200).json({ success: true, data: { user: result.user } });
     } catch (error) {
       next(error);
     }
@@ -43,9 +42,8 @@ export class AuthController {
   refreshToken = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const token = req.body?.refreshToken ?? req.cookies?.[REFRESH_COOKIE];
-      const result = await authService.refreshTokens(token);
-      setSessionCookies(res, result);
-      res.status(200).json({ success: true, data: result });
+      await authService.refreshTokens(token).then((result) => setSessionCookies(res, result));
+      res.status(200).json({ success: true, data: { message: 'Session refreshed' } });
     } catch (error) {
       clearSessionCookies(res);
       next(error);
