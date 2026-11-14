@@ -1,8 +1,14 @@
 import type { Metadata } from "next";
-import { ComingSoon } from "@/components/shell/coming-soon";
+import { PageHeading } from "@/components/shell/page-heading";
+import { EvidenceView } from "./evidence-view";
 
 export const metadata: Metadata = { title: "Work evidence" };
 
 export default function EvidencePage() {
-  return <ComingSoon title="Work evidence" description="Recorded time next to device activity, without judgement." />;
+  return (
+    <>
+      <PageHeading title="Work evidence" description="Recorded time next to device activity, stated plainly." />
+      <EvidenceView />
+    </>
+  );
 }

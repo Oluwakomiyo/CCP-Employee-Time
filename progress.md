@@ -130,7 +130,7 @@ Seed logins (dev only, all `Password123!`): `ceo@example.com` (CEO), `manager@ex
 - [x] Settings (`app/(app)/settings/` + `lib/settings.ts`): departments add/rename; devices list/register (one-time key)/revoke; API: `GET /activity/devices`, `POST /activity/devices/:id/revoke` (tested); employee create/edit now rejects unknown departments (`UNKNOWN_DEPARTMENT`)
 - [x] Shared layout for management screens: `app/(app)/manage.module.css`
 - [x] Reports (`web/app/(app)/reports/` + shared `web/components/reports/`): employee/project pickers with date range; Report/HoursList moved out of the detail pages and reused; project report hook takes an optional range; browser-checked as CEO (labour cost) and PM (hours only), 390px; employee denied
-- [ ] Work evidence (`/evidence`): employee + date picker → `GET /activity/workdays/:id/evidence`; timeline; official vs device numbers
+- [x] Work evidence (`web/app/(app)/evidence/` + `web/lib/evidence.ts`): employee + date pickers, new `GET /management/employees/:id/workdays?date=` (tested, PM-scoped); metric cards, assessment, segment timeline; browser-checked as CEO, PM (scoped, 403 path renders), 390px; employee denied; fixed a stuck skeleton on disabled lookups
 - [ ] Delete `client/`; drop the legacy time aliases and the body tokens in login
 
 ### 🔄 Phase 8: Notifications
