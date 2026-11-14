@@ -71,3 +71,31 @@ export const useCorrectionMutations = () => {
     }),
   };
 };
+
+/** A request as reviewers see it: the employee and the day's recorded entries come with it. */
+export interface ReviewCorrection extends Correction {
+  employee: { id: string; employeeCode: string; firstName: string; lastName: string; department: string };
+  workDay: Correction["workDay"] & {
+    segments: { id: string; clockIn: string; clockOut: string | null; status: string; location: string; project: { id: string; code: string; name: string } }[];
+  };
+}
+
+export const useReviewQueue = (status: CorrectionStatus | null, page: number) =>
+  useQuery({
+    queryKey: ["corrections", "review", status ?? "ALL", page],
+    queryFn: () => {
+      const p = new URLSearchParams({ page: String(page), limit: "10" });
+      if (status) p.set("status", status);
+      return api.page<ReviewCorrection[]>(`/corrections?${p.toString()}`);
+    },
+  });
+
+export const useReviewCorrection = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, status, reviewNotes }: { id: string; status: "APPROVED" | "REJECTED"; reviewNotes?: string }) =>
+      api.patch<unknown>(`/corrections/${id}/review`, { status, reviewNotes }),
+    // Refetch on any outcome: a 409 means someone else reviewed it first.
+    onSettled: () => Promise.all([qc.invalidateQueries({ queryKey: ["corrections"] }), qc.invalidateQueries({ queryKey: ["management"] })]),
+  });
+};
