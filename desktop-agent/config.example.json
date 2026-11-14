@@ -1,0 +1,7 @@
+{
+  "apiUrl": "http://localhost:5000/api/v1",
+  "deviceIdentifier": "REPLACE-WITH-DEVICE-IDENTIFIER",
+  "deviceKey": "REPLACE-WITH-KEY-FROM-DEVICE-REGISTRATION",
+  "heartbeatIntervalSeconds": 60,
+  "idleThresholdSeconds": 300
+}
