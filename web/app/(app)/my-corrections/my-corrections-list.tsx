@@ -96,6 +96,8 @@ export function MyCorrectionsList() {
                 label="Cancel"
                 prompt="Withdraw this request?"
                 confirmLabel="Withdraw"
+                pendingLabel="Withdrawing"
+                doneLabel="Withdrawn"
                 onConfirm={() => mutations.cancel.mutateAsync(correction.id).then(() => undefined)}
               />
             </span>
