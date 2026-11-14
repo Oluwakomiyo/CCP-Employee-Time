@@ -1,0 +1,14 @@
+# Development database. Usage: docker compose up -d db
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ccp
+      POSTGRES_PASSWORD: ccp
+      POSTGRES_DB: ccp_time
+    ports:
+      - "5432:5432"
+    volumes:
+      - ccp_pgdata:/var/lib/postgresql/data
+volumes:
+  ccp_pgdata:

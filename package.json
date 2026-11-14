@@ -1,0 +1,8 @@
+{
+  "name": "ccp-employee",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix server run dev",
+    "test": "npm --prefix server test"
+  }
+}
