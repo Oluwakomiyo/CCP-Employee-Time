@@ -13,6 +13,7 @@ import { correctionRouter } from './modules/corrections/correction.routes';
 import { auditRouter } from './modules/audit/audit.routes';
 import { payrollRouter } from './modules/payroll/payroll.routes';
 import { departmentRouter } from './modules/departments/department.routes';
+import { managementRouter, myReportHandler } from './modules/reports/report.routes';
 import { activityController } from './modules/activity-monitoring/activity.controller';
 import { authenticate } from './middleware/auth.middleware';
 import { timeController } from './modules/time/time.controller';
@@ -57,6 +58,7 @@ export const createApp = (): Express => {
 
   // Employee self-service paths from the spec (§38)
   app.get('/api/v1/me/time', authenticate, timeController.getHistory);
+  app.get('/api/v1/me/report', ...myReportHandler);
 
   // Canonical Section 92 Browser Heartbeat alias
   app.post('/api/v1/time/heartbeat', authenticate, activityController.recordBrowserHeartbeat);
@@ -71,6 +73,7 @@ export const createApp = (): Express => {
   app.use('/api/v1/audit', auditRouter);
   app.use('/api/v1/payroll', payrollRouter);
   app.use('/api/v1/departments', departmentRouter);
+  app.use('/api/v1/management', managementRouter);
   
   app.use(notFoundHandler);
   // Centralized Error Handling (must be last middleware)
