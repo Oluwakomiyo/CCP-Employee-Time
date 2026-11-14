@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { pageQuery, sortQuery } from '../../utils/listing';
 import { EmploymentStatus, Role } from '@prisma/client';
 
 export const createEmployeeSchema = z.object({
@@ -36,9 +37,9 @@ export const updateCompensationSchema = z.object({
 });
 
 export const queryEmployeesSchema = z.object({
-  page: z.coerce.number().int().positive().default(1),
-  limit: z.coerce.number().int().positive().max(100).default(20),
-  search: z.string().optional(),
+  ...pageQuery(),
+  ...sortQuery(['createdAt', 'firstName', 'lastName', 'employeeCode', 'department'] as const, 'createdAt'),
+  search: z.string().trim().max(100).optional(),
   department: z.string().optional(),
   status: z.nativeEnum(EmploymentStatus).optional(),
 });

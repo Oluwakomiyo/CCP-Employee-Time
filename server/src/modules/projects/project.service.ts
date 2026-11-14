@@ -21,7 +21,7 @@ export class ProjectService {
     userRole: Role,
     userEmployeeId?: string
   ) {
-    const { page, limit, search, isActive, status } = query;
+    const { page, limit, search, isActive, status, sort, order } = query;
     const skip = (page - 1) * limit;
 
     const where: Prisma.ProjectWhereInput = {};
@@ -60,7 +60,7 @@ export class ProjectService {
         where,
         skip,
         take: limit,
-        orderBy: { createdAt: 'desc' },
+        orderBy: { [sort]: order },
         include: {
           _count: {
             select: {

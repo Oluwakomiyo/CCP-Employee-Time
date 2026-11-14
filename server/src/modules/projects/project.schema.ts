@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { ProjectStatus } from '@prisma/client';
+import { pageQuery, sortQuery } from '../../utils/listing';
 
 const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Dates must be in YYYY-MM-DD format');
 const details = {
@@ -42,9 +43,9 @@ export const assignMemberSchema = z.object({
 });
 
 export const queryProjectsSchema = z.object({
-  page: z.coerce.number().int().positive().default(1),
-  limit: z.coerce.number().int().positive().max(100).default(20),
-  search: z.string().optional(),
+  ...pageQuery(),
+  ...sortQuery(['createdAt', 'name', 'code', 'startDate', 'status'] as const, 'createdAt'),
+  search: z.string().trim().max(100).optional(),
   status: z.nativeEnum(ProjectStatus).optional(),
   isActive: z
     .enum(['true', 'false'])

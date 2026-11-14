@@ -38,7 +38,7 @@ export class EmployeeService {
    * If caller is PROJECT_MANAGER or EMPLOYEE, compensation is omitted.
    */
   async listEmployees(query: QueryEmployeesInput, callerRole: Role) {
-    const { page, limit, search, department, status } = query;
+    const { page, limit, search, department, status, sort, order } = query;
     const skip = (page - 1) * limit;
 
     const where: Prisma.EmployeeWhereInput = {};
@@ -68,7 +68,7 @@ export class EmployeeService {
         where,
         skip,
         take: limit,
-        orderBy: { createdAt: 'desc' },
+        orderBy: { [sort]: order },
         select: {
           id: true,
           employeeCode: true,
