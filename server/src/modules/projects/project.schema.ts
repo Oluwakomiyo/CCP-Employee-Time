@@ -51,6 +51,11 @@ export const queryProjectsSchema = z.object({
     .enum(['true', 'false'])
     .optional()
     .transform((val) => (val === undefined ? undefined : val === 'true')),
+  // Only projects the caller is an active member of (the punch clock's picker for PMs and the CEO).
+  mine: z
+    .enum(['true', 'false'])
+    .optional()
+    .transform((val) => val === 'true'),
 });
 
 export type CreateProjectInput = z.infer<typeof createProjectSchema>;

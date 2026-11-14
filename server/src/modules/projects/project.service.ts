@@ -22,7 +22,7 @@ export class ProjectService {
     userRole: Role,
     userEmployeeId?: string
   ) {
-    const { page, limit, search, isActive, status, sort, order } = query;
+    const { page, limit, search, isActive, status, sort, order, mine } = query;
     const skip = (page - 1) * limit;
 
     const where: Prisma.ProjectWhereInput = {};
@@ -43,7 +43,7 @@ export class ProjectService {
     }
 
     // Restrict standard employees to only their assigned projects
-    if (userRole === Role.EMPLOYEE) {
+    if (userRole === Role.EMPLOYEE || mine) {
       if (!userEmployeeId) {
         return { data: [], meta: { page, limit, total: 0, totalPages: 0 } };
       }
