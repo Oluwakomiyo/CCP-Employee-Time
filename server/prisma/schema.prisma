@@ -140,7 +140,7 @@ model Employee {
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @db.Timestamptz(6)
 
-  compensation       Compensation?
+  compensations      Compensation[]
   projectMemberships ProjectMember[]
   workDays           WorkDay[]
   devices            EmployeeDevice[]
@@ -151,18 +151,24 @@ model Employee {
   @@index([status])
 }
 
+// Rate history (spec §20): rows are never overwritten. A change closes the current row
+// (effectiveTo) and opens a new one. One open row per employee is enforced by the partial
+// unique index "Compensation_one_open_per_employee" (see migration).
 model Compensation {
   id         String   @id @default(uuid())
-  employeeId String   @unique
-  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Restrict)
 
-  baseHourlyRate     Decimal  @db.Decimal(10, 2)
-  overtimeHourlyRate Decimal  @db.Decimal(10, 2)
-  currency           String   @default("USD") @db.VarChar(3)
-  effectiveDate      DateTime @db.Date
+  baseHourlyRate     Decimal   @db.Decimal(10, 2)
+  overtimeHourlyRate Decimal   @db.Decimal(10, 2)
+  currency           String    @default("NGN") @db.VarChar(3)
+  effectiveFrom      DateTime  @db.Date
+  effectiveTo        DateTime? @db.Date
 
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @db.Timestamptz(6)
+
+  @@index([employeeId, effectiveFrom])
 }
 
 // -----------------------------------------------------------------------------

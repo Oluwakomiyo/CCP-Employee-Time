@@ -1,6 +1,7 @@
 import { Prisma, Role, AuditAction, ProjectStatus } from '@prisma/client';
 import { prisma } from '../../config/prisma';
 import { AppError } from '../../errors/AppError';
+import { rateOn } from '../employees/compensation';
 import {
   CreateProjectInput,
   UpdateProjectInput,
@@ -316,7 +317,7 @@ export class ProjectService {
             workDay: {
               include: {
                 employee: {
-                  include: { compensation: true },
+                  include: { compensations: true },
                 },
               },
             },
@@ -345,7 +346,8 @@ export class ProjectService {
       const duration = seg.durationSeconds || 0;
       totalProjectSeconds += duration;
 
-      const baseRate = isCeo && emp.compensation ? Number(emp.compensation.baseHourlyRate) : 0;
+      // Priced at the rate in force on the day the work happened (spec §20).
+      const baseRate = isCeo ? Number(rateOn(emp.compensations, seg.workDay.date)?.baseHourlyRate ?? 0) : 0;
       const segmentCost = isCeo ? (duration / 3600) * baseRate : 0;
       totalProjectCost += segmentCost;
 

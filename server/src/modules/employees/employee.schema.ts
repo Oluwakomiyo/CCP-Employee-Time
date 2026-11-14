@@ -14,7 +14,7 @@ export const createEmployeeSchema = z.object({
   compensation: z.object({
     baseHourlyRate: z.number().positive('Base hourly rate must be positive'),
     overtimeHourlyRate: z.number().positive('Overtime rate must be positive'),
-    currency: z.string().length(3, 'Currency must be 3-letter ISO code (e.g. USD)').default('USD'),
+    currency: z.string().length(3, 'Currency must be 3-letter ISO code (e.g. NGN)').default('NGN'),
   }),
 });
 
@@ -31,7 +31,7 @@ export const updateEmployeeSchema = z.object({
 export const updateCompensationSchema = z.object({
   baseHourlyRate: z.number().positive('Base hourly rate must be positive'),
   overtimeHourlyRate: z.number().positive('Overtime rate must be positive'),
-  currency: z.string().length(3).default('USD'),
+  currency: z.string().length(3).default('NGN'),
   effectiveDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'effectiveDate must be in YYYY-MM-DD format'),
 });
 

@@ -9,6 +9,20 @@ import {
   QueryEmployeesInput,
 } from './employee.schema';
 import { generateTemporaryPassword } from '../../utils/password';
+import { CURRENT_RATE, dayBefore } from './compensation';
+
+/** Current rate only, for CEO views. */
+const currentRateSelect = {
+  where: CURRENT_RATE,
+  take: 1,
+  select: { baseHourlyRate: true, overtimeHourlyRate: true, currency: true, effectiveFrom: true },
+} as const;
+
+/** Flattens `compensations: [current]` into `compensation` (null when absent). */
+const withCurrentRate = <T extends { compensations?: unknown[] }>(e: T) => {
+  const { compensations, ...rest } = e;
+  return compensations === undefined ? rest : { ...rest, compensation: compensations[0] ?? null };
+};
 
 export class EmployeeService {
   /**
@@ -67,23 +81,14 @@ export class EmployeeService {
               mustChangePassword: true,
             },
           },
-          // Conditionally include compensation ONLY for CEO_ADMIN
-          compensation: isCeo
-            ? {
-              select: {
-                baseHourlyRate: true,
-                overtimeHourlyRate: true,
-                currency: true,
-                effectiveDate: true,
-              },
-            }
-            : undefined,
+          // Compensation ONLY for CEO_ADMIN (spec §4)
+          compensations: isCeo ? currentRateSelect : undefined,
         },
       }),
     ]);
 
     return {
-      data: items,
+      data: items.map(withCurrentRate),
       meta: {
         page,
         limit,
@@ -119,16 +124,7 @@ export class EmployeeService {
             isActive: true,
           },
         },
-        compensation: isCeo
-          ? {
-            select: {
-              baseHourlyRate: true,
-              overtimeHourlyRate: true,
-              currency: true,
-              effectiveDate: true,
-            },
-          }
-          : false,
+        compensations: isCeo ? currentRateSelect : false,
         projectMemberships: {
           where: { removedAt: null },
           select: {
@@ -151,7 +147,7 @@ export class EmployeeService {
       throw AppError.notFound(`Employee with ID '${employeeId}' not found`);
     }
 
-    return employee;
+    return withCurrentRate(employee);
   }
 
   /**
@@ -196,18 +192,18 @@ export class EmployeeService {
           position: input.position,
           status: EmploymentStatus.ACTIVE,
           hireDate: new Date(input.hireDate),
-          compensation: {
+          compensations: {
             create: {
               baseHourlyRate: new Prisma.Decimal(input.compensation.baseHourlyRate),
               overtimeHourlyRate: new Prisma.Decimal(input.compensation.overtimeHourlyRate),
               currency: input.compensation.currency,
-              effectiveDate: new Date(input.hireDate),
+              effectiveFrom: new Date(input.hireDate),
             },
           },
         },
         include: {
           user: { select: { id: true, email: true, role: true } },
-          compensation: true,
+          compensations: true,
         },
       });
 
@@ -359,47 +355,57 @@ export class EmployeeService {
   }
 
   /**
-   * Strict CEO_ADMIN endpoint: Returns isolated compensation data.
+   * CEO only: current rate plus full history, newest first.
    */
   async getCompensation(employeeId: string) {
-    const comp = await prisma.compensation.findUnique({
-      where: { employeeId },
-      include: {
-        employee: {
-          select: {
-            id: true,
-            employeeCode: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
+    const employee = await prisma.employee.findUnique({
+      where: { id: employeeId },
+      select: {
+        id: true,
+        employeeCode: true,
+        firstName: true,
+        lastName: true,
+        compensations: { orderBy: { effectiveFrom: 'desc' } },
       },
     });
+    if (!employee) throw AppError.notFound('Employee not found');
 
-    if (!comp) {
-      throw AppError.notFound('Compensation profile not found for this employee');
-    }
-
-    return comp;
+    const { compensations, ...profile } = employee;
+    return {
+      employee: profile,
+      current: compensations.find((c) => c.effectiveTo === null) ?? null,
+      history: compensations,
+    };
   }
 
   /**
-   * Strict CEO_ADMIN endpoint: Updates compensation rates with audit log.
+   * CEO only: a rate change never overwrites history (spec §20). The current rate is closed the
+   * day before `effectiveDate` and a new open rate starts on it. Audited as COMPENSATION_CHANGED.
    */
   async updateCompensation(employeeId: string, input: UpdateCompensationInput, actorUserId: string) {
-    const existing = await prisma.compensation.findUnique({ where: { employeeId } });
-    if (!existing) {
-      throw AppError.notFound('Compensation profile not found for this employee');
-    }
+    const employee = await prisma.employee.findUnique({ where: { id: employeeId } });
+    if (!employee) throw AppError.notFound('Employee not found');
 
-    const updated = await prisma.$transaction(async (tx) => {
-      const result = await tx.compensation.update({
-        where: { employeeId },
+    const effectiveFrom = new Date(`${input.effectiveDate}T00:00:00.000Z`);
+
+    return prisma.$transaction(async (tx) => {
+      const current = await tx.compensation.findFirst({ where: { employeeId, ...CURRENT_RATE } });
+      if (current && effectiveFrom <= current.effectiveFrom) {
+        throw AppError.badRequest(
+          `The new rate must start after the current rate's start date (${current.effectiveFrom.toISOString().slice(0, 10)})`
+        );
+      }
+      if (current) {
+        await tx.compensation.update({ where: { id: current.id }, data: { effectiveTo: dayBefore(effectiveFrom) } });
+      }
+
+      const created = await tx.compensation.create({
         data: {
+          employeeId,
           baseHourlyRate: new Prisma.Decimal(input.baseHourlyRate),
           overtimeHourlyRate: new Prisma.Decimal(input.overtimeHourlyRate),
           currency: input.currency,
-          effectiveDate: new Date(input.effectiveDate),
+          effectiveFrom,
         },
       });
 
@@ -408,16 +414,23 @@ export class EmployeeService {
           actorId: actorUserId,
           action: AuditAction.UPDATE,
           entityName: 'Compensation',
-          entityId: result.id,
-          beforeState: existing as unknown as Prisma.JsonObject,
-          afterState: result as unknown as Prisma.JsonObject,
+          entityId: created.id,
+          beforeState: current
+            ? { baseHourlyRate: current.baseHourlyRate, overtimeHourlyRate: current.overtimeHourlyRate, currency: current.currency, effectiveFrom: current.effectiveFrom }
+            : Prisma.JsonNull,
+          afterState: {
+            event: 'COMPENSATION_CHANGED',
+            employeeId,
+            baseHourlyRate: created.baseHourlyRate,
+            overtimeHourlyRate: created.overtimeHourlyRate,
+            currency: created.currency,
+            effectiveFrom: input.effectiveDate,
+          } as unknown as Prisma.JsonObject,
         },
       });
 
-      return result;
+      return created;
     });
-
-    return updated;
   }
 }
 

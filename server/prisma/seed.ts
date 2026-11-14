@@ -39,12 +39,12 @@ async function main() {
           position: 'Chief Executive Officer',
           status: EmploymentStatus.ACTIVE,
           hireDate: new Date('2020-01-15'),
-          compensation: {
+          compensations: {
             create: {
               baseHourlyRate: new Prisma.Decimal(120.0),
               overtimeHourlyRate: new Prisma.Decimal(180.0),
               currency: 'USD',
-              effectiveDate: new Date('2020-01-15'),
+              effectiveFrom: new Date('2020-01-15'),
             },
           },
         },
@@ -69,12 +69,12 @@ async function main() {
           position: 'Lead Project Manager',
           status: EmploymentStatus.ACTIVE,
           hireDate: new Date('2021-03-01'),
-          compensation: {
+          compensations: {
             create: {
               baseHourlyRate: new Prisma.Decimal(65.0),
               overtimeHourlyRate: new Prisma.Decimal(97.5),
               currency: 'USD',
-              effectiveDate: new Date('2021-03-01'),
+              effectiveFrom: new Date('2021-03-01'),
             },
           },
         },
@@ -99,12 +99,12 @@ async function main() {
           position: 'Full Stack Engineer',
           status: EmploymentStatus.ACTIVE,
           hireDate: new Date('2022-06-15'),
-          compensation: {
+          compensations: {
             create: {
               baseHourlyRate: new Prisma.Decimal(45.0),
               overtimeHourlyRate: new Prisma.Decimal(67.5),
               currency: 'USD',
-              effectiveDate: new Date('2022-06-15'),
+              effectiveFrom: new Date('2022-06-15'),
             },
           },
         },

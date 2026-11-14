@@ -2,6 +2,7 @@ import { Prisma, DayStatus, AuditAction } from '@prisma/client';
 import { prisma } from '../../config/prisma';
 import { AppError } from '../../errors/AppError';
 import { GeneratePayrollInput, QueryPayrollInput } from './payroll.schema';
+import { rateOn } from '../employees/compensation';
 
 export class PayrollService {
   /**
@@ -12,9 +13,9 @@ export class PayrollService {
     const startDate = new Date(input.periodStart);
     const endDate = new Date(input.periodEnd);
 
-    // 1. Identify Target Employees
+    // 1. Everyone who worked in the period, including people who have since left.
     const employeeFilter: Prisma.EmployeeWhereInput = {
-      status: 'ACTIVE',
+      workDays: { some: { date: { gte: startDate, lte: endDate } } },
     };
     if (input.employeeId) {
       employeeFilter.id = input.employeeId;
@@ -23,20 +24,18 @@ export class PayrollService {
     const employees = await prisma.employee.findMany({
       where: employeeFilter,
       include: {
-        compensation: true,
+        compensations: { orderBy: { effectiveFrom: 'asc' } },
       },
     });
 
     if (employees.length === 0) {
-      throw AppError.notFound('No active employees found for the specified criteria');
+      throw AppError.notFound('No employees worked in the specified period');
     }
 
     const generatedRecords = [];
+    const daysWithoutRate: { employeeId: string; date: string }[] = [];
 
     for (const emp of employees) {
-      if (!emp.compensation) {
-        continue; // Skip employee if no compensation package is configured
-      }
 
       // 2. Fetch all approved/closed workdays within the period
       const workDays = await prisma.workDay.findMany({
@@ -52,33 +51,33 @@ export class PayrollService {
 
       let totalRegularSeconds = 0;
       let totalOvertimeSeconds = 0;
-      const standardDaySeconds = 8 * 3600; // 8 hours standard day
+      let grossPay = new Prisma.Decimal(0);
+      let currency: string | null = null;
+      const standardDaySeconds = 8 * 3600; // shortcut: fixed 8h/day overtime threshold until a policy exists (spec §32)
 
-      // 3. Compute Regular vs Overtime per WorkDay
+      // 3. Regular vs overtime per day, each day priced at the rate in force that day (spec §20).
       for (const day of workDays) {
-        // Net worked time = totalWorkSeconds (recorded breaks already subtracted or excluded)
-        const netSeconds = Math.max(0, day.totalWorkSeconds - day.totalBreakSeconds);
-
-        if (netSeconds <= standardDaySeconds) {
-          totalRegularSeconds += netSeconds;
-        } else {
-          totalRegularSeconds += standardDaySeconds;
-          totalOvertimeSeconds += netSeconds - standardDaySeconds;
+        const rate = rateOn(emp.compensations, day.date);
+        if (!rate) {
+          daysWithoutRate.push({ employeeId: emp.id, date: day.date.toISOString().slice(0, 10) });
+          continue;
         }
+        // Net working time = presence minus recorded (unpaid) breaks.
+        const netSeconds = Math.max(0, day.totalWorkSeconds - day.totalBreakSeconds);
+        const regular = Math.min(netSeconds, standardDaySeconds);
+        const overtime = netSeconds - regular;
+        totalRegularSeconds += regular;
+        totalOvertimeSeconds += overtime;
+        grossPay = grossPay
+          .add(new Prisma.Decimal(regular).div(3600).mul(rate.baseHourlyRate))
+          .add(new Prisma.Decimal(overtime).div(3600).mul(rate.overtimeHourlyRate));
+        currency = rate.currency;
       }
+      if (!currency) continue; // no priced days for this employee
 
-      // Convert seconds to decimal hours (rounded to 2 decimal places)
-      const regularHoursNum = Math.round((totalRegularSeconds / 3600) * 100) / 100;
-      const overtimeHoursNum = Math.round((totalOvertimeSeconds / 3600) * 100) / 100;
-
-      const regularHours = new Prisma.Decimal(regularHoursNum);
-      const overtimeHours = new Prisma.Decimal(overtimeHoursNum);
-
-      const baseRate = emp.compensation.baseHourlyRate;
-      const otRate = emp.compensation.overtimeHourlyRate;
-
-      // Gross Pay = (regularHours * baseRate) + (overtimeHours * otRate)
-      const grossPay = regularHours.mul(baseRate).add(overtimeHours.mul(otRate));
+      const regularHours = new Prisma.Decimal(totalRegularSeconds).div(3600).toDecimalPlaces(2);
+      const overtimeHours = new Prisma.Decimal(totalOvertimeSeconds).div(3600).toDecimalPlaces(2);
+      grossPay = grossPay.toDecimalPlaces(2);
 
       // 4. Upsert Payroll Record (Period unique per employee)
       const record = await prisma.payrollRecord.upsert({
@@ -96,7 +95,7 @@ export class PayrollService {
           regularHours,
           overtimeHours,
           grossPay,
-          currency: emp.compensation.currency,
+          currency,
         },
         update: {
           regularHours,
@@ -135,6 +134,8 @@ export class PayrollService {
       },
     });
 
+    // shortcut: response shape kept as an array for the legacy client; days without a rate are logged.
+    if (daysWithoutRate.length) console.warn('[payroll] days without a configured rate:', daysWithoutRate);
     return generatedRecords;
   }
 
@@ -160,7 +161,7 @@ export class PayrollService {
         include: {
           employee: {
             include: {
-              compensation: true,
+              compensations: true,
               workDays: {
                 include: {
                   segments: {
@@ -178,13 +179,13 @@ export class PayrollService {
     // Compute itemized project breakdown for each payroll record
     const enriched = items.map((rec) => {
       const projectMap = new Map<string, { projectCode: string; projectName: string; hours: number; amount: number }>();
-      const baseRate = Number(rec.employee.compensation?.baseHourlyRate || 0);
 
       for (const day of rec.employee.workDays) {
         if (new Date(day.date) >= new Date(rec.periodStart) && new Date(day.date) <= new Date(rec.periodEnd)) {
           for (const seg of day.segments) {
             const pId = seg.projectId;
             const hrs = (seg.durationSeconds || 0) / 3600;
+            const baseRate = Number(rateOn(rec.employee.compensations, day.date)?.baseHourlyRate ?? 0);
 
             if (!projectMap.has(pId)) {
               projectMap.set(pId, {

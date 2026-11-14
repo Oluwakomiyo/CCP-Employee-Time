@@ -32,12 +32,12 @@ export const createUser = async (role: Role, opts: { mustChangePassword?: boolea
           department: 'Design',
           position: 'Architect',
           hireDate: new Date('2026-01-01'),
-          compensation: {
+          compensations: {
             create: {
               baseHourlyRate: opts.rate ?? 5000,
               overtimeHourlyRate: 7500,
               currency: 'NGN',
-              effectiveDate: new Date('2026-01-01'),
+              effectiveFrom: new Date('2026-01-01'),
             },
           },
         },
