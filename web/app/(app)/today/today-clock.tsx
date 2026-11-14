@@ -39,6 +39,8 @@ export function TodayClock() {
   const projects = useMyProjects();
   const action = useTimeAction();
   const [error, setError] = useState<string | null>(null);
+  // Controls the hold button's done state, so a refused or failed end rewinds it instead of sticking on "Work ended".
+  const [ending, setEnding] = useState(false);
   const running = today.data?.state === "WORKING" || today.data?.state === "ON_BREAK";
   const now = useTicker(running);
 
@@ -143,12 +145,18 @@ export function TodayClock() {
               confirmedLabel="Work ended"
               tone="danger"
               icon={<Square size={16} aria-hidden="true" />}
-              disabled={action.isPending}
-              onConfirm={() => void run("end").catch(onError)}
+              disabled={action.isPending || onBreak}
+              confirmed={ending}
+              onConfirm={() => {
+                setEnding(true);
+                run("end")
+                  .catch(onError)
+                  .finally(() => setEnding(false));
+              }}
             />
           </div>
         )}
-        {onBreak && <p className={styles.hint}>End the break before changing project, location or activity.</p>}
+        {onBreak && <p className={styles.hint}>End the break before changing project, location or activity, or ending work.</p>}
       </section>
     </div>
   );
