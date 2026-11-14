@@ -2,9 +2,11 @@
 
 Architecture firm time tracking: employees clock in on projects (office or site) with a note on the work. Hours × hourly rate gives monthly pay; average daily hours drive project estimates. CEO sees everything, project managers see their teams, employees see only themselves (never money).
 
+**Using the app?** Read the [user guide](USER_GUIDE.md): how employees, project managers and the CEO use it day to day.
+
 ## Stack
 
-- `server/` — Express 4 + Prisma 5 + PostgreSQL API (the contract; 87 tests)
+- `server/` — Express 4 + Prisma 5 + PostgreSQL API (the contract; 89 tests)
 - `web/` — Next.js 16 App Router frontend (Arc primitives, no Tailwind)
 - `electron/` — thin desktop wrapper around the hosted web app (no activity tracking; install `desktop-agent/` beside it for that)
 - `desktop-agent/` — idle-time agent reporting per-device heartbeats
