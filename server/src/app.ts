@@ -12,6 +12,7 @@ import { activityRouter } from './modules/activity-monitoring/activity.routes';
 import { correctionRouter } from './modules/corrections/correction.routes';
 import { auditRouter } from './modules/audit/audit.routes';
 import { payrollRouter } from './modules/payroll/payroll.routes';
+import { departmentRouter } from './modules/departments/department.routes';
 import { activityController } from './modules/activity-monitoring/activity.controller';
 import { authenticate } from './middleware/auth.middleware';
 import { timeController } from './modules/time/time.controller';
@@ -69,6 +70,7 @@ export const createApp = (): Express => {
   app.use('/api/v1/corrections', correctionRouter);
   app.use('/api/v1/audit', auditRouter);
   app.use('/api/v1/payroll', payrollRouter);
+  app.use('/api/v1/departments', departmentRouter);
   
   app.use(notFoundHandler);
   // Centralized Error Handling (must be last middleware)
