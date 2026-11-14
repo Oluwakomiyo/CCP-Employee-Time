@@ -6,7 +6,7 @@ import { Button } from "@/components/arc/button/button";
 import { Card } from "@/components/arc/card/card";
 import { PasswordField } from "@/components/arc/password-field/password-field";
 import { PasswordStrength } from "@/components/arc/password-strength/password-strength";
-import { Skeleton } from "@/components/arc/skeleton/skeleton";
+import { ProfileSkeleton } from "./profile-skeleton";
 import { api, errorMessage } from "@/lib/api";
 import { useMe } from "@/lib/auth";
 import { RULES } from "@/app/change-password/change-password-form";
@@ -23,7 +23,7 @@ export function ProfileDetails() {
   const [saved, setSaved] = useState(false);
   const [pending, setPending] = useState(false);
 
-  if (isPending) return <Skeleton lines={6} label="Loading profile" />;
+  if (isPending) return <ProfileSkeleton />;
   if (isError)
     return (
       <div className={styles.layout}>
