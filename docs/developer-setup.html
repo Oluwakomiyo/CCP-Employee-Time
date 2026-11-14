@@ -1,0 +1,441 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CCP Time Developer Setup</title>
+<meta name="description" content="Get the web app, the API and the database running on your own computer in about 20 minutes.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root {
+  --bg: #fbfaf9; --surface: #ffffff; --fg: #1d1a1b; --muted: #6b6466; --line: #e8e3e3;
+  --accent: #922d36; --accent-soft: #f6e9ea; --code-bg: #f3efef; --term-bg: #1f1b1c; --term-fg: #f1ecec;
+  --font: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) { :root {
+  --bg: #161415; --surface: #1e1b1c; --fg: #efeaeb; --muted: #a59d9f; --line: #2f2a2b;
+  --accent: #f08c95; --accent-soft: #3a2326; --code-bg: #262223; --term-bg: #0f0d0e; --term-fg: #f1ecec; color-scheme: dark; } }
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font); font-size: 16px; line-height: 1.65; }
+img { max-width: 100%; }
+.page { display: grid; grid-template-columns: 15rem minmax(0, 46rem); gap: 3.5rem; justify-content: center;
+  padding-block: 3rem 5rem; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+header.intro { grid-column: 2; display: flex; flex-direction: column; gap: .5rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--line); }
+.brand { display: flex; align-items: center; gap: .6rem; color: var(--accent); font-weight: 600; font-size: .85rem; letter-spacing: .06em; text-transform: uppercase; text-decoration: none; }
+.brand span { width: .7rem; height: .7rem; border-radius: 2px; background: var(--accent); }
+h1 { margin: 0; font-size: clamp(2rem, 5vw, 2.75rem); line-height: 1.15; font-weight: 600; letter-spacing: -.02em; text-wrap: balance; }
+.lede { margin: 0; color: var(--muted); max-width: 40rem; }
+.tags { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .5rem; }
+.tags span { padding: .2rem .7rem; border: 1px solid var(--line); border-radius: 999px; font-size: .85rem; color: var(--muted); background: var(--surface); }
+nav.toc { grid-column: 1; grid-row: 1 / span 2; position: sticky; top: 2rem; align-self: start; font-size: .9rem; }
+nav.toc p { margin: 0 0 .5rem; font-weight: 600; color: var(--muted); font-size: .75rem; letter-spacing: .06em; text-transform: uppercase; }
+nav.toc ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .15rem; }
+nav.toc a { display: block; padding: .35rem .6rem; border-radius: 6px; color: var(--fg); text-decoration: none; }
+nav.toc a:hover { background: var(--accent-soft); color: var(--accent); }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+main { grid-column: 2; min-width: 0; }
+main h2 { margin: 3.5rem 0 1rem; padding-top: .5rem; font-size: 1.6rem; line-height: 1.25; font-weight: 600; letter-spacing: -.01em; text-wrap: balance; scroll-margin-top: 1.5rem; }
+main h3 { margin: 2.25rem 0 .6rem; font-size: 1.15rem; font-weight: 600; text-wrap: balance; }
+main p, main li { max-width: 68ch; overflow-wrap: anywhere; }
+main ul, main ol { padding-left: 1.3rem; display: flex; flex-direction: column; gap: .3rem; }
+main a { color: var(--accent); overflow-wrap: anywhere; }
+strong { font-weight: 600; }
+code { font-family: var(--mono); font-size: .86em; background: var(--code-bg); padding: .1em .35em; border-radius: 4px; overflow-wrap: anywhere; }
+.code { position: relative; margin: 1rem 0 1.25rem; }
+.code pre { margin: 0; padding: 1rem 1.1rem; padding-right: 5rem; overflow-x: auto; background: var(--term-bg); color: var(--term-fg); border-radius: 10px; font-size: .88rem; line-height: 1.6; }
+.code pre code { background: none; padding: 0; color: inherit; font-size: inherit; overflow-wrap: normal; white-space: pre; }
+.copy { position: absolute; top: .55rem; right: .55rem; font: 500 .78rem var(--font); color: var(--term-fg); background: rgb(255 255 255 / .1); border: 1px solid rgb(255 255 255 / .18); border-radius: 6px; padding: .25rem .6rem; cursor: pointer; }
+.copy:hover { background: rgb(255 255 255 / .18); }
+hr { border: 0; border-top: 1px solid var(--line); margin: 3rem 0 0; }
+.table-wrap { overflow-x: auto; margin: 1rem 0; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: .93rem; }
+th, td { text-align: left; padding: .65rem .9rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-weight: 600; color: var(--muted); font-size: .8rem; letter-spacing: .04em; text-transform: uppercase; }
+tr:last-child td { border-bottom: 0; }
+figure { margin: 1.5rem 0 2rem; }
+figure img { display: block; width: 100%; height: auto; border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 6px 24px rgb(0 0 0 / .06); }
+figcaption { margin-top: .55rem; color: var(--muted); font-size: .85rem; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(18rem, 100%), 1fr)); gap: 1rem; }
+.cards a { display: flex; flex-direction: column; gap: .4rem; padding: 1.4rem; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--fg); text-decoration: none; }
+.cards a:hover { border-color: var(--accent); }
+.cards strong { font-size: 1.15rem; color: var(--accent); }
+.cards span { color: var(--muted); }
+.single { grid-template-columns: minmax(0, 46rem); row-gap: 2rem; }
+.single header.intro, .single main { grid-column: 1; }
+@media (max-width: 960px) {
+  .page { grid-template-columns: minmax(0, 1fr); gap: 2rem; padding-block: 2rem 4rem; }
+  header.intro, main { grid-column: 1; }
+  nav.toc { grid-column: 1; grid-row: auto; position: static; padding: 1rem; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+}
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="intro">
+    <a class="brand" href="./"><span aria-hidden="true"></span>CCP Time</a>
+    <h1>Developer setup</h1>
+    <p class="lede">Get the web app, the API and the database running on your own computer in about 20 minutes.</p>
+    <div class="tags"><span>Windows</span><span>macOS</span><span>Linux</span></div>
+  </header>
+  <nav class="toc" aria-label="Contents">
+    <p>Contents</p>
+    <div class="toc">
+<ul>
+<li><a href="#1-install-the-tools">1. Install the tools</a></li>
+<li><a href="#2-get-the-code">2. Get the code</a></li>
+<li><a href="#3-create-the-database-user-and-databases">3. Create the database user and databases</a></li>
+<li><a href="#4-configure-the-api">4. Configure the API</a></li>
+<li><a href="#5-install-migrate-and-load-demo-data">5. Install, migrate and load demo data</a></li>
+<li><a href="#6-run-it">6. Run it</a></li>
+<li><a href="#7-run-the-tests-and-checks">7. Run the tests and checks</a></li>
+<li><a href="#docker-shortcut-database-only">Docker shortcut (database only)</a></li>
+<li><a href="#optional-the-desktop-app-and-the-activity-agent">Optional: the desktop app and the activity agent</a></li>
+<li><a href="#everyday-commands">Everyday commands</a></li>
+<li><a href="#troubleshooting">Troubleshooting</a></li>
+<li><a href="#where-to-go-next">Where to go next</a></li>
+</ul>
+</div>
+
+  </nav>
+  <main>
+<p>How to get CCP Time running on your own computer, on <strong>Windows</strong>, <strong>macOS</strong> or <strong>Linux</strong>. It takes about 20 minutes the first time.</p>
+<p>When you're done you'll have:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Part</th>
+<th>Address</th>
+<th>What it is</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Web app</td>
+<td><a href="http://localhost:3000">http://localhost:3000</a></td>
+<td>The Next.js site everyone uses</td>
+</tr>
+<tr>
+<td>API</td>
+<td><a href="http://localhost:5000">http://localhost:5000</a></td>
+<td>The Express server the web app talks to</td>
+</tr>
+<tr>
+<td>Database</td>
+<td>localhost:5432</td>
+<td>PostgreSQL, holding all the data</td>
+</tr>
+</tbody>
+</table></div>
+<p>The web app forwards every <code>/api/v1/...</code> request to the API, so you only ever open **<a href="http://localhost:3000**">http://localhost:3000**</a> in the browser.</p>
+<hr />
+<h2 id="1-install-the-tools">1. Install the tools</h2>
+<p>You need three things: <strong>Git</strong>, <strong>Node.js 22</strong> (20.9 or newer works) and <strong>PostgreSQL 16 or newer</strong>. Docker is optional (see <a href="#docker-shortcut-database-only">the Docker shortcut</a>).</p>
+<h3 id="windows">Windows</h3>
+<ol>
+<li><strong>Git:</strong> install from <a href="https://git-scm.com/download/win">https://git-scm.com/download/win</a> (the defaults are fine).</li>
+<li><strong>Node.js 22 LTS:</strong> install the Windows installer (<code>.msi</code>) from <a href="https://nodejs.org">https://nodejs.org</a>. Tick "Automatically install the necessary tools" if asked.</li>
+<li><strong>PostgreSQL:</strong> install from <a href="https://www.postgresql.org/download/windows/">https://www.postgresql.org/download/windows/</a> (the EDB installer).
+   - Remember the password you set for the <code>postgres</code> user.
+   - Keep port <strong>5432</strong>.
+   - The installer also adds <strong>SQL Shell (psql)</strong> to the Start menu.</li>
+</ol>
+<p>Use <strong>PowerShell</strong> or <strong>Command Prompt</strong> for the commands below. If PowerShell says <em>"npm.ps1 cannot be loaded because running scripts is disabled"</em>, run this once and reopen PowerShell:</p>
+<div class="code"><button type="button" class="copy" aria-label="Copy command">Copy</button><pre><code class="language-powershell">Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+</code></pre></div>
+<h3 id="macos">macOS</h3>
+<p>With <a href="https://brew.sh">Homebrew</a>:</p>
+<div class="code"><button type="button" class="copy" aria-label="Copy command">Copy</button><pre><code class="language-bash">brew install git node@22 postgresql@16
+brew link --force node@22
+brew services start postgresql@16
+</code></pre></div>
+<p>(Postgres.app from <a href="https://postgresapp.com">https://postgresapp.com</a> works too, instead of the Homebrew PostgreSQL.)</p>
+<h3 id="linux-ubuntu-debian">Linux (Ubuntu / Debian)</h3>
+<div class="code"><button type="button" class="copy" aria-label="Copy command">Copy</button><pre><code class="language-bash">sudo apt update
+sudo apt install -y git postgresql
+# Node 22 from NodeSource (the distro's nodejs package is often too old)
+curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
+sudo apt install -y nodejs
+sudo systemctl enable --now postgresql
+</code></pre></div>
+<p>On Fedora: <code>sudo dnf install git nodejs postgresql-server</code>, then run <code>sudo postgresql-setup --initdb</code> and <code>sudo systemctl enable --now postgresql</code>.</p>
+<p><strong>Check everything is installed</strong> (any OS):</p>
+<div class="code"><button type="button" class="copy" aria-label="Copy command">Copy</button><pre><code class="language-bash">git --version
+node --version     # v22.x (anything from v20.9 works)
+npm --version
+psql --version     # 16 or newer
+</code></pre></div>
+<hr />
+<h2 id="2-get-the-code">2. Get the code</h2>
+<p>You need access to the GitHub repository; ask the owner to add you.</p>
+<div class="code"><button type="button" class="copy" aria-label="Copy command">Copy</button><pre><code class="language-bash">git clone git@github.com:Oluwakomiyo/CCP-Employee-Time.git
+cd CCP-Employee-Time
+</code></pre></div>
+<p>(Use the HTTPS address from the GitHub page instead if you haven't set up an SSH key.)</p>
+<hr />
+<h2 id="3-create-the-database-user-and-databases">3. Create the database user and databases</h2>
+<p>The app expects a PostgreSQL user called <strong><code>ccp</code></strong> with password <strong><code>ccp</code></strong>, and two databases:
+- <strong><code>ccp_time</code></strong> for the app;
+- <strong><code>ccp_time_test</code></strong>, which the tests wipe on every run.</p>
+<p>These are development-only credentials. Never use them on a real server.</p>
+<p><strong>Open a PostgreSQL prompt as the admin user:</strong></p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>OS</th>
+<th>Command</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Windows</td>
+<td>Start menu → <strong>SQL Shell (psql)</strong> → press Enter for each default, then type the <code>postgres</code> password you chose</td>
+</tr>
+<tr>
+<td>macOS (Homebrew)</td>
+<td><code>psql postgres</code></td>
+</tr>
+<tr>
+<td>macOS (Postgres.app)</td>
+<td>Click the elephant → <strong>Open psql</strong></td>
+</tr>
+<tr>
+<td>Linux</td>
+<td><code>sudo -u postgres psql</code></td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Then paste these three lines:</strong></p>
+<div class="code"><button type="button" class="copy" aria-label="Copy command">Copy</button><pre><code class="language-sql">CREATE ROLE ccp LOGIN PASSWORD 'ccp' CREATEDB;
+CREATE DATABASE ccp_time OWNER ccp;
+CREATE DATABASE ccp_time_test OWNER ccp;
+</code></pre></div>
+<p>Type <code>\q</code> to leave.</p>
+<hr />
+<h2 id="4-configure-the-api">4. Configure the API</h2>
+<p>Copy the example settings file:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>OS</th>
+<th>Command (run from the project folder)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Windows (PowerShell)</td>
+<td><code>Copy-Item server\.env.example server\.env</code></td>
+</tr>
+<tr>
+<td>Windows (Command Prompt)</td>
+<td><code>copy server\.env.example server\.env</code></td>
+</tr>
+<tr>
+<td>macOS / Linux</td>
+<td><code>cp server/.env.example server/.env</code></td>
+</tr>
+</tbody>
+</table></div>
+<p>Open <code>server/.env</code> in your editor. The database lines already match step 3. You only need to fill in <strong>two secrets</strong>. Generate a random value (this works on every OS):</p>
+<div class="code"><button type="button" class="copy" aria-label="Copy command">Copy</button><pre><code class="language-bash">node -e &quot;console.log(require('crypto').randomBytes(48).toString('hex'))&quot;
+</code></pre></div>
+<p>Run it twice, then paste one result after <code>JWT_SECRET=</code> and the other after <code>JWT_REFRESH_SECRET=</code>. The API refuses to start while either is empty.</p>
+<p>The web app needs no settings file for local development; it assumes the API is at <code>http://localhost:5000</code>. To point it somewhere else, create <code>web/.env.local</code> containing <code>API_ORIGIN=http://your-api:5000</code>.</p>
+<hr />
+<h2 id="5-install-migrate-and-load-demo-data">5. Install, migrate and load demo data</h2>
+<div class="code"><button type="button" class="copy" aria-label="Copy command">Copy</button><pre><code class="language-bash">cd server
+npm install
+npx prisma migrate deploy     # creates all the tables
+npx prisma db seed            # loads demo accounts, projects and two weeks of time
+cd ../web
+npm install
+cd ..
+</code></pre></div>
+<hr />
+<h2 id="6-run-it">6. Run it</h2>
+<p>You need <strong>two terminals</strong>, both in the project folder:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Terminal 1: API</th>
+<th>Terminal 2: web app</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>npm run dev</code></td>
+<td><code>npm run dev:web</code></td>
+</tr>
+<tr>
+<td>Wait for <code>🚀 API Server running at http://localhost:5000</code></td>
+<td>Wait for <code>Ready</code></td>
+</tr>
+</tbody>
+</table></div>
+<p>Open **<a href="http://localhost:3000**">http://localhost:3000**</a> and sign in with any demo account (password <code>Password123!</code> for all):</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Email</th>
+<th>Role</th>
+<th>What you'll see</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ceo@example.com</code></td>
+<td>CEO (admin)</td>
+<td>Everything, including pay, payroll and settings</td>
+</tr>
+<tr>
+<td><code>manager@example.com</code></td>
+<td>Project manager</td>
+<td>Leads all three demo projects</td>
+</tr>
+<tr>
+<td><code>john@example.com</code></td>
+<td>Employee</td>
+<td>Has a missing clock-out to fix</td>
+</tr>
+<tr>
+<td><code>mary@example.com</code></td>
+<td>Employee</td>
+<td>Has a correction waiting for review</td>
+</tr>
+<tr>
+<td><code>peter@example.com</code></td>
+<td>Employee</td>
+<td>Site supervisor</td>
+</tr>
+</tbody>
+</table></div>
+<p>Both servers reload automatically when you save a file.</p>
+<hr />
+<h2 id="7-run-the-tests-and-checks">7. Run the tests and checks</h2>
+<p>From the project folder:</p>
+<div class="code"><button type="button" class="copy" aria-label="Copy command">Copy</button><pre><code class="language-bash">npm test                          # API tests (resets ccp_time_test first)
+cd web &amp;&amp; npx tsc --noEmit &amp;&amp; npm run lint   # web typecheck and lint
+</code></pre></div>
+<p>All tests should pass. The test output includes a few lines saying <code>AuditLog rows are immutable</code>. That's expected: one test checks that the audit log can't be edited.</p>
+<hr />
+<h2 id="docker-shortcut-database-only">Docker shortcut (database only)</h2>
+<p>If you have Docker Desktop (Windows or macOS) or Docker Engine (Linux), you can skip installing PostgreSQL and do this instead of step 3:</p>
+<div class="code"><button type="button" class="copy" aria-label="Copy command">Copy</button><pre><code class="language-bash">docker compose up -d db
+docker compose exec db createdb -U ccp ccp_time_test
+</code></pre></div>
+<p>This starts PostgreSQL 16 with the <code>ccp</code> user and the <code>ccp_time</code> database already created. Then carry on from step 4.</p>
+<p>To run the <strong>whole stack</strong> in containers (database, API, background worker and web), as on a server, see <code>DEPLOYMENT.md</code>. You'll need to set <code>JWT_SECRET</code> and <code>JWT_REFRESH_SECRET</code> first.</p>
+<hr />
+<h2 id="optional-the-desktop-app-and-the-activity-agent">Optional: the desktop app and the activity agent</h2>
+<p><strong>Desktop app</strong> (a window onto the web app, with a tray icon). With the web app running:</p>
+<div class="code"><button type="button" class="copy" aria-label="Copy command">Copy</button><pre><code class="language-bash">cd electron
+npm install
+npm start
+</code></pre></div>
+<p>On Linux, if it complains about the sandbox, use <code>npm start -- --no-sandbox</code>.</p>
+<p><strong>Activity agent</strong> (reports whether a computer is in use, for the Work evidence page):
+1. Sign in as the CEO, open <strong>Settings → Desktop devices → Register device</strong>, and copy the key it shows.
+2. Copy <code>desktop-agent/config.example.json</code> to <code>desktop-agent/config.json</code>. Fill in <code>deviceIdentifier</code> exactly as registered, and <code>deviceKey</code>. Never commit this file; it's already ignored by git.
+3. Run <code>cd desktop-agent &amp;&amp; npm start</code>.</p>
+<p>How it reads idle time on each OS:
+- <strong>Windows:</strong> PowerShell; nothing to install.
+- <strong>macOS:</strong> <code>ioreg</code>; nothing to install.
+- <strong>Linux:</strong> needs <code>xprintidle</code> (<code>sudo apt install xprintidle</code>). It only works on X11, so on Wayland the agent reports "unknown" rather than guessing.</p>
+<hr />
+<h2 id="everyday-commands">Everyday commands</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Task</th>
+<th>Command (from the project folder)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Start the API</td>
+<td><code>npm run dev</code></td>
+</tr>
+<tr>
+<td>Start the web app</td>
+<td><code>npm run dev:web</code></td>
+</tr>
+<tr>
+<td>Run the API tests</td>
+<td><code>npm test</code></td>
+</tr>
+<tr>
+<td>Reset the dev database to fresh demo data</td>
+<td><code>cd server &amp;&amp; npx prisma migrate reset</code> (answer <code>y</code>; it re-seeds automatically)</td>
+</tr>
+<tr>
+<td>Reload demo data without wiping the schema</td>
+<td><code>cd server &amp;&amp; npx prisma db seed</code></td>
+</tr>
+<tr>
+<td>Browse the database in a UI</td>
+<td><code>cd server &amp;&amp; npx prisma studio</code></td>
+</tr>
+<tr>
+<td>Create a new migration after editing <code>schema.prisma</code></td>
+<td><code>cd server &amp;&amp; npx prisma migrate dev --name what_changed</code></td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<h2 id="troubleshooting">Troubleshooting</h2>
+<p><strong><code>JWT_SECRET is required</code> (or the API exits straight away)</strong>
+You haven't filled in both secrets in <code>server/.env</code> (step 4).</p>
+<p><strong><code>P1001: Can't reach database server at localhost:5432</code></strong>
+PostgreSQL isn't running:
+- <strong>Windows:</strong> open Services, find "postgresql-x64-16" and press Start.
+- <strong>macOS:</strong> <code>brew services start postgresql@16</code>.
+- <strong>Linux:</strong> <code>sudo systemctl start postgresql</code>.</p>
+<p><strong><code>P1000: Authentication failed against database server</code></strong>
+The <code>ccp</code> user doesn't exist or has a different password. Repeat step 3.</p>
+<p><strong><code>permission denied to create database</code> when running <code>npm test</code></strong>
+The <code>ccp</code> user is missing <code>CREATEDB</code>. In psql as the admin user, run: <code>ALTER ROLE ccp CREATEDB;</code></p>
+<p><strong><code>Port 3000 (or 5000) is already in use</code></strong>
+Another program is using the port. Close it, or find it:
+- <strong>Windows:</strong> <code>netstat -ano | findstr :5000</code>, then end that process in Task Manager.
+- <strong>macOS / Linux:</strong> <code>lsof -i :5000</code>, then <code>kill &lt;PID&gt;</code>.</p>
+<p><strong>The web app loads but every page shows an error, or login fails</strong>
+The API isn't running, or isn't on port 5000. Check terminal 1.</p>
+<p><strong>Login works, then you're thrown back to the sign-in page</strong>
+Your browser is blocking cookies for localhost. Allow cookies, or try a private window.</p>
+<p><strong>Windows: <code>'prisma' is not recognized</code></strong>
+Run it through npx (<code>npx prisma ...</code>) from inside the <code>server</code> folder, after <code>npm install</code>.</p>
+<p><strong>Windows: Git turned the <code>.sh</code> scripts into Windows line endings</strong>
+The repository's <code>.gitattributes</code> prevents this for new clones. If you cloned before it existed, the simplest fix is to clone again.</p>
+<p><strong>Something is odd and you want a clean slate</strong>
+<code>cd server &amp;&amp; npx prisma migrate reset</code> wipes the dev database and reloads the demo data.</p>
+<hr />
+<h2 id="where-to-go-next">Where to go next</h2>
+<ul>
+<li><code>README.md</code>: a short overview of the project.</li>
+<li><code>ARCHITECTURE.md</code>: how the API and the web app are organised.</li>
+<li><code>API.md</code>: every endpoint.</li>
+<li><code>DATABASE.md</code>: tables, migrations and key rules.</li>
+<li><code>SECURITY.md</code>: sessions, permissions and secrets.</li>
+<li><code>DEPLOYMENT.md</code>: running it on a server with Docker.</li>
+<li><code>SIGNOFF.md</code>: the coding rules for this project (read this before changing code).</li>
+<li><code>USER_GUIDE.md</code>: how people use the app.</li>
+</ul>
+  </main>
+</div>
+<script>
+document.querySelectorAll('.code .copy').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    const pre = btn.nextElementSibling;
+    const done = (label) => { btn.textContent = label; setTimeout(() => (btn.textContent = 'Copy'), 1600); };
+    const select = () => { const r = document.createRange(); r.selectNodeContents(pre); const s = getSelection(); s.removeAllRanges(); s.addRange(r); done('Press Ctrl+C'); };
+    try { navigator.clipboard.writeText(pre.innerText.replace(/\n$/, '')).then(() => done('Copied'), select); } catch (e) { select(); }
+  });
+});
+</script>
+</body>
+</html>

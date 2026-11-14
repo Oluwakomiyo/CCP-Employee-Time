@@ -1,0 +1,383 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CCP Time User Guide</title>
+<meta name="description" content="How employees record their time, how project managers run their projects, and how the CEO manages staff, pay rates and payroll.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root {
+  --bg: #fbfaf9; --surface: #ffffff; --fg: #1d1a1b; --muted: #6b6466; --line: #e8e3e3;
+  --accent: #922d36; --accent-soft: #f6e9ea; --code-bg: #f3efef; --term-bg: #1f1b1c; --term-fg: #f1ecec;
+  --font: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) { :root {
+  --bg: #161415; --surface: #1e1b1c; --fg: #efeaeb; --muted: #a59d9f; --line: #2f2a2b;
+  --accent: #f08c95; --accent-soft: #3a2326; --code-bg: #262223; --term-bg: #0f0d0e; --term-fg: #f1ecec; color-scheme: dark; } }
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font); font-size: 16px; line-height: 1.65; }
+img { max-width: 100%; }
+.page { display: grid; grid-template-columns: 15rem minmax(0, 46rem); gap: 3.5rem; justify-content: center;
+  padding-block: 3rem 5rem; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+header.intro { grid-column: 2; display: flex; flex-direction: column; gap: .5rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--line); }
+.brand { display: flex; align-items: center; gap: .6rem; color: var(--accent); font-weight: 600; font-size: .85rem; letter-spacing: .06em; text-transform: uppercase; text-decoration: none; }
+.brand span { width: .7rem; height: .7rem; border-radius: 2px; background: var(--accent); }
+h1 { margin: 0; font-size: clamp(2rem, 5vw, 2.75rem); line-height: 1.15; font-weight: 600; letter-spacing: -.02em; text-wrap: balance; }
+.lede { margin: 0; color: var(--muted); max-width: 40rem; }
+.tags { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .5rem; }
+.tags span { padding: .2rem .7rem; border: 1px solid var(--line); border-radius: 999px; font-size: .85rem; color: var(--muted); background: var(--surface); }
+nav.toc { grid-column: 1; grid-row: 1 / span 2; position: sticky; top: 2rem; align-self: start; font-size: .9rem; }
+nav.toc p { margin: 0 0 .5rem; font-weight: 600; color: var(--muted); font-size: .75rem; letter-spacing: .06em; text-transform: uppercase; }
+nav.toc ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .15rem; }
+nav.toc a { display: block; padding: .35rem .6rem; border-radius: 6px; color: var(--fg); text-decoration: none; }
+nav.toc a:hover { background: var(--accent-soft); color: var(--accent); }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+main { grid-column: 2; min-width: 0; }
+main h2 { margin: 3.5rem 0 1rem; padding-top: .5rem; font-size: 1.6rem; line-height: 1.25; font-weight: 600; letter-spacing: -.01em; text-wrap: balance; scroll-margin-top: 1.5rem; }
+main h3 { margin: 2.25rem 0 .6rem; font-size: 1.15rem; font-weight: 600; text-wrap: balance; }
+main p, main li { max-width: 68ch; overflow-wrap: anywhere; }
+main ul, main ol { padding-left: 1.3rem; display: flex; flex-direction: column; gap: .3rem; }
+main a { color: var(--accent); overflow-wrap: anywhere; }
+strong { font-weight: 600; }
+code { font-family: var(--mono); font-size: .86em; background: var(--code-bg); padding: .1em .35em; border-radius: 4px; overflow-wrap: anywhere; }
+.code { position: relative; margin: 1rem 0 1.25rem; }
+.code pre { margin: 0; padding: 1rem 1.1rem; padding-right: 5rem; overflow-x: auto; background: var(--term-bg); color: var(--term-fg); border-radius: 10px; font-size: .88rem; line-height: 1.6; }
+.code pre code { background: none; padding: 0; color: inherit; font-size: inherit; overflow-wrap: normal; white-space: pre; }
+.copy { position: absolute; top: .55rem; right: .55rem; font: 500 .78rem var(--font); color: var(--term-fg); background: rgb(255 255 255 / .1); border: 1px solid rgb(255 255 255 / .18); border-radius: 6px; padding: .25rem .6rem; cursor: pointer; }
+.copy:hover { background: rgb(255 255 255 / .18); }
+hr { border: 0; border-top: 1px solid var(--line); margin: 3rem 0 0; }
+.table-wrap { overflow-x: auto; margin: 1rem 0; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: .93rem; }
+th, td { text-align: left; padding: .65rem .9rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-weight: 600; color: var(--muted); font-size: .8rem; letter-spacing: .04em; text-transform: uppercase; }
+tr:last-child td { border-bottom: 0; }
+figure { margin: 1.5rem 0 2rem; }
+figure img { display: block; width: 100%; height: auto; border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 6px 24px rgb(0 0 0 / .06); }
+figcaption { margin-top: .55rem; color: var(--muted); font-size: .85rem; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(18rem, 100%), 1fr)); gap: 1rem; }
+.cards a { display: flex; flex-direction: column; gap: .4rem; padding: 1.4rem; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--fg); text-decoration: none; }
+.cards a:hover { border-color: var(--accent); }
+.cards strong { font-size: 1.15rem; color: var(--accent); }
+.cards span { color: var(--muted); }
+.single { grid-template-columns: minmax(0, 46rem); row-gap: 2rem; }
+.single header.intro, .single main { grid-column: 1; }
+@media (max-width: 960px) {
+  .page { grid-template-columns: minmax(0, 1fr); gap: 2rem; padding-block: 2rem 4rem; }
+  header.intro, main { grid-column: 1; }
+  nav.toc { grid-column: 1; grid-row: auto; position: static; padding: 1rem; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+}
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="intro">
+    <a class="brand" href="./"><span aria-hidden="true"></span>CCP Time</a>
+    <h1>User guide</h1>
+    <p class="lede">How employees record their time, how project managers run their projects, and how the CEO manages staff, pay rates and payroll.</p>
+    
+  </header>
+  <nav class="toc" aria-label="Contents">
+    <p>Contents</p>
+    <div class="toc">
+<ul>
+<li><a href="#1-everyone-signing-in-and-finding-your-way">1. Everyone: signing in and finding your way</a></li>
+<li><a href="#2-employees-recording-your-time">2. Employees: recording your time</a></li>
+<li><a href="#3-project-managers-running-your-projects">3. Project managers: running your projects</a></li>
+<li><a href="#4-ceo-administrator-running-the-company">4. CEO (administrator): running the company</a></li>
+<li><a href="#the-desktop-app-and-the-activity-agent">The desktop app and the activity agent</a></li>
+<li><a href="#quick-answers">Quick answers</a></li>
+</ul>
+</div>
+
+  </nav>
+  <main>
+<p>CCP Time records how long each person works on each project, in the office, on site or remotely. From those hours it works out monthly pay, average working days, and how long a project is likely to take.</p>
+<p>This guide is in four parts. Read the one that matches your role:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Part</th>
+<th>For</th>
+<th>What you can do</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="#1-everyone-signing-in-and-finding-your-way">1. Everyone</a></td>
+<td>All staff</td>
+<td>Sign in, change your password, notifications, light and dark mode</td>
+</tr>
+<tr>
+<td><a href="#2-employees-recording-your-time">2. Employees</a></td>
+<td>Architects, engineers, site staff</td>
+<td>Record your time, take breaks, fix mistakes, see your hours</td>
+</tr>
+<tr>
+<td><a href="#3-project-managers-running-your-projects">3. Project managers</a></td>
+<td>Project leads</td>
+<td>Everything in part 2, plus your team's live status, hours, corrections and projects</td>
+</tr>
+<tr>
+<td><a href="#4-ceo-administrator-running-the-company">4. CEO (administrator)</a></td>
+<td>The CEO</td>
+<td>Everything above, plus staff accounts, pay rates, payroll and settings</td>
+</tr>
+</tbody>
+</table></div>
+<p>Times are always Nigerian time (Lagos).</p>
+<hr />
+<h2 id="1-everyone-signing-in-and-finding-your-way">1. Everyone: signing in and finding your way</h2>
+<h3 id="your-first-sign-in">Your first sign-in</h3>
+<ol>
+<li>The CEO creates your account and gives you a <strong>temporary password</strong>.</li>
+<li>Go to the CCP Time address you were given (or open the CCP Time desktop app) and sign in with your work email and that password.</li>
+<li>You'll be asked to <strong>choose your own password</strong> straight away. It must be at least 10 characters and include a letter and a number. The checklist under the field turns green as you meet each rule.</li>
+<li>After that you land on your home screen: <strong>Today</strong> for employees, <strong>Dashboard</strong> for managers and the CEO.</li>
+</ol>
+<figure><img src="guide/01-sign-in.png" alt="The sign-in page" loading="lazy" width="1280" height="800"><figcaption>The sign-in page</figcaption></figure>
+<p>Forgotten your password? There is no self-service reset. Ask the CEO, who can issue a new temporary password.</p>
+<h3 id="getting-around">Getting around</h3>
+<ul>
+<li><strong>On a computer:</strong> the menu is on the left, grouped into <em>My work</em>, <em>Manage</em> (managers and CEO) and <em>Company</em> (CEO only). You only see the pages you are allowed to use.</li>
+<li><strong>On a phone:</strong> tap the <strong>☰</strong> button at the top left to open the same menu from the bottom of the screen.</li>
+<li><strong>Your account menu</strong> (your initials, top right) holds your <strong>Profile</strong>, the <strong>theme</strong> (light, dark or follow your device) and <strong>Sign out</strong>.</li>
+</ul>
+<h3 id="notifications">Notifications</h3>
+<p>The <strong>bell</strong> at the top right shows a red count of unread notifications, and checks for new ones every minute. You'll be told when:
+- you forgot to clock out (employees);
+- a correction you asked for is approved or rejected (employees);
+- a correction is waiting for your review (project managers and the CEO);
+- you are added to a project.</p>
+<p>Click a notification to mark it read and go straight to the right page.</p>
+<figure><img src="guide/19-notifications.png" alt="The notifications panel open from the bell" loading="lazy" width="1280" height="800"><figcaption>The notifications panel open from the bell</figcaption></figure>
+<h3 id="your-profile">Your profile</h3>
+<p><strong>Account menu → Profile</strong> shows your details and lets you change your password. Enter your current password, then the new one twice.</p>
+<hr />
+<h2 id="2-employees-recording-your-time">2. Employees: recording your time</h2>
+<h3 id="the-golden-rule">The golden rule</h3>
+<p><strong>Start work when you begin, end work when you stop.</strong> Everything else (hours, averages, pay) is worked out from those two moments and the breaks in between. The clock runs on the server, so it doesn't matter which device you use. You can start on your phone and end on your computer.</p>
+<h3 id="today-the-punch-clock">Today: the punch clock</h3>
+<p>Open <strong>Today</strong>.</p>
+<p><strong>To start work:</strong>
+1. Choose the <strong>project</strong> you are working on. You only see projects you have been added to; if one is missing, ask your project manager.
+2. Choose <strong>where</strong> you are working: Office, Site, Remote or Other.
+3. Choose <strong>what you are doing</strong>: Design, Drawing, Client meeting, Site inspection, Documentation, Administration or Other.
+4. Optionally add a <strong>note</strong>, for example <em>"ground floor layout revisions"</em>.
+5. Press <strong>Start work</strong>. The big timer starts counting.</p>
+<figure><img src="guide/02-today-start.png" alt="Today before starting work: project, location, activity and a note" loading="lazy" width="1280" height="800"><figcaption>Today before starting work: project, location, activity and a note</figcaption></figure>
+<p><strong>While you work</strong>, the screen shows:
+- your time worked today;
+- your breaks today;
+- when you started, and the current project, location and activity.</p>
+<figure><img src="guide/03-today-working.png" alt="Today while working: the timer, today's totals and the current project" loading="lazy" width="1280" height="800"><figcaption>Today while working: the timer, today's totals and the current project</figcaption></figure>
+<p><strong>When you switch tasks</strong> (a different project, moving from office to site, or changing activity):
+- Press <strong>Change project, location or activity</strong>, pick what changed, and press <strong>Save change</strong>.
+- Your time so far stays with the old project or activity. New time goes to the new one.
+- Do this as it happens, not at the end of the day. That's how project hours stay accurate.</p>
+<figure><img src="guide/04-today-change.png" alt="The panel for changing project, location or activity" loading="lazy" width="1280" height="800"><figcaption>The panel for changing project, location or activity</figcaption></figure>
+<p><strong>Breaks:</strong>
+- Choose the break type (Lunch, Short break or Other) and press <strong>Start break</strong>. The work timer pauses.
+- Press <strong>End break</strong> when you're back.
+- Breaks are unpaid.
+- While on a break you <strong>cannot</strong> change project, location or activity, or end work. End the break first.</p>
+<p><strong>To end work:</strong> press and <strong>hold</strong> the <strong>Hold to end work</strong> button until it fills. The hold stops you ending the day by accident.</p>
+<h3 id="forgot-to-clock-out">Forgot to clock out?</h3>
+<p>If you're still clocked in 16 hours after you started, the system marks that day as <strong>missing a clock-out</strong>. It does <strong>not</strong> guess when you stopped, so those hours count as zero until fixed. You'll get a notification. Ask for a correction (below) with the real time you finished.</p>
+<h3 id="my-time">My time</h3>
+<p><strong>My time</strong> lists your working days, newest first.
+- Use the <strong>date range</strong> picker to look at any period.
+- Each day shows hours worked (minus breaks), breaks, and a status:
+  - <strong>Open:</strong> still in progress.
+  - <strong>Completed:</strong> a normal finished day.
+  - <strong>Missing clock-out:</strong> needs a correction.
+  - <strong>Correction pending:</strong> waiting for your manager.
+  - <strong>Corrected:</strong> fixed by an approved correction.
+- Open a day to see each entry: which project, where, and from what time to what time.
+- A day with a missing clock-out has a shortcut to request a correction.</p>
+<figure><img src="guide/05-my-time.png" alt="My time: working days with hours, breaks and status" loading="lazy" width="1280" height="800"><figcaption>My time: working days with hours, breaks and status</figcaption></figure>
+<h3 id="my-projects">My projects</h3>
+<p><strong>My projects</strong> shows each project you're on and how many hours <em>you</em> have put into it over the chosen range. It never shows pay or project costs.</p>
+<h3 id="my-corrections-fixing-a-mistake">My corrections: fixing a mistake</h3>
+<p>You can't edit your own time directly; every change is approved by a manager and recorded. To fix something:
+1. Open <strong>My corrections</strong> and press <strong>Request correction</strong>. Or use the shortcut from a flagged day in My time.
+2. Choose the <strong>day</strong>, then either:
+   - pick an <strong>existing entry</strong> to fix its start or end time, or
+   - add a <strong>missing entry</strong> for a project you forgot to clock in to.
+3. Enter the correct times and a short <strong>reason</strong> (at least 5 characters), for example <em>"Stayed late to finish the layout; forgot to clock out."</em>
+4. Submit. Your project manager (or the CEO) is notified.</p>
+<figure><img src="guide/06-request-correction.png" alt="The Request correction window" loading="lazy" width="1280" height="800"><figcaption>The Request correction window</figcaption></figure>
+<p>While a request is <strong>pending</strong> you can <strong>Edit</strong> it, or <strong>Withdraw</strong> it. The system refuses requests that overlap other recorded time, or that use a project you aren't on, and tells you why. You'll get a notification when it's decided, with the reviewer's note if they left one.</p>
+<hr />
+<h2 id="3-project-managers-running-your-projects">3. Project managers: running your projects</h2>
+<p>You have everything in part 2 for your own time, plus the <strong>Manage</strong> pages. You see data only for <strong>people on projects you lead</strong>, and you never see pay rates or costs.</p>
+<h3 id="dashboard">Dashboard</h3>
+<p>A snapshot of your team:
+- <strong>Cards:</strong>
+  - who is working now, on a break, not clocked in yet or finished for the day;
+  - hours today;
+  - active projects;
+  - missing clock-outs;
+  - corrections waiting for review.
+- <strong>Charts:</strong>
+  - hours over time (7, 30 or 90 days);
+  - hours by project;
+  - each active project's hours against its estimate;
+  - hours by location and by activity.</p>
+<figure><img src="guide/07-dashboard.png" alt="The management dashboard" loading="lazy" width="1280" height="800"><figcaption>The management dashboard</figcaption></figure>
+<h3 id="live-status">Live status</h3>
+<p>Everyone in your scope right now: working, on a break, finished or not started, with their project, what they're doing and how long they've been at it. It refreshes every 15 seconds.</p>
+<figure><img src="guide/08-live-status.png" alt="Live status: who is working, on a break or finished" loading="lazy" width="1280" height="800"><figcaption>Live status: who is working, on a break or finished</figcaption></figure>
+<h3 id="employees">Employees</h3>
+<p>A searchable staff list. Open a person to see:</p>
+<figure><img src="guide/10-employees.png" alt="The employees list" loading="lazy" width="1280" height="800"><figcaption>The employees list</figcaption></figure>
+<ul>
+<li><strong>Overview:</strong> their details, projects, and last-30-day numbers (hours, average day, missing clock-outs).</li>
+<li><strong>Report:</strong> hours by project, activity and location for the last 30 or 90 days.</li>
+</ul>
+<p>Only the CEO can add, edit or deactivate staff.</p>
+<h3 id="projects">Projects</h3>
+<p>The list shows each project you lead, its status, team size, and <strong>hours against estimate</strong> as a progress bar, flagged when a project goes over. Press <strong>New project</strong> to create one; you become its lead automatically.</p>
+<figure><img src="guide/14-projects.png" alt="The projects list with hours against each estimate" loading="lazy" width="1280" height="800"><figcaption>The projects list with hours against each estimate</figcaption></figure>
+<p>Inside a project:</p>
+<ul>
+<li><strong>Overview:</strong> hours worked, the estimate, hours remaining (or how far over), project details, and who is working on it right now.</li>
+</ul>
+<figure><img src="guide/15-project-detail.png" alt="A project's overview" loading="lazy" width="1280" height="800"><figcaption>A project's overview</figcaption></figure>
+<ul>
+<li><strong>Team:</strong> add people with the search box, or remove someone. Removing a person keeps every hour they already recorded; they just can't clock in to it any more. Only the CEO can make someone a lead or remove a lead.</li>
+<li><strong>Report:</strong> hours by person, activity and location.</li>
+<li><strong>Estimate:</strong> choose a team and see roughly <strong>how many working days</strong> the remaining work will take. It is based on each person's average working day over the last 90 days; anyone with no recent history is assumed to work 8 hours a day, and the page says so. It's a guide, not a promise.</li>
+</ul>
+<figure><img src="guide/16-project-estimate.png" alt="The estimate tab: working days for the chosen team" loading="lazy" width="1280" height="800"><figcaption>The estimate tab: working days for the chosen team</figcaption></figure>
+<ul>
+<li><strong>Edit:</strong> change the name, client, site, dates, estimate or <strong>status</strong> (Planned, Active, On hold, Completed, Cancelled). People can only clock in to <strong>Active</strong> projects. A project that has time recorded can't be deleted, so change its status instead.</li>
+</ul>
+<h3 id="corrections-reviewing-requests">Corrections: reviewing requests</h3>
+<ol>
+<li>Open <strong>Corrections</strong>. It shows <strong>Pending</strong> requests by default.</li>
+<li>Press <strong>Review</strong> on a request. A panel shows what was <strong>recorded</strong> that day (the entry being changed is marked) next to what is <strong>requested</strong>, with the employee's reason.</li>
+<li>Optionally add a note for the employee, then <strong>Approve</strong> or <strong>Reject</strong>.</li>
+</ol>
+<figure><img src="guide/09-review-correction.png" alt="Reviewing a correction: what was recorded next to what is requested" loading="lazy" width="1280" height="800"><figcaption>Reviewing a correction: what was recorded next to what is requested</figcaption></figure>
+<ul>
+<li><strong>Approving</strong> updates the day's record and recalculates its hours.</li>
+<li><strong>Rejecting</strong> leaves the original record exactly as it was.</li>
+<li>You can't review your <strong>own</strong> requests; another manager or the CEO must.</li>
+<li>If someone else reviewed it a moment before you, the list refreshes and tells you.</li>
+</ul>
+<h3 id="reports">Reports</h3>
+<p>Pick an <strong>employee</strong> or a <strong>project</strong> and a date range to see hours by project, activity and location. It's the same information as the report tabs, without opening each record.</p>
+<h3 id="work-evidence">Work evidence</h3>
+<p>Pick a person and a day to compare their <strong>recorded time</strong> with what their computer's activity agent reported: active time, long idle gaps, and which device. The page gives a plain assessment, for example <em>"Site work: reduced computer activity is expected"</em>. It's there to support a conversation, not to accuse anyone; site work, meetings and drawing by hand all show little computer activity.</p>
+<h3 id="audit-log">Audit log</h3>
+<p>Every change made in the system, who made it and when, with a before-and-after view. Project managers see the changes they made themselves. Entries can never be edited or deleted.</p>
+<hr />
+<h2 id="4-ceo-administrator-running-the-company">4. CEO (administrator): running the company</h2>
+<p>You see <strong>everything</strong>: all staff, all projects, pay rates, labour costs, payroll and settings. Everything in parts 2 and 3 applies to you as well, across the whole company.</p>
+<h3 id="adding-a-new-employee">Adding a new employee</h3>
+<ol>
+<li><strong>Employees → Add employee.</strong></li>
+<li>Fill in their name, work email, employee number (for example CCP-014), position, department, role (Employee, Project manager or CEO), hire date, <strong>hourly rate</strong> and <strong>overtime rate</strong> in naira.</li>
+<li>Press <strong>Add employee</strong>. A <strong>temporary password</strong> appears <strong>once</strong>. Copy it with the copy button and give it to them privately. It's never shown again; if it's lost, reset it (below).</li>
+<li>They must choose their own password at first sign-in.</li>
+<li>Add them to their projects (<strong>Projects → project → Team</strong>) so they can clock in.</li>
+</ol>
+<figure><img src="guide/11-add-employee.png" alt="The Add employee form" loading="lazy" width="1280" height="800"><figcaption>The Add employee form</figcaption></figure>
+<p>Departments come from <strong>Settings</strong>, so add a new department there first.</p>
+<h3 id="managing-an-existing-employee">Managing an existing employee</h3>
+<p>Open the person from <strong>Employees</strong>:
+- <strong>Edit:</strong> name, email, number, position or department.
+- <strong>Reset password:</strong> signs them out everywhere and shows a new temporary password once.
+- <strong>Deactivate:</strong> they can no longer sign in, but all their history stays (for payroll and reports). People are never deleted.
+- <strong>Reactivate:</strong> lets a deactivated person sign in again.</p>
+<figure><img src="guide/12-employee-detail.png" alt="An employee's page: badges, last-30-day numbers, profile and projects" loading="lazy" width="1280" height="800"><figcaption>An employee's page: badges, last-30-day numbers, profile and projects</figcaption></figure>
+<h3 id="pay-rates-and-rate-history">Pay rates and rate history</h3>
+<p>Open a person → <strong>Compensation</strong>:
+- The <strong>rate history</strong> lists every rate they've had and the dates it applied.
+- To change a rate, enter the <strong>new hourly rate</strong>, the <strong>new overtime rate</strong> and the date it <strong>starts on</strong>, then <strong>Save new rate</strong>. The old rate ends the day before.
+- Past days keep the rate that applied <strong>at the time</strong>, so a raise never changes pay already earned.</p>
+<figure><img src="guide/13-compensation.png" alt="Rate history and the form to change a rate" loading="lazy" width="1280" height="800"><figcaption>Rate history and the form to change a rate</figcaption></figure>
+<h3 id="how-pay-is-worked-out">How pay is worked out</h3>
+<ul>
+<li><strong>Hours that count</strong> are worked time minus breaks, on days that are <em>Completed</em> or <em>Corrected</em>.</li>
+<li>Each day is priced at the rate in force <strong>on that day</strong>.</li>
+<li>The first <strong>8 hours</strong> in a day are paid at the hourly rate; anything above 8 hours is overtime, paid at the overtime rate. (This 8-hour line is fixed for now.)</li>
+<li>A day with no rate on file is left out, and payroll warns you.</li>
+</ul>
+<h3 id="payroll">Payroll</h3>
+<ol>
+<li>Open <strong>Payroll</strong> and pick the <strong>pay period</strong> (presets for this month and last month). A period can be up to 3 months, and periods for the same person can't overlap.</li>
+<li>Press <strong>Generate draft</strong>. You'll see each person's regular hours, overtime hours, gross pay and hours per project, plus totals.
+   - If any days have <strong>no rate</strong>, you're told how many. Add the rate on the person's Compensation tab and generate again.
+   - You can <strong>regenerate</strong> a draft as often as you like until it is finalized.</li>
+<li><strong>Export CSV</strong> downloads the period as a spreadsheet for your accountant or bank.</li>
+<li>When everything is right, <strong>press and hold "Hold to finalize"</strong>. Finalized records are <strong>locked</strong>: later corrections won't change them, and regenerating skips them.
+   - Finalizing is refused while anyone has an open day, a missing clock-out or a pending correction in the period. The page lists those days; resolve them in Corrections, then try again.</li>
+</ol>
+<figure><img src="guide/17-payroll.png" alt="A payroll draft with totals, per-person pay and the finalize button" loading="lazy" width="1280" height="800"><figcaption>A payroll draft with totals, per-person pay and the finalize button</figcaption></figure>
+<h3 id="projects-and-leads">Projects and leads</h3>
+<p>As well as everything in part 3, you can:
+- <strong>Make someone a project lead</strong> (the <em>Make them a project lead</em> switch when adding to a team), and remove leads.
+- See <strong>labour cost</strong> on a project's Overview and per person on its Report: the cost of the hours worked, at each day's rate.
+- See the <strong>estimated labour cost</strong> on the Estimate tab, priced at current rates.</p>
+<h3 id="settings">Settings</h3>
+<ul>
+<li><strong>Departments:</strong> add new departments and rename existing ones. Renaming moves everyone in that department along with it.</li>
+<li><strong>Desktop devices:</strong> the computers allowed to report activity for Work evidence.</li>
+<li><strong>Register device:</strong> pick the employee, name the computer, and enter its serial number or MAC address and its operating system.</li>
+<li>A <strong>device key</strong> is shown <strong>once</strong>. Put it in the activity agent's settings file on that computer (see below).</li>
+<li><strong>Revoke</strong> a lost, sold or replaced computer. Its key stops working immediately.</li>
+</ul>
+<figure><img src="guide/18-settings.png" alt="Settings: departments and desktop devices" loading="lazy" width="1280" height="800"><figcaption>Settings: departments and desktop devices</figcaption></figure>
+<h3 id="audit-log_1">Audit log</h3>
+<p>You see every action by everyone: sign-ins, clock-ins, edits, rate changes, approvals, payroll runs and device changes, each with before-and-after details.</p>
+<hr />
+<h2 id="the-desktop-app-and-the-activity-agent">The desktop app and the activity agent</h2>
+<p>There are two separate desktop programs:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Program</th>
+<th>What it does</th>
+<th>Needed?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>CCP Time desktop app</strong></td>
+<td>The same web app in its own window, with a tray icon. Closing the window keeps it in the tray; quit from the tray menu.</td>
+<td>Optional: the browser works just as well.</td>
+</tr>
+<tr>
+<td><strong>Activity agent</strong> (<code>desktop-agent</code>)</td>
+<td>Runs quietly in the background and reports, once a minute, whether the computer is in use. It never records screens, keys or files.</td>
+<td>Only if you want Work evidence for that computer.</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>To set up the activity agent on a computer:</strong>
+1. The CEO registers the device in <strong>Settings → Desktop devices</strong> and copies the key.
+2. On that computer, copy <code>config.example.json</code> to <code>config.json</code> in the agent folder and fill in the server address, the device identifier (exactly as registered) and the key.
+3. Start the agent. Activity appears in Work evidence for days that person works.</p>
+<hr />
+<h2 id="quick-answers">Quick answers</h2>
+<p><strong>I can't see a project when starting work.</strong> You haven't been added to it, or it isn't Active. Ask your project manager.</p>
+<p><strong>I can't end work or change project.</strong> You're on a break. Press <strong>End break</strong> first.</p>
+<p><strong>My hours for yesterday show as zero.</strong> You probably didn't clock out, so the day is marked <em>missing clock-out</em>. Request a correction with the time you actually finished.</p>
+<p><strong>I made a mistake in a correction request.</strong> If it's still pending, press <strong>Edit</strong> or <strong>Withdraw</strong> in My corrections.</p>
+<p><strong>Why can't I finalize payroll?</strong> Someone in the period has an unfinished day, a missing clock-out or a pending correction. The page lists them.</p>
+<p><strong>A new employee can't be added to a department.</strong> Add the department in <strong>Settings</strong> first.</p>
+<p><strong>Someone left the company.</strong> <strong>Deactivate</strong> them. Their hours stay in reports and payroll, but they can't sign in.</p>
+<p><strong>A computer was lost.</strong> <strong>Revoke</strong> it in <strong>Settings → Desktop devices</strong>.</p>
+  </main>
+</div>
+
+</body>
+</html>
