@@ -5,3 +5,5 @@ dist/
 *.log
 desktop-agent/config.json
 .playwright-mcp/
+.neon
+.env.local

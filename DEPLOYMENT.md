@@ -51,7 +51,11 @@ Deploy in this order: each step needs an address from the one before it.
 | 4 | Web app (`web/`) | Vercel | Points at the API |
 | 5 | Final link-up | API settings | The API must allow the web app's address |
 
-**1. Database.** Create a PostgreSQL 16+ database and copy its connection string (`postgresql://...`).
+**1. Database.** Done: the production database is the Neon project **CCP-Employee** (`still-butterfly-83251173`, Frankfurt `aws-eu-central-1`, organization `org-restless-thunder-06190274`). All migrations are applied and it holds no data yet. `neon init` saved its connection strings to `.env.local` in the repo root, which is git-ignored and **not** read by local development:
+- Use **`DATABASE_URL_UNPOOLED`** (a direct connection) as the API's `DATABASE_URL`. The API is a long-running server, and Prisma migrations need a direct connection.
+- Append `&connect_timeout=15` to it. Neon suspends an idle database, and the first connection after a pause takes a few seconds to wake it.
+- Console: https://console.neon.tech/app/projects/still-butterfly-83251173
+- To apply new migrations from your computer: `cd server && DATABASE_URL="<DATABASE_URL_UNPOOLED value>" npx prisma migrate deploy`. The API container also applies them every time it starts.
 
 **2. API.** New service from the repository, with the root directory set to `server` (it builds from `server/Dockerfile`; the container applies migrations every time it starts). Set these variables:
 
