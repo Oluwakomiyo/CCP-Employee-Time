@@ -3,9 +3,9 @@
 import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { ShieldOff } from "lucide-react";
-import { Skeleton } from "@/components/arc/skeleton/skeleton";
 import { EmptyState } from "@/components/arc/empty-state/empty-state";
 import { AppShell } from "@/components/shell/app-shell";
+import { ShellSkeleton } from "@/components/shell/shell-skeleton";
 import { routeFor } from "@/components/shell/nav";
 import { useMe } from "@/lib/auth";
 
@@ -21,11 +21,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }, [isError, me, pathname, router]);
 
   if (isPending || isError || !me || me.mustChangePassword) {
-    return (
-      <div style={{ padding: "var(--space-8)", maxWidth: 480 }}>
-        <Skeleton label="Loading your workspace" lines={4} avatar />
-      </div>
-    );
+    return <ShellSkeleton />;
   }
 
   const route = routeFor(pathname);
