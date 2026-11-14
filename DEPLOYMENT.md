@@ -29,3 +29,12 @@ Nightly cron on a host that can reach postgres:
 
 - Docker is not installed on the dev machine, so the images and compose file are untested here — build them once where Docker exists before relying on them.
 - The stale-session job also runs inside the API; run either the `worker` service or the in-process job, not both (overlap is idempotent but wasteful).
+
+## Guides website (Vercel)
+
+`docs/` is a static site: `index.html`, `user-guide.html`, `developer-setup.html` and the screenshots in `docs/guide/`. It has no build step.
+
+- **Update it:** edit `USER_GUIDE.md` or `DEVELOPER_SETUP.md`, then run `python3 scripts/build-guides.py` (needs `pip install markdown`) and commit the regenerated `docs/*.html`.
+- **Vercel from GitHub:** New Project → import the repository → **Root Directory** `docs` → Framework Preset **Other** → leave the Build Command and Output Directory empty → Deploy. Every push to `main` redeploys.
+- **Vercel CLI:** `cd docs && npx vercel` (first run asks you to log in and link a project), then `npx vercel --prod`.
+- The site is public by default. The developer guide names the GitHub repository and the dev-only demo passwords, so turn on Vercel's Deployment Protection if it should stay internal.
