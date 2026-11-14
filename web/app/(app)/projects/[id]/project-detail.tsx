@@ -17,11 +17,12 @@ import { Skeleton } from "@/components/arc/skeleton/skeleton";
 import { Switch } from "@/components/arc/switch/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/arc/tabs/tabs";
 import { PageHeading } from "@/components/shell/page-heading";
+import { ProjectBreakdown } from "@/components/reports/project-report";
 import { errorMessage } from "@/lib/api";
 import { useMe } from "@/lib/auth";
-import { formatMoney, fullName, useEmployees } from "@/lib/employees";
+import { fullName, useEmployees } from "@/lib/employees";
 import { PROJECT_STATUSES, STATUS_TONE, useEstimate, useProjectMutations, useProjectReport, type ProjectReport } from "@/lib/projects";
-import { ACTIVITIES, formatTime, labelOf, LOCATIONS } from "@/lib/time";
+import { formatTime, labelOf, LOCATIONS } from "@/lib/time";
 import { isCeo } from "@/lib/types";
 import { ProjectForm } from "../project-form";
 import styles from "../../manage.module.css";
@@ -76,7 +77,7 @@ export function ProjectDetail({ id }: { id: string }) {
           <Team r={r} ceo={ceo} />
         </TabsContent>
         <TabsContent value="report">
-          <Breakdown r={r} ceo={ceo} />
+          <ProjectBreakdown r={r} ceo={ceo} />
         </TabsContent>
         <TabsContent value="estimate">
           <EstimatePanel r={r} ceo={ceo} />
@@ -202,41 +203,6 @@ function Team({ r, ceo }: { r: ProjectReport; ceo: boolean }) {
         {ceo && <Switch label="Make them a project lead" checked={lead} onCheckedChange={setLead} />}
         <ActionButton label="Add to project" pendingLabel="Adding" successLabel="Added" disabled={!employeeId} onAction={add} onActionError={() => undefined} />
       </section>
-    </div>
-  );
-}
-
-function HoursList({ title, items }: { title: string; items: { key: string; label: string; hours: number; extra?: string }[] }) {
-  return (
-    <section className={styles.card} aria-label={title}>
-      <h3>{title}</h3>
-      {items.length === 0 ? (
-        <p className={styles.hint}>No hours recorded yet.</p>
-      ) : (
-        <ul className={styles.list}>
-          {items.map((i) => (
-            <li key={i.key}>
-              <span>{i.label}</span>
-              <span className={styles.muted}>
-                {i.hours}h{i.extra ? ` · ${i.extra}` : ""}
-              </span>
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
-  );
-}
-
-function Breakdown({ r, ceo }: { r: ProjectReport; ceo: boolean }) {
-  return (
-    <div className={styles.grid2}>
-      <HoursList
-        title="By person"
-        items={r.hoursByEmployee.map((e) => ({ key: e.employeeId, label: e.name, hours: e.hours, extra: ceo && e.labourCost !== undefined ? formatMoney(e.labourCost) : undefined }))}
-      />
-      <HoursList title="By activity" items={r.hoursByActivity.map((a) => ({ key: a.activityType, label: labelOf(ACTIVITIES, a.activityType), hours: a.hours }))} />
-      <HoursList title="By location" items={r.hoursByLocation.map((l) => ({ key: l.location, label: labelOf(LOCATIONS, l.location), hours: l.hours }))} />
     </div>
   );
 }

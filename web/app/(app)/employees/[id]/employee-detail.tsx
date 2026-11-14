@@ -10,18 +10,17 @@ import ConfirmMorph from "@/components/arc/confirm-morph/confirm-morph";
 import { DatePicker } from "@/components/arc/date-picker/date-picker";
 import { Drawer } from "@/components/arc/drawer/drawer";
 import EmptyState from "@/components/arc/empty-state/empty-state";
-import { MetricCard } from "@/components/arc/metric-card/metric-card";
 import MoneyInput from "@/components/arc/money-input/money-input";
 import SegmentedControl from "@/components/arc/segmented-control/segmented-control";
 import { Skeleton } from "@/components/arc/skeleton/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/arc/tabs/tabs";
 import { PageHeading } from "@/components/shell/page-heading";
+import { EmployeeReport } from "@/components/reports/employee-report";
 import { errorMessage } from "@/lib/api";
 import { useMe } from "@/lib/auth";
 import { rangeFor, type DashboardRange } from "@/lib/dashboard";
 import { lagosDay } from "@/lib/history";
-import { formatMoney, fullName, ROLES, useCompensation, useEmployee, useEmployeeMutations, useEmployeeReport, type Employee } from "@/lib/employees";
-import { ACTIVITIES, labelOf, LOCATIONS } from "@/lib/time";
+import { formatMoney, fullName, ROLES, useCompensation, useEmployee, useEmployeeMutations, type Employee } from "@/lib/employees";
 import { isCeo } from "@/lib/types";
 import { EmployeeForm } from "../employee-form";
 import { TempPasswordDialog } from "../temp-password-dialog";
@@ -181,55 +180,14 @@ function Overview({ employee: e, ceo, self }: { employee: Employee; ceo: boolean
 function Report({ id }: { id: string }) {
   const [range, setRange] = useState<DashboardRange>("30");
   const { from, to } = rangeFor(range);
-  const report = useEmployeeReport(id, from, to);
 
   return (
     <div className={styles.layout}>
       <div className={styles.toolbar}>
         <SegmentedControl label="Range" options={RANGES} value={range} onValueChange={(v: string) => setRange(v as DashboardRange)} />
       </div>
-      {report.isPending ? (
-        <Skeleton lines={6} label="Loading report" />
-      ) : report.isError ? (
-        <Alert tone="danger" title="Could not load the report">
-          {errorMessage(report.error)}
-        </Alert>
-      ) : (
-        <>
-          <div className={styles.kpis}>
-            <MetricCard label="Hours worked" value={report.data.totalWorkingHours} suffix="h" context={`last ${range} days`} />
-            <MetricCard label="Average day" value={report.data.averageDailyHours} suffix="h" context={`over ${report.data.validWorkingDays} full days`} />
-            <MetricCard label="Breaks" value={report.data.breakHours} suffix="h" context="not counted as work" />
-            <MetricCard label="Missing clock-outs" value={report.data.missingClockOuts} context="need a correction" />
-          </div>
-          <div className={styles.grid2}>
-            <HoursList title="By project" items={report.data.hoursByProject.map((p) => ({ key: p.projectId, label: `${p.code} ${p.name}`, hours: p.hours }))} />
-            <HoursList title="By activity" items={report.data.hoursByActivity.map((a) => ({ key: a.activityType, label: labelOf(ACTIVITIES, a.activityType), hours: a.hours }))} />
-            <HoursList title="By location" items={report.data.hoursByLocation.map((l) => ({ key: l.location, label: labelOf(LOCATIONS, l.location), hours: l.hours }))} />
-          </div>
-        </>
-      )}
+      <EmployeeReport id={id} from={from} to={to} rangeLabel={`last ${range} days`} />
     </div>
-  );
-}
-
-function HoursList({ title, items }: { title: string; items: { key: string; label: string; hours: number }[] }) {
-  return (
-    <section className={styles.card} aria-label={title}>
-      <h3>{title}</h3>
-      {items.length === 0 ? (
-        <p className={styles.hint}>No hours in this range.</p>
-      ) : (
-        <ul className={styles.list}>
-          {items.map((i) => (
-            <li key={i.key}>
-              <span>{i.label}</span>
-              <span className={styles.muted}>{i.hours}h</span>
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
   );
 }
 
