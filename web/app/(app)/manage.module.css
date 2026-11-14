@@ -81,6 +81,12 @@
   font-size: var(--text-sm);
 }
 
+.sectionTitle {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: 500;
+}
+
 .rowActions {
   display: flex;
   flex-wrap: wrap;

@@ -1,8 +1,14 @@
 import type { Metadata } from "next";
-import { ComingSoon } from "@/components/shell/coming-soon";
+import { PageHeading } from "@/components/shell/page-heading";
+import { ReportsView } from "./reports-view";
 
 export const metadata: Metadata = { title: "Reports" };
 
 export default function ReportsPage() {
-  return <ComingSoon title="Reports" description="Employee and project reports, and duration estimates." />;
+  return (
+    <>
+      <PageHeading title="Reports" description="Hours by employee or by project, for any range." />
+      <ReportsView />
+    </>
+  );
 }
