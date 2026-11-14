@@ -13,7 +13,7 @@ import { homeFor, meKey, useLogout, useMe } from "@/lib/auth";
 import type { Me } from "@/lib/types";
 
 // Same rules the API enforces (server/src/modules/auth/auth.schema.ts: passwordRule).
-const RULES: PasswordRule[] = [
+export const RULES: PasswordRule[] = [
   { id: "length", label: "At least 10 characters", test: (p) => p.length >= 10, remaining: (p) => Math.max(0, 10 - p.length) },
   { id: "letter", label: "A letter", test: (p) => /[A-Za-z]/.test(p) },
   { id: "number", label: "A number", test: (p) => /[0-9]/.test(p) },
