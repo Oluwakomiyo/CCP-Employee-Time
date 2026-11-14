@@ -1,40 +1,40 @@
 import { Request, Response, NextFunction } from 'express';
-import { AppError } from '../errors/AppError';
+import { Prisma } from '@prisma/client';
 import { ZodError } from 'zod';
+import { AppError } from '../errors/AppError';
 
-export const errorHandler = (
-  err: Error,
-  _req: Request,
-  res: Response,
-  _next: NextFunction
-) => {
-  // 1. Handle Zod Schema Validation Errors
+const send = (res: Response, status: number, code: string, message: string, details?: unknown) =>
+  res.status(status).json({ success: false, error: { code, message, ...(details ? { details } : {}) } });
+
+export const notFoundHandler = (req: Request, res: Response) =>
+  send(res, 404, 'NOT_FOUND', `Route ${req.method} ${req.path} not found`);
+
+export const errorHandler = (err: Error, _req: Request, res: Response, _next: NextFunction) => {
   if (err instanceof ZodError) {
-    return res.status(400).json({
-      status: 'error',
-      code: 'VALIDATION_ERROR',
-      message: 'Invalid payload format',
-      errors: err.errors.map((e) => ({
-        field: e.path.join('.'),
-        message: e.message,
-      })),
-    });
+    return send(
+      res,
+      400,
+      'VALIDATION_ERROR',
+      'Invalid request data',
+      err.errors.map((e) => ({ field: e.path.join('.'), message: e.message }))
+    );
   }
 
-  // 2. Handle Custom Domain Application Errors
   if (err instanceof AppError) {
-    return res.status(err.statusCode).json({
-      status: 'error',
-      message: err.message,
-      ...(err.details ? { details: err.details } : {}),
-    });
+    return send(res, err.statusCode, err.code, err.message, err.details);
   }
 
-  // 3. Unexpected Server Errors
+  // Malformed JSON body from express.json()
+  if ((err as { type?: string }).type === 'entity.parse.failed') {
+    return send(res, 400, 'INVALID_JSON', 'Request body is not valid JSON');
+  }
+
+  if (err instanceof Prisma.PrismaClientKnownRequestError) {
+    if (err.code === 'P2002') return send(res, 409, 'CONFLICT', 'A record with these details already exists');
+    if (err.code === 'P2025') return send(res, 404, 'NOT_FOUND', 'Resource not found');
+    if (err.code === 'P2003') return send(res, 400, 'INVALID_REFERENCE', 'A referenced record does not exist');
+  }
+
   console.error('[Unhandled Server Error]:', err);
-  return res.status(500).json({
-    status: 'error',
-    code: 'INTERNAL_SERVER_ERROR',
-    message: 'An unexpected system error occurred.',
-  });
+  return send(res, 500, 'INTERNAL_SERVER_ERROR', 'An unexpected system error occurred.');
 };
