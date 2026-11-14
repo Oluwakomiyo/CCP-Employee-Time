@@ -10,6 +10,7 @@ import { Button } from "@/components/arc/button/button";
 import { useLogout } from "@/lib/auth";
 import { useTheme } from "@/lib/theme";
 import type { Me } from "@/lib/types";
+import { NotificationInbox } from "./notification-inbox";
 import { navFor, routeFor } from "./nav";
 import styles from "./app-shell.module.css";
 
@@ -81,14 +82,17 @@ export function AppShell({ me, children }: { me: Me; children: React.ReactNode }
             </span>
             <span className={styles.topbarTitle}>{routeFor(pathname)?.label ?? "CCP Time"}</span>
           </div>
-          <UserMenu
-            user={{ name, email: me.email, plan: ROLE_LABEL[me.role] }}
-            theme={preference}
-            onThemeChange={setPreference}
-            items={[{ label: "Profile", onSelect: () => router.push("/profile") }]}
-            onSignOut={logout}
-            showName
-          />
+          <div className={styles.topbarRight}>
+            <NotificationInbox role={me.role} />
+            <UserMenu
+              user={{ name, email: me.email, plan: ROLE_LABEL[me.role] }}
+              theme={preference}
+              onThemeChange={setPreference}
+              items={[{ label: "Profile", onSelect: () => router.push("/profile") }]}
+              onSignOut={logout}
+              showName
+            />
+          </div>
         </header>
         <main className={styles.content}>{children}</main>
       </div>
