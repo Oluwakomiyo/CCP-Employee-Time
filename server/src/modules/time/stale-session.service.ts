@@ -1,4 +1,5 @@
-import { SegmentStatus, DayStatus, CorrectionStatus, AuditAction, Role, Prisma } from '@prisma/client';
+import { SegmentStatus, DayStatus, CorrectionStatus, AuditAction, Role, Prisma, NotificationType } from '@prisma/client';
+import { notify } from '../notifications/notification.service';
 import { prisma } from '../../config/prisma';
 import { withEmployeeLock } from './time.totals';
 
@@ -18,7 +19,7 @@ export class StaleSessionService {
     const cutoff = new Date(Date.now() - cutoffHours * 60 * 60 * 1000);
     const stale = await prisma.workSegment.findMany({
       where: { status: SegmentStatus.ACTIVE, clockIn: { lte: cutoff } },
-      select: { id: true, workDayId: true, clockIn: true, workDay: { select: { employeeId: true } } },
+      select: { id: true, workDayId: true, clockIn: true, workDay: { select: { employeeId: true, date: true, employee: { select: { userId: true } } } } },
     });
 
     const segmentIds: string[] = [];
@@ -48,6 +49,12 @@ export class StaleSessionService {
               note: `No clock-out ${cutoffHours}h after clock-in. End time left blank; a correction is required.`,
             },
           },
+        });
+        await notify(tx, [segment.workDay.employee.userId], {
+          type: NotificationType.MISSING_CLOCK_OUT,
+          title: `You did not clock out on ${segment.workDay.date.toISOString().slice(0, 10)}`,
+          body: 'Submit a correction with the time you actually finished.',
+          data: { workDayId: segment.workDayId, segmentId: segment.id },
         });
         return true;
       });
