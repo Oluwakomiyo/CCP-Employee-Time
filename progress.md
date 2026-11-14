@@ -31,7 +31,7 @@ cd server && npm install && npx prisma migrate deploy && npx prisma db seed
 npm run dev            # API on http://localhost:5000 (from repo root or server/)
 npm test               # resets ccp_time_test, then runs every test
 ```
-Seed logins (dev only): `admin@company.com / Admin123!`, `pm@company.com / Manager123!`, `employee@company.com / Employee123!`.
+Seed logins (dev only, all `Password123!`): `ceo@example.com` (CEO), `manager@example.com` (PM, lead of all 3 projects), `john@example.com`, `mary@example.com`, `peter@example.com`.
 
 ---
 
@@ -66,17 +66,22 @@ Seed logins (dev only): `admin@company.com / Admin123!`, `pm@company.com / Manag
 - [x] Lagos workday; overnight shifts stay on the start day
 - [x] Tests: `server/tests/time-engine.test.ts` (§62 cases 1–10, §31 example day, timezone)
 
-### 🔄 Phase 3: Data model completion ← **NEXT**
-- [ ] Compensation history: `effective_from` / `effective_to`, with a rate-at-time lookup; changes close the old row and are audited (§20)
-- [ ] Soft deletes: projects archived (no hard delete), members get `removed_at`, no cascades from time or payroll tables
-- [ ] Project fields: `clientName`, `location`, `estimatedHours`, status enum PLANNED/ACTIVE/ON_HOLD/COMPLETED/CANCELLED (§21)
-- [ ] Enums aligned with the spec: Break LUNCH/SHORT_BREAK/OTHER; Day OPEN/COMPLETED/MISSING_CLOCK_OUT/CORRECTION_PENDING/CORRECTED
-- [ ] `Department` lookup table; `Notification` table (user, type, payload, readAt)
-- [ ] Indexes: `WorkDay(status)`, `WorkSegment(workDayId,status)`, `TimeCorrectionRequest(workDayId,status)`; drop redundant ones
-- [ ] Seed: CEO, PM, 3 employees, PRJ-001/002/003, two weeks of realistic shifts
-- [ ] Tests for rate lookup and soft removal
+### ✅ Phase 3: Data model completion
+- [x] Compensation history: `effectiveFrom` / `effectiveTo`; one open row per employee (partial unique) and a CHECK on period order; `rateOn()` in `modules/employees/compensation.ts`; a change closes the old row and is audited as COMPENSATION_CHANGED; `GET /employees/:id/compensation` returns `{ current, history }`
+- [x] Payroll and the project cost breakdown price each day at the rate in force that day; payroll includes people who left during the period
+- [x] Members soft-removed (`removedAt`; partial unique "one active membership"); only the CEO appoints or removes leads
+- [x] Projects can be deleted only if they have no recorded time (409 PROJECT_HAS_HISTORY); otherwise change the status
+- [x] History tables use `onDelete: Restrict` instead of cascading (employees are never hard-deleted)
+- [x] Project fields `clientName`, `location`, `estimatedHours`, `createdById`, `status` (PLANNED/ACTIVE/ON_HOLD/COMPLETED/CANCELLED); `isActive` is now a computed field (Prisma result extension)
+- [x] Enums renamed to the spec: Day COMPLETED/MISSING_CLOCK_OUT/CORRECTED; Break LUNCH/SHORT_BREAK/OTHER (data migrated)
+- [x] `Department` table; `Employee.department` is an FK to `Department.name` (responses stay a string; renaming cascades); `GET/POST/PATCH /departments`
+- [x] `Notification` table + `NotificationType` enum (service in Phase 8)
+- [x] Indexes tuned (status lookups added, duplicates of unique keys dropped)
+- [x] Seed: spec §66 accounts, PRJ-001/002/003, rate history, 10 working days, one missing clock-out, one pending correction
+- [x] Tests: `tests/compensation.unit.test.ts`, `tests/data-model.test.ts`
 
-### ⏳ Phase 4: Missing API surface
+### 🔄 Phase 4: Missing API surface ← **NEXT**
+
 - [ ] `GET /management/dashboard` (KPI counts) and `GET /management/status` (live board)
 - [ ] `GET /management/projects/:id/report`, `GET /management/employees/:id/report`, `GET /me/report`
 - [ ] `GET /management/estimate` (duration and cost estimate, cost CEO only)
@@ -106,7 +111,9 @@ Seed logins (dev only): `admin@company.com / Admin123!`, `pm@company.com / Manag
 
 ## Known gaps / follow-ups
 - The legacy `client/` punch screen has no activity-type picker (its entries save as OTHER); its error toasts read the old error shape. It will be replaced, not fixed.
-- Payroll still uses the current rate for past periods and deducts paid breaks (Phase 3/4).
+- Unknown department names are auto-created on employee create/edit (shortcut until the Settings screen exists; then reject them).
+- Payroll: 8h/day overtime threshold is hard-coded; no finalize/lock or CSV yet (Phase 4). Days with no rate are skipped and logged.
+- Project cost breakdown counts segment time including breaks inside the segment (fix with the Phase 4 reports).
 - `GET /me/time` is capped at 366 days instead of paginated (Phase 4).
 - Login returns tokens in the body as well as cookies, for the legacy client and Electron (remove in Phase 7).
 - Failed logins are not audited.
@@ -115,3 +122,4 @@ Seed logins (dev only): `admin@company.com / Admin123!`, `pm@company.com / Manag
 | Date | Work |
 |---|---|
 | 2026-11-14 | Spec and code audit; plan agreed; Phases 0–2 done (23 commits, 37 tests) |
+| 2026-11-14 | Phase 3 done (data model: rate history, soft membership, project status, departments, notifications table, new seed; 51 tests) |
