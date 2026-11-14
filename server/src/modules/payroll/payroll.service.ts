@@ -1,211 +1,264 @@
-import { Prisma, DayStatus, AuditAction } from '@prisma/client';
+import { Prisma, DayStatus, AuditAction, PayrollStatus } from '@prisma/client';
 import { prisma } from '../../config/prisma';
 import { AppError } from '../../errors/AppError';
-import { GeneratePayrollInput, QueryPayrollInput } from './payroll.schema';
+import { GeneratePayrollInput, PeriodInput, QueryPayrollInput } from './payroll.schema';
 import { rateOn } from '../employees/compensation';
+import { netSeconds } from '../reports/aggregate';
+
+/** Days that count for pay: finished or corrected (spec §104: payroll uses official time). */
+const PAYABLE: DayStatus[] = [DayStatus.CORRECTED, DayStatus.COMPLETED];
+/** Days that block finalizing a period until they are resolved. */
+const UNRESOLVED: DayStatus[] = [DayStatus.OPEN, DayStatus.MISSING_CLOCK_OUT, DayStatus.CORRECTION_PENDING];
+
+// shortcut: fixed 8h/day overtime threshold until the business sets a policy (spec §32).
+const STANDARD_DAY_SECONDS = 8 * 3600;
+
+const day = (s: string) => new Date(`${s}T00:00:00.000Z`);
+const employeeSummary = { id: true, employeeCode: true, firstName: true, lastName: true, department: true } as const;
 
 export class PayrollService {
   /**
-   * Generates payroll records for approved workdays in a period.
-   * Strictly CEO_ADMIN only.
+   * Generates DRAFT payroll for everyone who worked in the period (including people who have
+   * since left). Each day is priced at the rate in force that day. FINALIZED records are never
+   * touched. All-or-nothing: one transaction.
    */
   async generatePayroll(input: GeneratePayrollInput, actorUserId: string) {
-    const startDate = new Date(input.periodStart);
-    const endDate = new Date(input.periodEnd);
-
-    // 1. Everyone who worked in the period, including people who have since left.
-    const employeeFilter: Prisma.EmployeeWhereInput = {
-      workDays: { some: { date: { gte: startDate, lte: endDate } } },
-    };
-    if (input.employeeId) {
-      employeeFilter.id = input.employeeId;
-    }
+    const periodStart = day(input.periodStart);
+    const periodEnd = day(input.periodEnd);
 
     const employees = await prisma.employee.findMany({
-      where: employeeFilter,
+      where: {
+        workDays: { some: { date: { gte: periodStart, lte: periodEnd } } },
+        ...(input.employeeId ? { id: input.employeeId } : {}),
+      },
       include: {
         compensations: { orderBy: { effectiveFrom: 'asc' } },
+        workDays: { where: { date: { gte: periodStart, lte: periodEnd }, status: { in: PAYABLE } } },
       },
     });
+    if (employees.length === 0) throw AppError.notFound('No employees worked in the specified period');
 
-    if (employees.length === 0) {
-      throw AppError.notFound('No employees worked in the specified period');
+    // A period may be regenerated, but must not overlap a different period for the same person.
+    const overlapping = await prisma.payrollRecord.findFirst({
+      where: {
+        employeeId: { in: employees.map((e) => e.id) },
+        periodStart: { lte: periodEnd },
+        periodEnd: { gte: periodStart },
+        NOT: { periodStart, periodEnd },
+      },
+      select: { periodStart: true, periodEnd: true },
+    });
+    if (overlapping) {
+      throw AppError.conflict(
+        `This period overlaps an existing payroll period (${overlapping.periodStart.toISOString().slice(0, 10)} to ${overlapping.periodEnd.toISOString().slice(0, 10)})`,
+        'OVERLAPPING_PERIOD'
+      );
     }
 
-    const generatedRecords = [];
     const daysWithoutRate: { employeeId: string; date: string }[] = [];
-
-    for (const emp of employees) {
-
-      // 2. Fetch all approved/closed workdays within the period
-      const workDays = await prisma.workDay.findMany({
-        where: {
-          employeeId: emp.id,
-          date: {
-            gte: startDate,
-            lte: endDate,
-          },
-          status: { in: [DayStatus.CORRECTED, DayStatus.COMPLETED] },
-        },
-      });
-
-      let totalRegularSeconds = 0;
-      let totalOvertimeSeconds = 0;
-      let grossPay = new Prisma.Decimal(0);
+    const rows = employees.flatMap((emp) => {
+      let regular = 0;
+      let overtime = 0;
+      let gross = new Prisma.Decimal(0);
       let currency: string | null = null;
-      const standardDaySeconds = 8 * 3600; // shortcut: fixed 8h/day overtime threshold until a policy exists (spec §32)
-
-      // 3. Regular vs overtime per day, each day priced at the rate in force that day (spec §20).
-      for (const day of workDays) {
-        const rate = rateOn(emp.compensations, day.date);
+      for (const d of emp.workDays) {
+        const rate = rateOn(emp.compensations, d.date);
         if (!rate) {
-          daysWithoutRate.push({ employeeId: emp.id, date: day.date.toISOString().slice(0, 10) });
+          daysWithoutRate.push({ employeeId: emp.id, date: d.date.toISOString().slice(0, 10) });
           continue;
         }
-        // Net working time = presence minus recorded (unpaid) breaks.
-        const netSeconds = Math.max(0, day.totalWorkSeconds - day.totalBreakSeconds);
-        const regular = Math.min(netSeconds, standardDaySeconds);
-        const overtime = netSeconds - regular;
-        totalRegularSeconds += regular;
-        totalOvertimeSeconds += overtime;
-        grossPay = grossPay
-          .add(new Prisma.Decimal(regular).div(3600).mul(rate.baseHourlyRate))
-          .add(new Prisma.Decimal(overtime).div(3600).mul(rate.overtimeHourlyRate));
+        const net = Math.max(0, d.totalWorkSeconds - d.totalBreakSeconds);
+        const reg = Math.min(net, STANDARD_DAY_SECONDS);
+        regular += reg;
+        overtime += net - reg;
+        gross = gross
+          .add(new Prisma.Decimal(reg).div(3600).mul(rate.baseHourlyRate))
+          .add(new Prisma.Decimal(net - reg).div(3600).mul(rate.overtimeHourlyRate));
         currency = rate.currency;
       }
-      if (!currency) continue; // no priced days for this employee
-
-      const regularHours = new Prisma.Decimal(totalRegularSeconds).div(3600).toDecimalPlaces(2);
-      const overtimeHours = new Prisma.Decimal(totalOvertimeSeconds).div(3600).toDecimalPlaces(2);
-      grossPay = grossPay.toDecimalPlaces(2);
-
-      // 4. Upsert Payroll Record (Period unique per employee)
-      const record = await prisma.payrollRecord.upsert({
-        where: {
-          employeeId_periodStart_periodEnd: {
-            employeeId: emp.id,
-            periodStart: startDate,
-            periodEnd: endDate,
-          },
-        },
-        create: {
+      if (!currency) return [];
+      return [
+        {
           employeeId: emp.id,
-          periodStart: startDate,
-          periodEnd: endDate,
-          regularHours,
-          overtimeHours,
-          grossPay,
+          regularHours: new Prisma.Decimal(regular).div(3600).toDecimalPlaces(2),
+          overtimeHours: new Prisma.Decimal(overtime).div(3600).toDecimalPlaces(2),
+          grossPay: gross.toDecimalPlaces(2),
           currency,
         },
-        update: {
-          regularHours,
-          overtimeHours,
-          grossPay,
-          generatedAt: new Date(),
-        },
-        include: {
-          employee: {
-            select: {
-              id: true,
-              employeeCode: true,
-              firstName: true,
-              lastName: true,
-              department: true,
-            },
-          },
-        },
-      });
-
-      generatedRecords.push(record);
-    }
-
-    // 5. Immutable Audit Log
-    await prisma.auditLog.create({
-      data: {
-        actorId: actorUserId,
-        action: AuditAction.CREATE,
-        entityName: 'PayrollRecord',
-        entityId: input.periodStart,
-        afterState: {
-          periodStart: input.periodStart,
-          periodEnd: input.periodEnd,
-          recordsGenerated: generatedRecords.length,
-        },
-      },
+      ];
     });
 
-    // shortcut: response shape kept as an array for the legacy client; days without a rate are logged.
-    if (daysWithoutRate.length) console.warn('[payroll] days without a configured rate:', daysWithoutRate);
-    return generatedRecords;
+    const { records, skippedFinalized } = await prisma.$transaction(
+      async (tx) => {
+        const records = [];
+        let skippedFinalized = 0;
+        for (const row of rows) {
+          const key = { employeeId_periodStart_periodEnd: { employeeId: row.employeeId, periodStart, periodEnd } };
+          const existing = await tx.payrollRecord.findUnique({ where: key, select: { status: true } });
+          if (existing?.status === PayrollStatus.FINALIZED) {
+            skippedFinalized += 1;
+            continue;
+          }
+          records.push(
+            await tx.payrollRecord.upsert({
+              where: key,
+              create: { ...row, periodStart, periodEnd },
+              update: { ...row, generatedAt: new Date() },
+              include: { employee: { select: employeeSummary } },
+            })
+          );
+        }
+        await tx.auditLog.create({
+          data: {
+            actorId: actorUserId,
+            action: AuditAction.CREATE,
+            entityName: 'PayrollRun',
+            entityId: `${input.periodStart}_${input.periodEnd}`,
+            afterState: {
+              event: 'PAYROLL_GENERATED',
+              periodStart: input.periodStart,
+              periodEnd: input.periodEnd,
+              recordsGenerated: records.length,
+              skippedFinalized,
+              daysWithoutRate: daysWithoutRate.length,
+            },
+          },
+        });
+        return { records, skippedFinalized };
+      },
+      { timeout: 30_000 }
+    );
+
+    return { records, skippedFinalized, daysWithoutRate };
   }
 
   /**
-   * List all company payroll records (CEO_ADMIN only).
+   * Locks a period's DRAFT records. Refused while anyone has unresolved days in the period
+   * (open, missing clock-out or correction pending), so nobody is paid on incomplete time.
+   */
+  async finalizePeriod(input: PeriodInput, actorUserId: string) {
+    const periodStart = day(input.periodStart);
+    const periodEnd = day(input.periodEnd);
+
+    const unresolved = await prisma.workDay.findMany({
+      where: { date: { gte: periodStart, lte: periodEnd }, status: { in: UNRESOLVED } },
+      select: { date: true, status: true, employee: { select: employeeSummary } },
+      orderBy: { date: 'asc' },
+      take: 50,
+    });
+    if (unresolved.length) {
+      throw new AppError('Resolve these days before finalizing payroll', 409, { unresolved }, 'UNRESOLVED_DAYS');
+    }
+
+    const finalizedAt = new Date();
+    return prisma.$transaction(async (tx) => {
+      const res = await tx.payrollRecord.updateMany({
+        where: { periodStart, periodEnd, status: PayrollStatus.DRAFT },
+        data: { status: PayrollStatus.FINALIZED, finalizedAt, finalizedById: actorUserId },
+      });
+      if (res.count === 0) throw AppError.notFound('No draft payroll records for this period');
+      await tx.auditLog.create({
+        data: {
+          actorId: actorUserId,
+          action: AuditAction.UPDATE,
+          entityName: 'PayrollRun',
+          entityId: `${input.periodStart}_${input.periodEnd}`,
+          afterState: { event: 'PAYROLL_FINALIZED', records: res.count },
+        },
+      });
+      return { finalized: res.count, finalizedAt };
+    });
+  }
+
+  /** CSV of a period's payroll (spec §79 "payroll export"). */
+  async exportCsv(input: PeriodInput) {
+    const records = await prisma.payrollRecord.findMany({
+      where: { periodStart: day(input.periodStart), periodEnd: day(input.periodEnd) },
+      include: { employee: { select: employeeSummary } },
+      orderBy: { employee: { employeeCode: 'asc' } },
+    });
+    const cell = (v: unknown) => {
+      const s = String(v ?? '');
+      // Quote when needed; neutralise spreadsheet formula injection.
+      const safe = /^[=+\-@]/.test(s) ? `'${s}` : s;
+      return /[",\n]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
+    };
+    const header = ['employeeCode', 'firstName', 'lastName', 'department', 'periodStart', 'periodEnd', 'regularHours', 'overtimeHours', 'grossPay', 'currency', 'status'];
+    const lines = records.map((r) =>
+      [
+        r.employee.employeeCode,
+        r.employee.firstName,
+        r.employee.lastName,
+        r.employee.department,
+        input.periodStart,
+        input.periodEnd,
+        r.regularHours.toFixed(2),
+        r.overtimeHours.toFixed(2),
+        r.grossPay.toFixed(2),
+        r.currency,
+        r.status,
+      ]
+        .map(cell)
+        .join(',')
+    );
+    return [header.join(','), ...lines].join('\n') + '\n';
+  }
+
+  /**
+   * Lists payroll records (CEO only) with a per-project breakdown of each record's hours and
+   * base-rate amount (net of breaks, rate in force per day). Loads only the periods' segments.
    */
   async listPayrollRecords(query: QueryPayrollInput) {
-    const { page, limit, employeeId, periodStart, periodEnd } = query;
-    const skip = (page - 1) * limit;
-
+    const { page, limit, employeeId, periodStart, periodEnd, status } = query;
     const where: Prisma.PayrollRecordWhereInput = {};
     if (employeeId) where.employeeId = employeeId;
-    if (periodStart) where.periodStart = { gte: new Date(periodStart) };
-    if (periodEnd) where.periodEnd = { lte: new Date(periodEnd) };
+    if (periodStart) where.periodStart = { gte: day(periodStart) };
+    if (periodEnd) where.periodEnd = { lte: day(periodEnd) };
+    if (status) where.status = status;
 
     const [total, items] = await prisma.$transaction([
       prisma.payrollRecord.count({ where }),
       prisma.payrollRecord.findMany({
         where,
-        skip,
+        skip: (page - 1) * limit,
         take: limit,
-        orderBy: { periodStart: 'desc' },
-        include: {
-          employee: {
-            include: {
-              compensations: true,
-              workDays: {
-                include: {
-                  segments: {
-                    where: { status: { in: ['COMPLETED', 'AUTO_CLOSED'] } },
-                    include: { project: true },
-                  },
-                },
-              },
-            },
-          },
-        },
+        orderBy: [{ periodStart: 'desc' }, { employee: { employeeCode: 'asc' } }],
+        include: { employee: { select: { ...employeeSummary, compensations: true } } },
       }),
     ]);
 
-    // Compute itemized project breakdown for each payroll record
-    const enriched = items.map((rec) => {
-      const projectMap = new Map<string, { projectCode: string; projectName: string; hours: number; amount: number }>();
+    const segments = items.length
+      ? await prisma.workSegment.findMany({
+          where: {
+            OR: items.map((r) => ({
+              workDay: { employeeId: r.employeeId, date: { gte: r.periodStart, lte: r.periodEnd }, status: { in: PAYABLE } },
+            })),
+          },
+          include: {
+            breaks: { select: { startTime: true, endTime: true } },
+            activities: { select: { activityType: true, startTime: true, endTime: true } },
+            project: { select: { code: true, name: true } },
+            workDay: { select: { employeeId: true, date: true } },
+          },
+        })
+      : [];
 
-      for (const day of rec.employee.workDays) {
-        if (new Date(day.date) >= new Date(rec.periodStart) && new Date(day.date) <= new Date(rec.periodEnd)) {
-          for (const seg of day.segments) {
-            const pId = seg.projectId;
-            const hrs = (seg.durationSeconds || 0) / 3600;
-            const baseRate = Number(rateOn(rec.employee.compensations, day.date)?.baseHourlyRate ?? 0);
-
-            if (!projectMap.has(pId)) {
-              projectMap.set(pId, {
-                projectCode: seg.project.code,
-                projectName: seg.project.name,
-                hours: 0,
-                amount: 0,
-              });
-            }
-
-            const entry = projectMap.get(pId)!;
-            entry.hours += hrs;
-            entry.amount += hrs * baseRate;
-          }
-        }
+    const now = new Date();
+    const data = items.map(({ employee: { compensations, ...employee }, ...rec }) => {
+      const projects = new Map<string, { projectCode: string; projectName: string; hours: number; amount: number }>();
+      for (const s of segments) {
+        if (s.workDay.employeeId !== rec.employeeId || s.workDay.date < rec.periodStart || s.workDay.date > rec.periodEnd) continue;
+        const hrs = netSeconds(s, now) / 3600;
+        const rate = Number(rateOn(compensations, s.workDay.date)?.baseHourlyRate ?? 0);
+        const entry = projects.get(s.projectId) ?? { projectCode: s.project.code, projectName: s.project.name, hours: 0, amount: 0 };
+        entry.hours += hrs;
+        entry.amount += hrs * rate;
+        projects.set(s.projectId, entry);
       }
-
       return {
         ...rec,
-        projectBreakdown: Array.from(projectMap.values()).map((p) => ({
+        employee,
+        projectBreakdown: [...projects.values()].map((p) => ({
           ...p,
           hours: Math.round(p.hours * 100) / 100,
           amount: Math.round(p.amount * 100) / 100,
@@ -213,10 +266,7 @@ export class PayrollService {
       };
     });
 
-    return {
-      data: enriched,
-      meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
-    };
+    return { data, meta: { page, limit, total, totalPages: Math.ceil(total / limit) } };
   }
 }
 

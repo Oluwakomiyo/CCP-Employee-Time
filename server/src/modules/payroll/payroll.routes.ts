@@ -2,25 +2,15 @@ import { Router } from 'express';
 import { Role } from '@prisma/client';
 import { payrollController } from './payroll.controller';
 import { authenticate, authorize } from '../../middleware/auth.middleware';
-import { validate } from '../../middleware/validate.middleware';
-import { generatePayrollSchema } from './payroll.schema';
 
 const router = Router();
 
-router.use(authenticate);
+// Payroll is CEO-only (spec §4, §29); PMs and employees get 403. Inputs are parsed in the controller.
+router.use(authenticate, authorize(Role.CEO_ADMIN));
 
-// 2. Strict CEO_ADMIN ONLY endpoints (PM and Employee return 403)
-router.post(
-  '/generate',
-  authorize(Role.CEO_ADMIN),
-  validate(generatePayrollSchema),
-  payrollController.generatePayroll
-);
-
-router.get(
-  '/',
-  authorize(Role.CEO_ADMIN),
-  payrollController.listPayroll
-);
+router.get('/', payrollController.listPayroll);
+router.post('/generate', payrollController.generatePayroll);
+router.post('/finalize', payrollController.finalizePeriod);
+router.get('/export', payrollController.exportCsv);
 
 export const payrollRouter = router;
