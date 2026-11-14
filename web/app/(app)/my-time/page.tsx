@@ -1,8 +1,14 @@
 import type { Metadata } from "next";
-import { ComingSoon } from "@/components/shell/coming-soon";
+import { PageHeading } from "@/components/shell/page-heading";
+import { MyTimeList } from "./my-time-list";
 
 export const metadata: Metadata = { title: "My time" };
 
 export default function MyTimePage() {
-  return <ComingSoon title="My time" description="Your recorded workdays, segments and breaks." />;
+  return (
+    <>
+      <PageHeading title="My time" description="Your recorded workdays, segments and breaks." />
+      <MyTimeList />
+    </>
+  );
 }
