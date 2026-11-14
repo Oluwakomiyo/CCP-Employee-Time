@@ -1,0 +1,34 @@
+.layout {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.meta {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+.tableWrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-surface);
+  background: var(--surface);
+}
+
+.who {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.name {
+  display: flex;
+  flex-direction: column;
+}
+
+.name small {
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+}

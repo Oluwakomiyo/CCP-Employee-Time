@@ -120,7 +120,8 @@ Seed logins (dev only, all `Password123!`): `ceo@example.com` (CEO), `manager@ex
 
 ### 🔄 Phase 7: Management screens ← **NEXT**
 - [x] Dashboard (`web/app/(app)/dashboard/` + `web/lib/dashboard.ts`): metric cards, hours by project/over time/estimated-vs-actual bars, location/activity donuts, 7/30/90-day ranges; no money anywhere; browser-checked as CEO and PM, 390px, dark, loading skeleton, range switch
-- [ ] Live status, Employees (+ detail), Projects (+ detail/report/estimate), Corrections review, Payroll, Reports, Work evidence, Audit log, Settings
+- [x] Live status (`web/app/(app)/live/` + `web/lib/live.ts`): avatar + badge table polled every 15 s with ticking elapsed; browser-checked as CEO, 390px
+- [ ] Employees (+ detail), Projects (+ detail/report/estimate), Corrections review, Payroll, Reports, Work evidence, Audit log, Settings
 - [ ] Delete `client/`; drop the legacy time aliases and the body tokens in login
 
 ### 🔄 Phase 8: Notifications
