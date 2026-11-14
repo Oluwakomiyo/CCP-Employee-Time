@@ -1,8 +1,14 @@
 import type { Metadata } from "next";
-import { ComingSoon } from "@/components/shell/coming-soon";
+import { PageHeading } from "@/components/shell/page-heading";
+import { EmployeeList } from "./employee-list";
 
 export const metadata: Metadata = { title: "Employees" };
 
 export default function EmployeesPage() {
-  return <ComingSoon title="Employees" description="Staff, roles, projects and pay rates." />;
+  return (
+    <>
+      <PageHeading title="Employees" description="Everyone at CCP, their role and their department." />
+      <EmployeeList />
+    </>
+  );
 }
