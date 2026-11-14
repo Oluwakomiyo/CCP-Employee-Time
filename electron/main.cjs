@@ -1,18 +1,21 @@
-const { app, BrowserWindow, Tray, Menu, powerMonitor, ipcMain, nativeImage } = require('electron');
+const { app, BrowserWindow, Tray, Menu, nativeImage, shell } = require('electron');
 const path = require('path');
-const os = require('os');
 const fs = require('fs');
+
+/**
+ * Thin desktop wrapper: a window onto the hosted CCP Time web app, kept in the tray.
+ * It does no activity tracking. Device activity comes from desktop-agent/, which
+ * authenticates with a device key issued by the CEO in Settings.
+ */
 
 // The hosted web app. Point CCP_WEB_URL at the deployment in production;
 // it defaults to the local Next.js dev server.
 const WEB_URL = process.env.CCP_WEB_URL || 'http://localhost:3000';
-const API_BASE = process.env.CCP_API_URL || 'http://localhost:5000/api/v1';
+const WEB_ORIGIN = new URL(WEB_URL).origin;
 
 let mainWindow = null;
 let tray = null;
-let heartbeatTimer = null;
 let quitting = false;
-let activeSession = null; // { token, employeeId, deviceKey, deviceIdentifier }
 
 const iconPath = path.join(__dirname, '../web/public/ccp-logo.png');
 const appIcon = fs.existsSync(iconPath) ? nativeImage.createFromPath(iconPath) : nativeImage.createEmpty();
@@ -28,8 +31,20 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      preload: path.join(__dirname, 'preload.cjs'),
+      sandbox: true,
     },
+  });
+
+  // The window only ever shows CCP Time; any other link opens in the user's browser.
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (/^https?:/.test(url)) shell.openExternal(url);
+    return { action: 'deny' };
+  });
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    if (new URL(url).origin !== WEB_ORIGIN) {
+      event.preventDefault();
+      if (/^https?:/.test(url)) shell.openExternal(url);
+    }
   });
 
   mainWindow.loadURL(WEB_URL);
@@ -62,101 +77,6 @@ function createTray() {
   tray.on('double-click', () => mainWindow && mainWindow.show());
 }
 
-// Only pulse while the employee is clocked in (WORKING or ON_BREAK).
-// Anything else (not started, finished, unreachable API) skips the heartbeat
-// so off-hours never fabricate activity.
-async function clockedIn() {
-  if (!activeSession?.token) return false;
-  try {
-    const res = await fetch(`${API_BASE}/time/today`, {
-      headers: { Authorization: `Bearer ${activeSession.token}` },
-    });
-    if (!res.ok) return false;
-    const body = await res.json();
-    const state = body?.data?.state;
-    return state === 'WORKING' || state === 'ON_BREAK';
-  } catch {
-    return false;
-  }
-}
-
-// NATIVE OS-LEVEL TELEMETRY (Tracks AutoCAD, Revit, etc.)
-async function sendNativeHeartbeat() {
-  if (!activeSession?.deviceKey || !activeSession?.deviceIdentifier) return;
-  if (!(await clockedIn())) return;
-
-  const idleSeconds = powerMonitor.getSystemIdleTime();
-  const sessionStatus = idleSeconds >= 300 ? 'IDLE' : 'ACTIVE';
-
-  try {
-    await fetch(`${API_BASE}/activity/agent-heartbeat`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Device-Key': activeSession.deviceKey,
-      },
-      body: JSON.stringify({
-        deviceIdentifier: activeSession.deviceIdentifier,
-        clientTimestamp: new Date().toISOString(),
-        sessionStatus,
-        idleSeconds,
-      }),
-    });
-  } catch (err) {
-    console.warn('[Desktop Agent] Heartbeat error:', err.message);
-  }
-}
-
-// IPC: Automatically enroll device on user login
-ipcMain.handle('auth-login-success', async (_, authData) => {
-  const { token, employee } = authData;
-  const deviceIdentifier = `PC-${os.hostname().toUpperCase()}`;
-
-  try {
-    // Check or auto-register device with backend (CEO registers employee devices).
-    const res = await fetch(`${API_BASE}/activity/devices`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        employeeId: employee.id,
-        deviceName: `${employee.firstName}'s Workstation (${os.hostname()})`,
-        deviceIdentifier,
-        platform: `${os.type()} ${os.release()}`,
-      }),
-    });
-
-    const data = await res.json();
-    const deviceKey = data?.data?.apiKey;
-
-    activeSession = {
-      token,
-      employeeId: employee.id,
-      deviceIdentifier,
-      deviceKey: deviceKey || activeSession?.deviceKey,
-    };
-
-    // Start 60-second native OS pulses
-    if (heartbeatTimer) clearInterval(heartbeatTimer);
-    sendNativeHeartbeat();
-    heartbeatTimer = setInterval(sendNativeHeartbeat, 60 * 1000);
-
-    return { success: true, enrolled: true };
-  } catch (err) {
-    console.error('[Desktop Agent] Auto-enrollment error:', err.message);
-    return { success: false };
-  }
-});
-
-// IPC: Stop telemetry on user sign out
-ipcMain.handle('auth-logout', () => {
-  if (heartbeatTimer) clearInterval(heartbeatTimer);
-  activeSession = null;
-  return { success: true };
-});
-
 app.whenReady().then(() => {
   if (process.platform === 'win32') {
     app.setAppUserModelId('com.ccp.timesystems');
@@ -171,7 +91,7 @@ app.on('before-quit', () => {
 });
 
 app.on('window-all-closed', () => {
-  // The tracker lives on in the tray; Quit comes from its menu.
+  // The app lives on in the tray; Quit comes from its menu.
   if (!quitting) return;
   if (tray) tray.destroy();
 });

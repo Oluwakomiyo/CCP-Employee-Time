@@ -2,7 +2,7 @@
   "name": "ccp-electron-wrapper",
   "version": "1.0.0",
   "private": true,
-  "description": "Thin Electron wrapper that loads the hosted CCP Time web app and sends desktop heartbeats.",
+  "description": "Thin Electron wrapper that loads the hosted CCP Time web app. Activity tracking is done by desktop-agent/.",
   "main": "main.cjs",
   "scripts": {
     "start": "electron ."
