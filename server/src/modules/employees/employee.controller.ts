@@ -11,7 +11,7 @@ export class EmployeeController {
       const result = await employeeService.listEmployees(query, req.user!.role);
 
       res.status(200).json({
-        status: 'success',
+        success: true,
         ...result,
       });
     } catch (error) {
@@ -31,7 +31,7 @@ export class EmployeeController {
       const employee = await employeeService.getEmployeeById(id, req.user!.role);
 
       res.status(200).json({
-        status: 'success',
+        success: true,
         data: { employee },
       });
     } catch (error) {
@@ -41,12 +41,12 @@ export class EmployeeController {
 
   createEmployee = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const employee = await employeeService.createEmployee(req.body, req.user!.userId);
+      const { employee, temporaryPassword } = await employeeService.createEmployee(req.body, req.user!.userId);
 
       res.status(201).json({
-        status: 'success',
+        success: true,
         message: 'Employee successfully created',
-        data: { employee },
+        data: { employee, temporaryPassword },
       });
     } catch (error) {
       next(error);
@@ -59,7 +59,7 @@ export class EmployeeController {
       const updated = await employeeService.updateEmployee(id, req.body, req.user!.userId);
 
       res.status(200).json({
-        status: 'success',
+        success: true,
         message: 'Employee successfully updated',
         data: { employee: updated },
       });
@@ -71,10 +71,10 @@ export class EmployeeController {
   deleteEmployee = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { id } = req.params;
-      const result = await employeeService.deleteEmployee(id, req.user!.userId);
+      const result = await employeeService.deactivateEmployee(id, req.user!.userId);
 
       res.status(200).json({
-        status: 'success',
+        success: true,
         message: result.message,
       });
     } catch (error) {
@@ -85,9 +85,8 @@ export class EmployeeController {
   updateEmployeePassword = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { id } = req.params;
-      const { password } = req.body;
-      const result = await employeeService.updateEmployeePassword(id, password, req.user!.userId);
-      res.status(200).json({ status: 'success', message: result.message });
+      const result = await employeeService.resetEmployeePassword(id, req.user!.userId);
+      res.status(200).json({ success: true, data: result });
     } catch (error) {
       next(error);
     }
@@ -99,7 +98,7 @@ export class EmployeeController {
       const compensation = await employeeService.getCompensation(id);
 
       res.status(200).json({
-        status: 'success',
+        success: true,
         data: { compensation },
       });
     } catch (error) {
@@ -113,7 +112,7 @@ export class EmployeeController {
       const updated = await employeeService.updateCompensation(id, req.body, req.user!.userId);
 
       res.status(200).json({
-        status: 'success',
+        success: true,
         message: 'Compensation successfully updated',
         data: { compensation: updated },
       });

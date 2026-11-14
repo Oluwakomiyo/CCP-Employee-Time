@@ -3,7 +3,6 @@ import { EmploymentStatus, Role } from '@prisma/client';
 
 export const createEmployeeSchema = z.object({
   email: z.string().email('Valid email is required').trim().toLowerCase(),
-  password: z.string().min(8, 'Temporary password must be at least 8 characters'),
   role: z.nativeEnum(Role).default(Role.EMPLOYEE),
   employeeCode: z.string().min(3, 'Employee code must be at least 3 characters').toUpperCase().trim(),
   firstName: z.string().min(1, 'First name is required').trim(),

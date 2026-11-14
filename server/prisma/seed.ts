@@ -7,7 +7,8 @@ async function main() {
   console.log('🌱 Starting database seeding...');
 
   // 1. Clean existing records in reverse dependency order
-  await prisma.auditLog.deleteMany();
+  // Dev-only reset. AuditLog has an append-only trigger, so it is truncated (triggers do not fire on TRUNCATE).
+  await prisma.$executeRawUnsafe('TRUNCATE TABLE "AuditLog"');
   await prisma.payrollRecord.deleteMany();
   await prisma.timeCorrectionRequest.deleteMany();
   await prisma.activity.deleteMany();

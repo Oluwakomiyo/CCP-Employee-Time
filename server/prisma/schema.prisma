@@ -97,7 +97,6 @@ model User {
   id                 String   @id @default(uuid())
   email              String   @unique
   passwordHash       String
-  managedPassword    String?
   role               Role     @default(EMPLOYEE)
   isActive           Boolean  @default(true)
   mustChangePassword Boolean  @default(false)

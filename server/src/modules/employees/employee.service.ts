@@ -8,7 +8,7 @@ import {
   UpdateCompensationInput,
   QueryEmployeesInput,
 } from './employee.schema';
-import { encryptPassword, decryptPassword } from '../../utils/crypto';
+import { generateTemporaryPassword } from '../../utils/password';
 
 export class EmployeeService {
   /**
@@ -64,7 +64,7 @@ export class EmployeeService {
               email: true,
               role: true,
               isActive: true,
-              managedPassword: isCeo ? true : undefined, // Only CEO_ADMIN can see the encrypted password
+              mustChangePassword: true,
             },
           },
           // Conditionally include compensation ONLY for CEO_ADMIN
@@ -82,21 +82,8 @@ export class EmployeeService {
       }),
     ]);
 
-    const sanitizedItems = items.map((emp) => {
-      if (isCeo && emp.user?.managedPassword) {
-        return {
-          ...emp,
-          user: {
-            ...emp.user,
-            managedPassword: decryptPassword(emp.user.managedPassword),
-          },
-        };
-      }
-      return emp;
-    });
-
     return {
-      data: sanitizedItems,
+      data: items,
       meta: {
         page,
         limit,
@@ -184,17 +171,17 @@ export class EmployeeService {
       throw AppError.conflict(`Employee code '${input.employeeCode}' is already in use`);
     }
 
-    const passwordHash = await bcrypt.hash(input.password, 10);
-    const managedPassword = encryptPassword(input.password); // <--- Encrypt for CEO retrieval
+    // The system generates the temporary password; only its hash is stored (spec §5).
+    const temporaryPassword = generateTemporaryPassword();
+    const passwordHash = await bcrypt.hash(temporaryPassword, 12);
 
     const newEmployee = await prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
         data: {
           email: input.email,
           passwordHash,
-          managedPassword,
           role: input.role,
-          mustChangePassword: false,
+          mustChangePassword: true,
         },
       });
 
@@ -240,7 +227,8 @@ export class EmployeeService {
       return employee;
     });
 
-    return newEmployee;
+    // Returned exactly once so the CEO can hand it over; it is never retrievable again.
+    return { employee: newEmployee, temporaryPassword };
   }
 
   /**
@@ -287,6 +275,8 @@ export class EmployeeService {
           where: { id: existing.userId },
           data: { isActive: false, refreshTokenHash: null },
         });
+      } else if (input.status === EmploymentStatus.ACTIVE || input.status === EmploymentStatus.ON_LEAVE) {
+        await tx.user.update({ where: { id: existing.userId }, data: { isActive: true } });
       }
 
       await tx.auditLog.create({
@@ -306,52 +296,65 @@ export class EmployeeService {
     return updated;
   }
 
-  async deleteEmployee(employeeId: string, actorUserId: string) {
+  /**
+   * Deactivates an employee. Records are never hard-deleted: time, payroll and audit
+   * history must survive (spec §22, §76).
+   */
+  async deactivateEmployee(employeeId: string, actorUserId: string) {
     const emp = await prisma.employee.findUnique({ where: { id: employeeId } });
     if (!emp) throw AppError.notFound('Employee not found');
+    if (emp.userId === actorUserId) throw AppError.badRequest('You cannot deactivate your own account');
 
     await prisma.$transaction(async (tx) => {
-      // Delete linked User which cascades down
-      await tx.user.delete({ where: { id: emp.userId } });
+      await tx.employee.update({ where: { id: employeeId }, data: { status: EmploymentStatus.INACTIVE } });
+      await tx.user.update({ where: { id: emp.userId }, data: { isActive: false, refreshTokenHash: null } });
       await tx.auditLog.create({
         data: {
           actorId: actorUserId,
-          action: AuditAction.DELETE,
+          action: AuditAction.UPDATE,
           entityName: 'Employee',
           entityId: employeeId,
+          beforeState: { status: emp.status },
+          afterState: { status: EmploymentStatus.INACTIVE, event: 'EMPLOYEE_DEACTIVATED' },
         },
       });
     });
 
-    return { message: 'Employee successfully removed' };
+    return { message: 'Employee deactivated' };
   }
 
   /**
    * Updates an employee's password and logs the action.
    * Only CEO_ADMIN can perform this action.
    */
-  async updateEmployeePassword(employeeId: string, newPass: string, actorUserId: string) {
+  /**
+   * Issues a new temporary password (shown once), forces a change at next login,
+   * and signs the user out everywhere.
+   */
+  async resetEmployeePassword(employeeId: string, actorUserId: string) {
     const emp = await prisma.employee.findUnique({ where: { id: employeeId } });
     if (!emp) throw AppError.notFound('Employee not found');
 
-    const passwordHash = await bcrypt.hash(newPass, 10);
-    const managedPassword = encryptPassword(newPass);
+    const temporaryPassword = generateTemporaryPassword();
+    const passwordHash = await bcrypt.hash(temporaryPassword, 12);
 
-    await prisma.user.update({
-      where: { id: emp.userId },
-      data: { passwordHash, managedPassword },
-    });
+    await prisma.$transaction([
+      prisma.user.update({
+        where: { id: emp.userId },
+        data: { passwordHash, mustChangePassword: true, refreshTokenHash: null },
+      }),
+      prisma.auditLog.create({
+        data: {
+          actorId: actorUserId,
+          action: AuditAction.UPDATE,
+          entityName: 'UserCredentials',
+          entityId: emp.userId,
+          afterState: { event: 'PASSWORD_RESET' },
+        },
+      }),
+    ]);
 
-    await prisma.auditLog.create({
-      data: {
-        actorId: actorUserId,
-        action: AuditAction.UPDATE,
-        entityName: 'UserCredentials',
-        entityId: emp.userId,
-      },
-    });
-
-    return { message: 'Employee password updated successfully' };
+    return { temporaryPassword };
   }
 
   /**
