@@ -23,6 +23,9 @@ Times are always Nigerian time (Lagos).
 3. You'll be asked to **choose your own password** straight away. It must be at least 10 characters and include a letter and a number. The checklist under the field turns green as you meet each rule.
 4. After that you land on your home screen: **Today** for employees, **Dashboard** for managers and the CEO.
 
+![The sign-in page](docs/guide/01-sign-in.png)
+
+
 Forgotten your password? There is no self-service reset. Ask the CEO, who can issue a new temporary password.
 
 ### Getting around
@@ -38,6 +41,9 @@ The **bell** at the top right shows a red count of unread notifications, and che
 - you are added to a project.
 
 Click a notification to mark it read and go straight to the right page.
+
+![The notifications panel open from the bell](docs/guide/19-notifications.png)
+
 
 ### Your profile
 **Account menu → Profile** shows your details and lets you change your password. Enter your current password, then the new one twice.
@@ -59,15 +65,24 @@ Open **Today**.
 4. Optionally add a **note**, for example *"ground floor layout revisions"*.
 5. Press **Start work**. The big timer starts counting.
 
+![Today before starting work: project, location, activity and a note](docs/guide/02-today-start.png)
+
+
 **While you work**, the screen shows:
 - your time worked today;
 - your breaks today;
 - when you started, and the current project, location and activity.
 
+![Today while working: the timer, today's totals and the current project](docs/guide/03-today-working.png)
+
+
 **When you switch tasks** (a different project, moving from office to site, or changing activity):
 - Press **Change project, location or activity**, pick what changed, and press **Save change**.
 - Your time so far stays with the old project or activity. New time goes to the new one.
 - Do this as it happens, not at the end of the day. That's how project hours stay accurate.
+
+![The panel for changing project, location or activity](docs/guide/04-today-change.png)
+
 
 **Breaks:**
 - Choose the break type (Lunch, Short break or Other) and press **Start break**. The work timer pauses.
@@ -92,6 +107,9 @@ If you're still clocked in 16 hours after you started, the system marks that day
 - Open a day to see each entry: which project, where, and from what time to what time.
 - A day with a missing clock-out has a shortcut to request a correction.
 
+![My time: working days with hours, breaks and status](docs/guide/05-my-time.png)
+
+
 ### My projects
 **My projects** shows each project you're on and how many hours *you* have put into it over the chosen range. It never shows pay or project costs.
 
@@ -103,6 +121,9 @@ You can't edit your own time directly; every change is approved by a manager and
    - add a **missing entry** for a project you forgot to clock in to.
 3. Enter the correct times and a short **reason** (at least 5 characters), for example *"Stayed late to finish the layout; forgot to clock out."*
 4. Submit. Your project manager (or the CEO) is notified.
+
+![The Request correction window](docs/guide/06-request-correction.png)
+
 
 While a request is **pending** you can **Edit** it, or **Withdraw** it. The system refuses requests that overlap other recorded time, or that use a project you aren't on, and tells you why. You'll get a notification when it's decided, with the reviewer's note if they left one.
 
@@ -126,28 +147,49 @@ A snapshot of your team:
   - each active project's hours against its estimate;
   - hours by location and by activity.
 
+![The management dashboard](docs/guide/07-dashboard.png)
+
+
 ### Live status
 Everyone in your scope right now: working, on a break, finished or not started, with their project, what they're doing and how long they've been at it. It refreshes every 15 seconds.
 
+![Live status: who is working, on a break or finished](docs/guide/08-live-status.png)
+
+
 ### Employees
 A searchable staff list. Open a person to see:
+
+![The employees list](docs/guide/10-employees.png)
+
 - **Overview:** their details, projects, and last-30-day numbers (hours, average day, missing clock-outs).
 - **Report:** hours by project, activity and location for the last 30 or 90 days.
 
 Only the CEO can add, edit or deactivate staff.
 
 ### Projects
-The list shows each project you lead, its status, team size, and **hours against estimate** as a progress bar, flagged when a project goes over. Press **New project** to create one; you become its lead automatically. Inside a project:
+The list shows each project you lead, its status, team size, and **hours against estimate** as a progress bar, flagged when a project goes over. Press **New project** to create one; you become its lead automatically.
+
+![The projects list with hours against each estimate](docs/guide/14-projects.png)
+ Inside a project:
 - **Overview:** hours worked, the estimate, hours remaining (or how far over), project details, and who is working on it right now.
+
+![A project's overview](docs/guide/15-project-detail.png)
+
 - **Team:** add people with the search box, or remove someone. Removing a person keeps every hour they already recorded; they just can't clock in to it any more. Only the CEO can make someone a lead or remove a lead.
 - **Report:** hours by person, activity and location.
 - **Estimate:** choose a team and see roughly **how many working days** the remaining work will take. It is based on each person's average working day over the last 90 days; anyone with no recent history is assumed to work 8 hours a day, and the page says so. It's a guide, not a promise.
+
+![The estimate tab: working days for the chosen team](docs/guide/16-project-estimate.png)
+
 - **Edit:** change the name, client, site, dates, estimate or **status** (Planned, Active, On hold, Completed, Cancelled). People can only clock in to **Active** projects. A project that has time recorded can't be deleted, so change its status instead.
 
 ### Corrections: reviewing requests
 1. Open **Corrections**. It shows **Pending** requests by default.
 2. Press **Review** on a request. A panel shows what was **recorded** that day (the entry being changed is marked) next to what is **requested**, with the employee's reason.
 3. Optionally add a note for the employee, then **Approve** or **Reject**.
+
+![Reviewing a correction: what was recorded next to what is requested](docs/guide/09-review-correction.png)
+
 
 - **Approving** updates the day's record and recalculates its hours.
 - **Rejecting** leaves the original record exactly as it was.
@@ -176,6 +218,9 @@ You see **everything**: all staff, all projects, pay rates, labour costs, payrol
 4. They must choose their own password at first sign-in.
 5. Add them to their projects (**Projects → project → Team**) so they can clock in.
 
+![The Add employee form](docs/guide/11-add-employee.png)
+
+
 Departments come from **Settings**, so add a new department there first.
 
 ### Managing an existing employee
@@ -185,11 +230,17 @@ Open the person from **Employees**:
 - **Deactivate:** they can no longer sign in, but all their history stays (for payroll and reports). People are never deleted.
 - **Reactivate:** lets a deactivated person sign in again.
 
+![An employee's page: badges, last-30-day numbers, profile and projects](docs/guide/12-employee-detail.png)
+
+
 ### Pay rates and rate history
 Open a person → **Compensation**:
 - The **rate history** lists every rate they've had and the dates it applied.
 - To change a rate, enter the **new hourly rate**, the **new overtime rate** and the date it **starts on**, then **Save new rate**. The old rate ends the day before.
 - Past days keep the rate that applied **at the time**, so a raise never changes pay already earned.
+
+![Rate history and the form to change a rate](docs/guide/13-compensation.png)
+
 
 ### How pay is worked out
 - **Hours that count** are worked time minus breaks, on days that are *Completed* or *Corrected*.
@@ -206,6 +257,9 @@ Open a person → **Compensation**:
 4. When everything is right, **press and hold "Hold to finalize"**. Finalized records are **locked**: later corrections won't change them, and regenerating skips them.
    - Finalizing is refused while anyone has an open day, a missing clock-out or a pending correction in the period. The page lists those days; resolve them in Corrections, then try again.
 
+![A payroll draft with totals, per-person pay and the finalize button](docs/guide/17-payroll.png)
+
+
 ### Projects and leads
 As well as everything in part 3, you can:
 - **Make someone a project lead** (the *Make them a project lead* switch when adding to a team), and remove leads.
@@ -218,6 +272,9 @@ As well as everything in part 3, you can:
   - **Register device:** pick the employee, name the computer, and enter its serial number or MAC address and its operating system.
   - A **device key** is shown **once**. Put it in the activity agent's settings file on that computer (see below).
   - **Revoke** a lost, sold or replaced computer. Its key stops working immediately.
+
+![Settings: departments and desktop devices](docs/guide/18-settings.png)
+
 
 ### Audit log
 You see every action by everyone: sign-ins, clock-ins, edits, rate changes, approvals, payroll runs and device changes, each with before-and-after details.
