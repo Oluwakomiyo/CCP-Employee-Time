@@ -83,7 +83,8 @@ export class AuthService {
     };
   }
 
-  async refreshTokens(refreshToken: string) {
+  async refreshTokens(refreshToken?: string) {
+    if (!refreshToken) throw AppError.unauthorized('Refresh token is required');
     let payload;
     try {
       payload = verifyRefreshToken(refreshToken);
@@ -121,10 +122,12 @@ export class AuthService {
     const newRefreshToken = generateRefreshToken(newPayload);
     const newHash = hashToken(newRefreshToken);
 
-    await prisma.user.update({
-      where: { id: user.id },
+    // Conditional update: a concurrent refresh with the same token loses the race.
+    const rotated = await prisma.user.updateMany({
+      where: { id: user.id, refreshTokenHash: hashed },
       data: { refreshTokenHash: newHash },
     });
+    if (rotated.count !== 1) throw AppError.unauthorized('Refresh token revoked or reused');
 
     return {
       accessToken: newAccessToken,
@@ -183,18 +186,34 @@ export class AuthService {
     return user;
   }
 
-  async changePassword(userId: string, currentPass: string, newPass: string) {
+  async changePassword(userId: string, currentPass: string, newPass: string, ipAddress?: string, userAgent?: string) {
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw AppError.notFound('User not found');
 
     const isMatch = await bcrypt.compare(currentPass, user.passwordHash);
     if (!isMatch) throw AppError.badRequest('Current password is incorrect');
+    if (await bcrypt.compare(newPass, user.passwordHash)) {
+      throw AppError.badRequest('New password must be different from the current password');
+    }
 
-    const newHash = await bcrypt.hash(newPass, 10);
-    await prisma.user.update({
-      where: { id: userId },
-      data: { passwordHash: newHash, mustChangePassword: false },
-    });
+    const newHash = await bcrypt.hash(newPass, 12);
+    await prisma.$transaction([
+      prisma.user.update({
+        where: { id: userId },
+        data: { passwordHash: newHash, mustChangePassword: false },
+      }),
+      prisma.auditLog.create({
+        data: {
+          actorId: userId,
+          action: AuditAction.UPDATE,
+          entityName: 'UserCredentials',
+          entityId: userId,
+          ipAddress,
+          userAgent,
+          afterState: { event: 'PASSWORD_CHANGED' },
+        },
+      }),
+    ]);
 
     return { message: 'Password successfully updated' };
   }
