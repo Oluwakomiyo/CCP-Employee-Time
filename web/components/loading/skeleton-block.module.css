@@ -1,0 +1,27 @@
+/* Same calm pulse as the Arc skeleton: blocks dim a beat after the one above,
+   then rest. Reduced motion shows still blocks. */
+.block {
+  display: block;
+  flex: none;
+  min-width: 0;
+  border-radius: var(--radius, var(--radius-control));
+  background: color-mix(in oklab, var(--border-strong) 38%, var(--surface));
+  animation: loading-pulse 1.8s var(--ease-in-out) calc(var(--index, 0) * 90ms) 11 both;
+}
+
+.pill {
+  border-radius: var(--radius, var(--radius-pill));
+}
+
+.circle {
+  border-radius: var(--radius, 50%);
+}
+
+@keyframes loading-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.52; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .block { animation: none; }
+}

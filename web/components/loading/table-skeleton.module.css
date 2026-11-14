@@ -1,0 +1,67 @@
+/* Mirrors the Arc table metrics: 44px header, 52px rows, same padding, gaps and
+   dividers, same 620px stacking breakpoint. */
+.table {
+  width: 100%;
+}
+
+.head,
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 0 var(--space-4);
+}
+
+.head {
+  height: 44px;
+  border-bottom: 1px solid var(--border);
+}
+
+.row {
+  height: 52px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.row:last-child {
+  border-bottom: 0;
+}
+
+.cell {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+@media (max-width: 620px) {
+  .head {
+    height: auto;
+    padding: var(--space-1) var(--space-2);
+    gap: var(--space-1);
+    overflow: hidden;
+  }
+
+  /* The header folds into a strip of sort pills: fixed chips, control radius. */
+  .head .cell {
+    flex: none !important;
+    width: 4.5rem;
+  }
+
+  .head .cell > span {
+    width: 100% !important;
+    height: 32px !important;
+    border-radius: var(--radius-control);
+  }
+
+  .row {
+    height: auto;
+    min-height: 64px;
+    flex-wrap: wrap;
+    align-content: center;
+    gap: 2px var(--space-2);
+    padding: 10px var(--space-4);
+  }
+
+  .row .cell:first-child {
+    flex-basis: 100% !important;
+  }
+}
