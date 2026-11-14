@@ -66,6 +66,17 @@ enum LocationType {
   OFFICE
   SITE
   REMOTE
+  OTHER
+}
+
+enum ActivityType {
+  DESIGN
+  CLIENT_MEETING
+  SITE_INSPECTION
+  DOCUMENTATION
+  DRAWING
+  ADMINISTRATION
+  OTHER
 }
 
 enum VerificationStatus {
@@ -284,7 +295,8 @@ model Activity {
   id            String  @id @default(uuid())
   workSegmentId String
   projectId     String
-  title         String
+  activityType  ActivityType @default(OTHER)
+  title         String?
   notes         String?
 
   startTime DateTime  @db.Timestamptz(6)
