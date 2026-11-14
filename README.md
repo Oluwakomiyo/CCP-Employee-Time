@@ -4,6 +4,8 @@ Architecture firm time tracking: employees clock in on projects (office or site)
 
 **Using the app?** Read the [user guide](USER_GUIDE.md): how employees, project managers and the CEO use it day to day.
 
+**Setting it up on your computer?** Follow the [developer setup guide](DEVELOPER_SETUP.md) (Windows, macOS and Linux).
+
 ## Stack
 
 - `server/` — Express 4 + Prisma 5 + PostgreSQL API (the contract; 89 tests)
