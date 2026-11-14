@@ -3,41 +3,40 @@ import { Role } from '@prisma/client';
 import { timeController } from './time.controller';
 import { authenticate, authorize } from '../../middleware/auth.middleware';
 import { validate } from '../../middleware/validate.middleware';
-import { clockInSchema, startBreakSchema, logActivitySchema } from './time.schema';
+import {
+  startWorkSchema,
+  changeProjectSchema,
+  changeLocationSchema,
+  changeActivitySchema,
+  startBreakSchema,
+} from './time.schema';
 
 const router = Router();
 
 router.use(authenticate);
 
-// 1. Live status & Timesheet History
-router.get('/status', timeController.getStatus);
+// Status & history
+router.get('/today', timeController.getToday);
 router.get('/history', timeController.getHistory);
 
-// 2. Segment Clock-in & Clock-out
-router.post('/clock-in', validate(clockInSchema), timeController.clockIn);
-router.post('/clock-out', timeController.clockOut);
-
-// 3. Break Management
+// Time engine (spec §38). Every action returns the employee's fresh status.
+router.post('/start', validate(startWorkSchema), timeController.startWork);
+router.post('/project', validate(changeProjectSchema), timeController.changeProject);
+router.post('/location', validate(changeLocationSchema), timeController.changeLocation);
+router.post('/activity', validate(changeActivitySchema), timeController.changeActivity);
 router.post('/breaks/start', validate(startBreakSchema), timeController.startBreak);
 router.post('/breaks/end', timeController.endBreak);
+router.post('/end', timeController.endWork);
 
-// 4. Activity Logging
-router.post('/activities', validate(logActivitySchema), timeController.logActivity);
+// shortcut: legacy aliases used by the old Vite client; remove with client/ in Phase 7.
+router.get('/status', timeController.getToday);
+router.post('/clock-in', validate(startWorkSchema), timeController.startWork);
+router.post('/clock-out', timeController.endWork);
+router.post('/switch', validate(changeProjectSchema), timeController.changeProject);
+router.post('/activities', validate(changeActivitySchema), timeController.changeActivity);
 
-// -----------------------------------------------------------------------------
-// 5. Missing Clock-Out Handling
-// -----------------------------------------------------------------------------
-
-// List all workdays with missing clock-outs
+// Missing clock-outs
 router.get('/flagged', timeController.getFlaggedDays);
-
-// Manually trigger stale session auto-closure (CEO_ADMIN and PROJECT_MANAGER)
-router.post(
-  '/auto-close-stale',
-  authorize(Role.CEO_ADMIN, Role.PROJECT_MANAGER),
-  timeController.triggerAutoClose
-);
-
-router.post('/switch', timeController.switchContext);
+router.post('/auto-close-stale', authorize(Role.CEO_ADMIN, Role.PROJECT_MANAGER), timeController.triggerAutoClose);
 
 export const timeRouter = router;

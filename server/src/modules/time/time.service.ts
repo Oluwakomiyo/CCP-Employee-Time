@@ -5,501 +5,394 @@ import {
   Role,
   Prisma,
   LocationType,
+  ActivityType,
 } from '@prisma/client';
-import { prisma } from '../../config/prisma';
+import { prisma, DbClient } from '../../config/prisma';
 import { AppError } from '../../errors/AppError';
+import { workDateFor } from '../../utils/time';
+import { withEmployeeLock, recomputeDayTotals, secondsBetween } from './time.totals';
 import {
-  ClockInInput,
+  StartWorkInput,
+  ChangeProjectInput,
+  ChangeLocationInput,
+  ChangeActivityInput,
   StartBreakInput,
-  LogActivityInput,
   TimeHistoryQueryInput,
 } from './time.schema';
 
+/** Who is acting and from where; all timestamps are generated here, never taken from the client (spec §8). */
+export interface TimeActor {
+  employeeId: string;
+  userId: string;
+  role: Role;
+  ip?: string;
+}
+
+const activeSegmentFor = (tx: DbClient, employeeId: string) =>
+  tx.workSegment.findFirst({
+    where: { workDay: { employeeId }, status: SegmentStatus.ACTIVE },
+    include: {
+      project: { select: { id: true, code: true, name: true } },
+      breaks: { where: { endTime: null } },
+      activities: { where: { endTime: null } },
+    },
+  });
+
+type ActiveSegment = NonNullable<Awaited<ReturnType<typeof activeSegmentFor>>>;
+
+const requireActive = async (tx: DbClient, employeeId: string): Promise<ActiveSegment> => {
+  const segment = await activeSegmentFor(tx, employeeId);
+  if (!segment) throw new AppError('You have not started work', 409, undefined, 'NO_ACTIVE_WORKDAY');
+  return segment;
+};
+
+const requireNotOnBreak = (segment: ActiveSegment, action: string) => {
+  if (segment.breaks.length > 0) {
+    throw new AppError(`End your break before you ${action}`, 409, undefined, 'ON_BREAK');
+  }
+};
+
+/** Spec §8: project must exist, be active and be assigned to the employee. */
+const assertCanWorkOn = async (tx: DbClient, actor: TimeActor, projectId: string) => {
+  const project = await tx.project.findUnique({
+    where: { id: projectId },
+    include: { members: { where: { employeeId: actor.employeeId } } },
+  });
+  if (!project) throw AppError.badRequest('Project does not exist');
+  if (!project.isActive) throw AppError.badRequest('Project is not active');
+  if (actor.role !== Role.CEO_ADMIN && project.members.length === 0) {
+    throw AppError.forbidden('You are not assigned to this project');
+  }
+  return project;
+};
+
+const audit = (tx: DbClient, actor: TimeActor, action: AuditAction, entityName: string, entityId: string, afterState: Prisma.JsonObject) =>
+  tx.auditLog.create({ data: { actorId: actor.userId, action, entityName, entityId, ipAddress: actor.ip, afterState } });
+
+/** Closes the open activity and segment at `now` and returns the segment's duration. */
+const closeSegment = async (tx: DbClient, segment: ActiveSegment, now: Date, actor: TimeActor) => {
+  await tx.activity.updateMany({ where: { workSegmentId: segment.id, endTime: null }, data: { endTime: now } });
+  const durationSeconds = secondsBetween(segment.clockIn, now);
+  await tx.workSegment.update({
+    where: { id: segment.id },
+    data: { clockOut: now, durationSeconds, clockOutIp: actor.ip, status: SegmentStatus.COMPLETED },
+  });
+  return durationSeconds;
+};
+
+const openSegment = async (
+  tx: DbClient,
+  workDayId: string,
+  actor: TimeActor,
+  now: Date,
+  ctx: { projectId: string; location: LocationType; activityType: ActivityType; description?: string | null }
+) => {
+  const segment = await tx.workSegment.create({
+    data: {
+      workDayId,
+      projectId: ctx.projectId,
+      location: ctx.location,
+      status: SegmentStatus.ACTIVE,
+      clockIn: now,
+      clockInIp: actor.ip,
+    },
+  });
+  await tx.activity.create({
+    data: {
+      workSegmentId: segment.id,
+      projectId: ctx.projectId,
+      activityType: ctx.activityType,
+      notes: ctx.description ?? null,
+      startTime: now,
+    },
+  });
+  return segment;
+};
+
 export class TimeService {
-  /**
-   * Clocks in an employee to a project (From Phase 5)
-   */
-  async clockIn(
-    employeeId: string,
-    input: ClockInInput,
-    userRole: Role,
-    userId: string,
-    ipAddress?: string
-  ) {
-    const project = await prisma.project.findUnique({
-      where: { id: input.projectId },
-      include: { members: true },
-    });
-
-    if (!project || !project.isActive) {
-      throw AppError.badRequest('Project does not exist or is currently inactive');
-    }
-
-    if (userRole !== Role.CEO_ADMIN) {
-      const isMember = project.members.some((m) => m.employeeId === employeeId);
-      if (!isMember) {
-        throw AppError.forbidden('You are not assigned to log time against this project');
+  /** POST /time/start: creates (or reopens) today's workday, a segment and an activity atomically. */
+  async startWork(actor: TimeActor, input: StartWorkInput) {
+    return withEmployeeLock(actor.employeeId, async (tx) => {
+      const active = await activeSegmentFor(tx, actor.employeeId);
+      if (active) {
+        throw new AppError('You already have an active workday.', 409, undefined, 'ACTIVE_WORKDAY_EXISTS');
       }
-    }
+      await assertCanWorkOn(tx, actor, input.projectId);
 
-    const activeSegment = await prisma.workSegment.findFirst({
-      where: {
-        workDay: { employeeId },
-        status: SegmentStatus.ACTIVE,
-      },
-      include: { project: true },
-    });
-
-    if (activeSegment) {
-      throw AppError.conflict(
-        `Already clocked in to project '${activeSegment.project.name}'. Clock out before starting a new segment.`
-      );
-    }
-
-    const now = new Date();
-    const todayDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-
-    const newSegment = await prisma.$transaction(async (tx) => {
-      let workDay = await tx.workDay.findUnique({
-        where: {
-          employeeId_date: {
-            employeeId,
-            date: todayDate,
-          },
-        },
-      });
-
-      if (!workDay) {
-        workDay = await tx.workDay.create({
-          data: {
-            employeeId,
-            date: todayDate,
-            status: DayStatus.OPEN,
-          },
-        });
-      } else if (workDay.status === DayStatus.CLOSED) {
-        // 🔴 Re-open workday if starting another segment today
-        await tx.workDay.update({
-          where: { id: workDay.id },
-          data: { status: DayStatus.OPEN },
-        });
+      const now = new Date();
+      const date = workDateFor(now);
+      const existing = await tx.workDay.findUnique({ where: { employeeId_date: { employeeId: actor.employeeId, date } } });
+      const workDay =
+        existing ??
+        (await tx.workDay.create({ data: { employeeId: actor.employeeId, date, status: DayStatus.OPEN } }));
+      if (existing && existing.status === DayStatus.CLOSED) {
+        await tx.workDay.update({ where: { id: existing.id }, data: { status: DayStatus.OPEN } });
       }
 
-      const segment = await tx.workSegment.create({
-        data: {
-          workDayId: workDay.id,
-          projectId: input.projectId,
-          location: input.location ?? LocationType.OFFICE,
-          status: SegmentStatus.ACTIVE,
-          clockIn: now,
-          clockInIp: ipAddress,
-        },
-        include: {
-          project: {
-            select: { id: true, code: true, name: true },
-          },
-        },
+      const segment = await openSegment(tx, workDay.id, actor, now, {
+        projectId: input.projectId,
+        location: input.location ?? LocationType.OFFICE,
+        activityType: input.activityType,
+        description: input.description,
       });
-
-      await tx.auditLog.create({
-        data: {
-          actorId: userId,
-          action: AuditAction.CLOCK_IN,
-          entityName: 'WorkSegment',
-          entityId: segment.id,
-          ipAddress,
-          afterState: {
-            projectId: input.projectId,
-            clockIn: now.toISOString(),
-          },
-        },
+      await audit(tx, actor, AuditAction.CLOCK_IN, 'WorkDay', workDay.id, {
+        event: 'WORKDAY_STARTED',
+        segmentId: segment.id,
+        projectId: input.projectId,
+        at: now.toISOString(),
       });
-
-      return segment;
+      return this.statusIn(tx, actor.employeeId);
     });
-
-    return newSegment;
   }
 
-  /**
-   * Starts a break within the currently active segment.
-   * Enforces:
-   * 1. Must be currently clocked into a segment.
-   * 2. Cannot start a break if another break is already active.
-   */
-  async startBreak(employeeId: string, input: StartBreakInput, userId: string) {
-    const activeSegment = await prisma.workSegment.findFirst({
-      where: {
-        workDay: { employeeId },
-        status: SegmentStatus.ACTIVE,
-      },
-      include: {
-        breaks: {
-          where: { endTime: null },
-        },
-      },
+  /** POST /time/project: closes the segment/activity and opens new ones on another project (spec §10). */
+  async changeProject(actor: TimeActor, input: ChangeProjectInput) {
+    return withEmployeeLock(actor.employeeId, async (tx) => {
+      const current = await requireActive(tx, actor.employeeId);
+      requireNotOnBreak(current, 'change project');
+      if (current.projectId === input.projectId && (input.location ?? current.location) === current.location) {
+        throw AppError.badRequest('You are already working on this project at this location');
+      }
+      await assertCanWorkOn(tx, actor, input.projectId);
+
+      const now = new Date();
+      const currentActivity = current.activities[0];
+      await closeSegment(tx, current, now, actor);
+      const segment = await openSegment(tx, current.workDayId, actor, now, {
+        projectId: input.projectId,
+        location: input.location ?? current.location,
+        activityType: input.activityType ?? currentActivity?.activityType ?? ActivityType.OTHER,
+        description: input.description ?? (input.activityType ? null : currentActivity?.notes),
+      });
+      await audit(tx, actor, AuditAction.UPDATE, 'WorkSegment', segment.id, {
+        event: 'PROJECT_CHANGED',
+        fromProjectId: current.projectId,
+        toProjectId: input.projectId,
+        at: now.toISOString(),
+      });
+      return this.statusIn(tx, actor.employeeId);
     });
+  }
 
-    if (!activeSegment) {
-      throw AppError.badRequest('You must be clocked in to start a break');
-    }
+  /** POST /time/location: new segment on the same project, keeping the current activity (spec §11). */
+  async changeLocation(actor: TimeActor, input: ChangeLocationInput) {
+    return withEmployeeLock(actor.employeeId, async (tx) => {
+      const current = await requireActive(tx, actor.employeeId);
+      requireNotOnBreak(current, 'change location');
+      const location = input.location as LocationType;
+      if (current.location === location) throw AppError.badRequest(`You are already at ${location}`);
 
-    if (activeSegment.breaks.length > 0) {
-      throw AppError.conflict('A break is already in progress. End your current break first.');
-    }
+      const now = new Date();
+      const currentActivity = current.activities[0];
+      await closeSegment(tx, current, now, actor);
+      const segment = await openSegment(tx, current.workDayId, actor, now, {
+        projectId: current.projectId,
+        location,
+        activityType: currentActivity?.activityType ?? ActivityType.OTHER,
+        description: currentActivity?.notes,
+      });
+      await audit(tx, actor, AuditAction.UPDATE, 'WorkSegment', segment.id, {
+        event: 'LOCATION_CHANGED',
+        from: current.location,
+        to: location,
+        at: now.toISOString(),
+      });
+      return this.statusIn(tx, actor.employeeId);
+    });
+  }
 
-    const now = new Date();
+  /** POST /time/activity: closes the current activity and opens a new one in the same segment (spec §12). */
+  async changeActivity(actor: TimeActor, input: ChangeActivityInput) {
+    return withEmployeeLock(actor.employeeId, async (tx) => {
+      const current = await requireActive(tx, actor.employeeId);
+      requireNotOnBreak(current, 'change activity');
 
-    const breakRecord = await prisma.$transaction(async (tx) => {
-      const b = await tx.break.create({
+      const now = new Date();
+      await tx.activity.updateMany({ where: { workSegmentId: current.id, endTime: null }, data: { endTime: now } });
+      const activity = await tx.activity.create({
         data: {
-          workSegmentId: activeSegment.id,
-          breakType: input.breakType,
-          isPaid: input.isPaid,
+          workSegmentId: current.id,
+          projectId: current.projectId,
+          activityType: input.activityType,
+          notes: input.description ?? input.title ?? null,
           startTime: now,
         },
       });
-
-      await tx.auditLog.create({
-        data: {
-          actorId: userId,
-          action: AuditAction.UPDATE,
-          entityName: 'Break',
-          entityId: b.id,
-          afterState: {
-            breakType: input.breakType,
-            startTime: now.toISOString(),
-            isPaid: input.isPaid,
-          },
-        },
+      await audit(tx, actor, AuditAction.UPDATE, 'Activity', activity.id, {
+        event: 'ACTIVITY_CHANGED',
+        activityType: input.activityType,
+        at: now.toISOString(),
       });
-
-      return b;
+      return this.statusIn(tx, actor.employeeId);
     });
+  }
 
-    return breakRecord;
+  /** POST /time/breaks/start. Breaks are unpaid in V1 (client cannot mark them paid). */
+  async startBreak(actor: TimeActor, input: StartBreakInput) {
+    return withEmployeeLock(actor.employeeId, async (tx) => {
+      const current = await requireActive(tx, actor.employeeId);
+      if (current.breaks.length > 0) {
+        throw new AppError('You are already on a break', 409, undefined, 'ALREADY_ON_BREAK');
+      }
+      const now = new Date();
+      const record = await tx.break.create({
+        data: { workSegmentId: current.id, breakType: input.breakType, isPaid: false, startTime: now },
+      });
+      await audit(tx, actor, AuditAction.UPDATE, 'Break', record.id, {
+        event: 'BREAK_STARTED',
+        breakType: input.breakType,
+        at: now.toISOString(),
+      });
+      return this.statusIn(tx, actor.employeeId);
+    });
+  }
+
+  /** POST /time/breaks/end */
+  async endBreak(actor: TimeActor) {
+    return withEmployeeLock(actor.employeeId, async (tx) => {
+      const current = await requireActive(tx, actor.employeeId);
+      const open = current.breaks[0];
+      if (!open) throw new AppError('You are not on a break', 409, undefined, 'NOT_ON_BREAK');
+
+      const now = new Date();
+      const durationSeconds = secondsBetween(open.startTime, now);
+      await tx.break.update({ where: { id: open.id }, data: { endTime: now, durationSeconds } });
+      await recomputeDayTotals(tx, current.workDayId);
+      await audit(tx, actor, AuditAction.UPDATE, 'Break', open.id, {
+        event: 'BREAK_ENDED',
+        durationSeconds,
+        at: now.toISOString(),
+      });
+      return this.statusIn(tx, actor.employeeId);
+    });
+  }
+
+  /** POST /time/end: closes everything and completes the workday (spec §14). */
+  async endWork(actor: TimeActor) {
+    return withEmployeeLock(actor.employeeId, async (tx) => {
+      const current = await requireActive(tx, actor.employeeId);
+      requireNotOnBreak(current, 'end work');
+
+      const now = new Date();
+      await closeSegment(tx, current, now, actor);
+      const totals = await recomputeDayTotals(tx, current.workDayId);
+      // Only an OPEN day becomes CLOSED; flagged or under-correction days keep their status.
+      await tx.workDay.updateMany({
+        where: { id: current.workDayId, status: DayStatus.OPEN },
+        data: { status: DayStatus.CLOSED },
+      });
+      await audit(tx, actor, AuditAction.CLOCK_OUT, 'WorkDay', current.workDayId, {
+        event: 'WORKDAY_ENDED',
+        segmentId: current.id,
+        at: now.toISOString(),
+        ...totals,
+      });
+      return this.statusIn(tx, actor.employeeId);
+    });
+  }
+
+  /** GET /time/today */
+  async getToday(employeeId: string) {
+    return this.statusIn(prisma, employeeId);
   }
 
   /**
-   * Ends the currently active break and calculates duration.
-   * Enforces:
-   * 1. An active break must exist.
-   * 2. Recalculates WorkDay.totalBreakSeconds.
+   * Current state for the employee dashboard (spec §45). Keeps the fields the legacy
+   * client reads (isClockedIn, activeSegment.*) and adds today's totals.
    */
-  async endBreak(employeeId: string, userId: string) {
-    const activeSegment = await prisma.workSegment.findFirst({
-      where: {
-        workDay: { employeeId },
-        status: SegmentStatus.ACTIVE,
-      },
-      include: {
-        breaks: {
-          where: { endTime: null },
-        },
-      },
-    });
-
-    if (!activeSegment || activeSegment.breaks.length === 0) {
-      throw AppError.badRequest('No active break found to end');
-    }
-
-    const activeBreak = activeSegment.breaks[0];
-    const endTime = new Date();
-    const durationSeconds = Math.max(
-      0,
-      Math.floor((endTime.getTime() - new Date(activeBreak.startTime).getTime()) / 1000)
-    );
-
-    const endedBreak = await prisma.$transaction(async (tx) => {
-      const b = await tx.break.update({
-        where: { id: activeBreak.id },
-        data: {
-          endTime,
-          durationSeconds,
-        },
-      });
-
-      // Sum all completed breaks for the entire workday
-      const allDayBreaks = await tx.break.findMany({
-        where: {
-          workSegment: { workDayId: activeSegment.workDayId },
-          endTime: { not: null },
-        },
-        select: { durationSeconds: true },
-      });
-
-      const totalBreakSeconds = allDayBreaks.reduce(
-        (sum, item) => sum + (item.durationSeconds || 0),
-        0
-      );
-
-      await tx.workDay.update({
-        where: { id: activeSegment.workDayId },
-        data: { totalBreakSeconds },
-      });
-
-      await tx.auditLog.create({
-        data: {
-          actorId: userId,
-          action: AuditAction.UPDATE,
-          entityName: 'Break',
-          entityId: b.id,
-          afterState: {
-            endTime: endTime.toISOString(),
-            durationSeconds,
-          },
-        },
-      });
-
-      return b;
-    });
-
-    return endedBreak;
-  }
-
-  /**
-   * Logs a specific task/activity against the currently active segment.
-   */
-  async logActivity(employeeId: string, input: LogActivityInput) {
-    const activeSegment = await prisma.workSegment.findFirst({
-      where: {
-        workDay: { employeeId },
-        status: SegmentStatus.ACTIVE,
-      },
-    });
-
-    if (!activeSegment) {
-      throw AppError.badRequest('You must be actively clocked in to log an activity');
-    }
-
-    const startTime = input.startTime ? new Date(input.startTime) : new Date();
-    const endTime = input.endTime ? new Date(input.endTime) : null;
-
-    const activity = await prisma.activity.create({
-      data: {
-        workSegmentId: activeSegment.id,
-        projectId: activeSegment.projectId,
-        title: input.title,
-        notes: input.notes,
-        startTime,
-        endTime,
-      },
-    });
-
-    return activity;
-  }
-
-  /**
-   * Clocks out of the current segment (From Phase 5)
-   */
-  async clockOut(employeeId: string, userId: string, ipAddress?: string) {
-    const activeSegment = await prisma.workSegment.findFirst({
-      where: {
-        workDay: { employeeId },
-        status: SegmentStatus.ACTIVE,
-      },
-      include: {
-        breaks: {
-          where: { endTime: null },
-        },
-      },
-    });
-
-    if (!activeSegment) {
-      throw AppError.badRequest('No active clock-in session found to clock out of');
-    }
-
-    if (activeSegment.breaks.length > 0) {
-      throw AppError.conflict(
-        'You have an ongoing break. Please end your break before clocking out.'
-      );
-    }
-
-    const clockOutTime = new Date();
-    const durationSeconds = Math.max(
-      0,
-      Math.floor((clockOutTime.getTime() - new Date(activeSegment.clockIn).getTime()) / 1000)
-    );
-
-    const completedSegment = await prisma.$transaction(async (tx) => {
-      const segment = await tx.workSegment.update({
-        where: { id: activeSegment.id },
-        data: {
-          clockOut: clockOutTime,
-          durationSeconds,
-          clockOutIp: ipAddress,
-          status: SegmentStatus.COMPLETED,
-        },
-        include: {
-          project: { select: { id: true, code: true, name: true } },
-        },
-      });
-
-      const allCompletedSegments = await tx.workSegment.findMany({
-        where: {
-          workDayId: activeSegment.workDayId,
-          status: SegmentStatus.COMPLETED,
-        },
-        select: { durationSeconds: true },
-      });
-
-      const totalWorkSeconds = allCompletedSegments.reduce(
-        (sum, s) => sum + (s.durationSeconds || 0),
-        0
-      );
-
-      await tx.workDay.update({
-        where: { id: activeSegment.workDayId },
-        data: {
-          totalWorkSeconds,
-          status: DayStatus.CLOSED, // 🔴 Sets status to CLOSED upon clock-out
-        },
-      });
-
-      await tx.auditLog.create({
-        data: {
-          actorId: userId,
-          action: AuditAction.CLOCK_OUT,
-          entityName: 'WorkSegment',
-          entityId: segment.id,
-          ipAddress,
-          afterState: {
-            clockOut: clockOutTime.toISOString(),
-            durationSeconds,
-          },
-        },
-      });
-
-      return segment;
-    });
-
-    return completedSegment;
-  }
-
-  /**
-   * Live status check (From Phase 5)
-   */
-  async getCurrentStatus(employeeId: string) {
-    const activeSegment = await prisma.workSegment.findFirst({
-      where: {
-        workDay: { employeeId },
-        status: SegmentStatus.ACTIVE,
-      },
-      include: {
-        project: {
-          select: { id: true, code: true, name: true },
-        },
-        breaks: {
-          where: { endTime: null },
-        },
-      },
-    });
-
-    if (!activeSegment) {
-      return {
-        isClockedIn: false,
-        activeSegment: null,
-      };
-    }
-
+  private async statusIn(db: DbClient, employeeId: string) {
     const now = new Date();
-    const elapsedSeconds = Math.floor(
-      (now.getTime() - new Date(activeSegment.clockIn).getTime()) / 1000
-    );
+    const segment = await activeSegmentFor(db, employeeId);
+    // The running segment's day (may be yesterday for overnight work), else today's date.
+    const include = { segments: { include: { breaks: true } } } as const;
+    const workDay = segment
+      ? await db.workDay.findUnique({ where: { id: segment.workDayId }, include })
+      : await db.workDay.findUnique({ where: { employeeId_date: { employeeId, date: workDateFor(now) } }, include });
 
-    const activeBreak = activeSegment.breaks[0] || null;
+    // Today's net working time including the running segment and any running break.
+    let presence = 0;
+    let breaks = 0;
+    for (const s of workDay?.segments ?? []) {
+      if (s.durationSeconds !== null) presence += s.durationSeconds;
+      else if (s.status === SegmentStatus.ACTIVE) presence += secondsBetween(s.clockIn, now);
+      for (const b of s.breaks) {
+        breaks += b.durationSeconds ?? (b.endTime ? 0 : secondsBetween(b.startTime, now));
+      }
+    }
+
+    const activeBreak = segment?.breaks[0] ?? null;
+    const activity = segment?.activities[0] ?? null;
+    const state = !segment ? 'NOT_WORKING' : activeBreak ? 'ON_BREAK' : 'WORKING';
 
     return {
-      isClockedIn: true,
-      activeSegment: {
-        id: activeSegment.id,
-        projectId: activeSegment.projectId,
-        projectName: activeSegment.project.name,
-        projectCode: activeSegment.project.code,
-        clockIn: activeSegment.clockIn,
-        elapsedSeconds,
-        isOnBreak: activeBreak !== null,
-        activeBreak: activeBreak
-          ? {
-            id: activeBreak.id,
-            breakType: activeBreak.breakType,
-            startTime: activeBreak.startTime,
-            breakElapsedSeconds: Math.floor(
-              (now.getTime() - new Date(activeBreak.startTime).getTime()) / 1000
-            ),
-          }
-          : null,
+      state,
+      isClockedIn: !!segment,
+      today: {
+        workDayId: workDay?.id ?? null,
+        status: workDay?.status ?? null,
+        presenceSeconds: presence,
+        breakSeconds: breaks,
+        workingSeconds: Math.max(0, presence - breaks),
       },
+      activeSegment: segment
+        ? {
+            id: segment.id,
+            projectId: segment.projectId,
+            projectName: segment.project.name,
+            projectCode: segment.project.code,
+            location: segment.location,
+            clockIn: segment.clockIn,
+            elapsedSeconds: secondsBetween(segment.clockIn, now),
+            activity: activity
+              ? { id: activity.id, activityType: activity.activityType, description: activity.notes, startTime: activity.startTime }
+              : null,
+            isOnBreak: !!activeBreak,
+            activeBreak: activeBreak
+              ? {
+                  id: activeBreak.id,
+                  breakType: activeBreak.breakType,
+                  startTime: activeBreak.startTime,
+                  breakElapsedSeconds: secondsBetween(activeBreak.startTime, now),
+                }
+              : null,
+          }
+        : null,
     };
   }
 
-  /**
-   * History & timesheets (From Phase 5)
-   */
-  async getTimesheetHistory(
-    query: TimeHistoryQueryInput,
-    userRole: Role,
-    userEmployeeId: string
-  ) {
+  /** GET /me/time and /time/history: own records; management may pass all=true / employeeId. */
+  async getTimesheetHistory(query: TimeHistoryQueryInput, userRole: Role, userEmployeeId: string) {
     const where: Prisma.WorkDayWhereInput = {};
 
-    // 🔴 Default is ALWAYS the caller's own personal shifts
     if (query.all === 'true' && userRole !== Role.EMPLOYEE) {
-      // Management requested company-wide shifts (e.g. for Work Evidence)
       if (query.employeeId) where.employeeId = query.employeeId;
     } else {
-      // Personal timesheet view
       where.employeeId = userEmployeeId;
     }
+    if (query.startDate || query.endDate) {
+      where.date = {
+        ...(query.startDate ? { gte: new Date(`${query.startDate}T00:00:00.000Z`) } : {}),
+        ...(query.endDate ? { lte: new Date(`${query.endDate}T00:00:00.000Z`) } : {}),
+      };
+    }
 
-    const workDays = await prisma.workDay.findMany({
+    // shortcut: capped at 366 days instead of real pagination; Phase 4 adds page/limit.
+    return prisma.workDay.findMany({
       where,
       orderBy: { date: 'desc' },
+      take: 366,
       include: {
         segments: {
           orderBy: { clockIn: 'asc' },
           include: {
             project: { select: { id: true, code: true, name: true } },
-            breaks: true,
-            activities: true,
+            breaks: { orderBy: { startTime: 'asc' } },
+            activities: { orderBy: { startTime: 'asc' } },
           },
         },
-        employee: {
-          select: {
-            id: true,
-            employeeCode: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
+        employee: { select: { id: true, employeeCode: true, firstName: true, lastName: true } },
       },
     });
-
-    return workDays;
-  }
-
-  // 🔴 1-CLICK SEAMLESS SWITCH OF PROJECT OR LOCATION
-  async switchProjectOrLocation(
-    employeeId: string,
-    newProjectId: string,
-    newLocation: LocationType,
-    userRole: Role,
-    userId: string,
-    ipAddress?: string
-  ) {
-    // 1. Clock out of current segment
-    await this.clockOut(employeeId, userId, ipAddress);
-
-    // 2. Immediately clock into new segment with new context
-    const newSegment = await this.clockIn(
-      employeeId,
-      { projectId: newProjectId, location: newLocation },
-      userRole,
-      userId,
-      ipAddress
-    );
-
-    return newSegment;
   }
 }
 

@@ -1,187 +1,96 @@
-import {
-  SegmentStatus,
-  DayStatus,
-  CorrectionStatus,
-  AuditAction,
-  Role,
-  Prisma,
-} from '@prisma/client';
+import { SegmentStatus, DayStatus, CorrectionStatus, AuditAction, Role, Prisma } from '@prisma/client';
 import { prisma } from '../../config/prisma';
+import { withEmployeeLock } from './time.totals';
 
-export interface AutoCloseResult {
-  closedCount: number;
-  processedSegmentIds: string[];
+export interface FlagResult {
+  flaggedCount: number;
+  segmentIds: string[];
 }
 
 export class StaleSessionService {
   /**
-   * Identifies all active segments older than cutoffHours (default: 16),
-   * auto-closes them to defaultShiftHours (default: 8), flags the WorkDay,
-   * creates a pending TimeCorrectionRequest, and writes an AuditLog.
+   * Missing clock-out detection (spec §15, §53). For every segment still ACTIVE after
+   * `cutoffHours`, the segment is set aside as AUTO_CLOSED with NO end time and NO duration
+   * (nothing is guessed), and the day is flagged MISSING_CLOCK_OUT. The employee must then
+   * submit a correction with the real end time. Safe to run any number of times.
    */
-  async autoCloseStaleSessions(
-    cutoffHours = 16,
-    defaultShiftHours = 8
-  ): Promise<AutoCloseResult> {
-    const cutoffThreshold = new Date(Date.now() - cutoffHours * 60 * 60 * 1000);
-
-    // Find all ACTIVE segments whose clockIn is older than 16 hours
-    const staleSegments = await prisma.workSegment.findMany({
-      where: {
-        status: SegmentStatus.ACTIVE,
-        clockIn: {
-          lte: cutoffThreshold,
-        },
-      },
-      include: {
-        workDay: {
-          include: {
-            employee: true,
-          },
-        },
-        breaks: {
-          where: { endTime: null },
-        },
-      },
+  async flagMissingClockOuts(cutoffHours = 16, actorUserId: string | null = null): Promise<FlagResult> {
+    const cutoff = new Date(Date.now() - cutoffHours * 60 * 60 * 1000);
+    const stale = await prisma.workSegment.findMany({
+      where: { status: SegmentStatus.ACTIVE, clockIn: { lte: cutoff } },
+      select: { id: true, workDayId: true, clockIn: true, workDay: { select: { employeeId: true } } },
     });
 
-    if (staleSegments.length === 0) {
-      return { closedCount: 0, processedSegmentIds: [] };
-    }
-
-    const processedSegmentIds: string[] = [];
-
-    for (const segment of staleSegments) {
-      const clockInTime = new Date(segment.clockIn);
-      // Auto-set clockOut to 8 hours after clockIn
-      const autoClockOutTime = new Date(
-        clockInTime.getTime() + defaultShiftHours * 60 * 60 * 1000
-      );
-      const durationSeconds = defaultShiftHours * 60 * 60;
-
-      await prisma.$transaction(async (tx) => {
-        // 1. Close any open break at the auto-clock-out time
-        for (const openBreak of segment.breaks) {
-          const breakDuration = Math.max(
-            0,
-            Math.floor(
-              (autoClockOutTime.getTime() - new Date(openBreak.startTime).getTime()) /
-                1000
-            )
-          );
-          await tx.break.update({
-            where: { id: openBreak.id },
-            data: {
-              endTime: autoClockOutTime,
-              durationSeconds: breakDuration,
-            },
-          });
-        }
-
-        // 2. Update the segment to AUTO_CLOSED
-        await tx.workSegment.update({
-          where: { id: segment.id },
-          data: {
-            status: SegmentStatus.AUTO_CLOSED,
-            clockOut: autoClockOutTime,
-            durationSeconds,
-          },
+    const segmentIds: string[] = [];
+    for (const segment of stale) {
+      const flagged = await withEmployeeLock(segment.workDay.employeeId, async (tx) => {
+        // Conditional update: if the employee clocked out meanwhile (or another run got here first), skip.
+        const res = await tx.workSegment.updateMany({
+          where: { id: segment.id, status: SegmentStatus.ACTIVE },
+          data: { status: SegmentStatus.AUTO_CLOSED },
         });
+        if (res.count !== 1) return false;
 
-        // 3. Mark the WorkDay as FLAGGED_MISSING_CLOCKOUT and update total work seconds
         await tx.workDay.update({
           where: { id: segment.workDayId },
-          data: {
-            status: DayStatus.FLAGGED_MISSING_CLOCKOUT,
-            totalWorkSeconds: {
-              increment: durationSeconds,
-            },
-          },
+          data: { status: DayStatus.FLAGGED_MISSING_CLOCKOUT },
         });
-
-        // 4. Create an automated TimeCorrectionRequest for reconciliation
-        await tx.timeCorrectionRequest.create({
-          data: {
-            workDayId: segment.workDayId,
-            employeeId: segment.workDay.employeeId,
-            status: CorrectionStatus.PENDING,
-            reason: `System Auto-Close: Missing clock-out detected (segment was active > ${cutoffHours}h). Automatically defaulted to ${defaultShiftHours} hours. Please review and submit exact hours worked.`,
-            requestedChanges: {
-              segmentId: segment.id,
-              originalClockIn: segment.clockIn.toISOString(),
-              proposedClockIn: segment.clockIn.toISOString(),
-              proposedClockOut: autoClockOutTime.toISOString(),
-              isAutoGenerated: true,
-            },
-          },
-        });
-
-        // 5. Create immutable audit record
         await tx.auditLog.create({
           data: {
-            actorId: null, // System automated action
+            actorId: actorUserId,
             action: AuditAction.FORCE_CLOCK_OUT,
             entityName: 'WorkSegment',
             entityId: segment.id,
             afterState: {
-              status: SegmentStatus.AUTO_CLOSED,
+              event: 'MISSING_CLOCK_OUT',
               clockIn: segment.clockIn.toISOString(),
-              clockOut: autoClockOutTime.toISOString(),
-              durationSeconds,
-              reason: 'Exceeded cutoff threshold without clock-out',
+              clockOut: null,
+              note: `No clock-out ${cutoffHours}h after clock-in. End time left blank; a correction is required.`,
             },
           },
         });
+        return true;
       });
-
-      processedSegmentIds.push(segment.id);
+      if (flagged) segmentIds.push(segment.id);
     }
 
-    return {
-      closedCount: processedSegmentIds.length,
-      processedSegmentIds,
-    };
+    return { flaggedCount: segmentIds.length, segmentIds };
   }
 
   /**
-   * Retrieves all workdays flagged with FLAGGED_MISSING_CLOCKOUT.
-   * CEO/PM sees all or project-specific; Employees see only their own.
+   * Days flagged for a missing clock-out. Employees: own. PMs: own plus employees on projects
+   * they lead. CEO: all.
    */
-  async getFlaggedWorkDays(userRole: Role, employeeId?: string) {
-    const where: Prisma.WorkDayWhereInput = {
-      status: DayStatus.FLAGGED_MISSING_CLOCKOUT,
-    };
-
+  async getFlaggedWorkDays(userRole: Role, employeeId: string) {
+    const where: Prisma.WorkDayWhereInput = { status: DayStatus.FLAGGED_MISSING_CLOCKOUT };
     if (userRole === Role.EMPLOYEE) {
       where.employeeId = employeeId;
+    } else if (userRole === Role.PROJECT_MANAGER) {
+      where.OR = [
+        { employeeId },
+        {
+          employee: {
+            projectMemberships: {
+              some: { project: { members: { some: { employeeId, isProjectLead: true } } } },
+            },
+          },
+        },
+      ];
     }
 
-    const flaggedDays = await prisma.workDay.findMany({
+    return prisma.workDay.findMany({
       where,
       orderBy: { date: 'desc' },
+      take: 200,
       include: {
-        employee: {
-          select: {
-            id: true,
-            employeeCode: true,
-            firstName: true,
-            lastName: true,
-            department: true,
-          },
-        },
+        employee: { select: { id: true, employeeCode: true, firstName: true, lastName: true, department: true } },
         segments: {
-          where: { status: SegmentStatus.AUTO_CLOSED },
-          include: {
-            project: { select: { id: true, code: true, name: true } },
-          },
+          where: { status: SegmentStatus.AUTO_CLOSED, clockOut: null },
+          include: { project: { select: { id: true, code: true, name: true } } },
         },
-        corrections: {
-          where: { status: CorrectionStatus.PENDING },
-        },
+        corrections: { where: { status: CorrectionStatus.PENDING } },
       },
     });
-
-    return flaggedDays;
   }
 }
 

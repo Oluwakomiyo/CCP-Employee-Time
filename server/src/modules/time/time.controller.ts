@@ -1,109 +1,39 @@
 import { Request, Response, NextFunction } from 'express';
-import { timeService } from './time.service';
+import { timeService, TimeActor } from './time.service';
 import { staleSessionService } from './stale-session.service';
-import { timeHistoryQuerySchema } from './time.schema';
+import { autoCloseQuerySchema, timeHistoryQuerySchema } from './time.schema';
+
+const actorOf = (req: Request): TimeActor => ({
+  employeeId: req.user!.employeeId,
+  userId: req.user!.userId,
+  role: req.user!.role,
+  ip: req.ip,
+});
+
+/** Wraps a time action: runs it and returns the employee's fresh status. */
+const action =
+  (fn: (actor: TimeActor, body: any) => Promise<unknown>, status = 200) =>
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const data = await fn(actorOf(req), req.body);
+      res.status(status).json({ success: true, data });
+    } catch (error) {
+      next(error);
+    }
+  };
 
 export class TimeController {
-  clockIn = async (req: Request, res: Response, next: NextFunction) => {
+  startWork = action((a, b) => timeService.startWork(a, b), 201);
+  changeProject = action((a, b) => timeService.changeProject(a, b));
+  changeLocation = action((a, b) => timeService.changeLocation(a, b));
+  changeActivity = action((a, b) => timeService.changeActivity(a, b));
+  startBreak = action((a, b) => timeService.startBreak(a, b), 201);
+  endBreak = action((a) => timeService.endBreak(a));
+  endWork = action((a) => timeService.endWork(a));
+
+  getToday = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const ipAddress = req.ip || req.socket.remoteAddress;
-      const segment = await timeService.clockIn(
-        req.user!.employeeId,
-        req.body,
-        req.user!.role,
-        req.user!.userId,
-        ipAddress
-      );
-
-      res.status(201).json({
-        success: true,
-        message: 'Successfully clocked in',
-        data: { segment },
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  clockOut = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const ipAddress = req.ip || req.socket.remoteAddress;
-      const segment = await timeService.clockOut(
-        req.user!.employeeId,
-        req.user!.userId,
-        ipAddress
-      );
-
-      res.status(200).json({
-        success: true,
-        message: 'Successfully clocked out',
-        data: { segment },
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  startBreak = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const breakRecord = await timeService.startBreak(
-        req.user!.employeeId,
-        req.body,
-        req.user!.userId
-      );
-
-      res.status(201).json({
-        success: true,
-        message: 'Break started',
-        data: { break: breakRecord },
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  endBreak = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const breakRecord = await timeService.endBreak(
-        req.user!.employeeId,
-        req.user!.userId
-      );
-
-      res.status(200).json({
-        success: true,
-        message: 'Break ended',
-        data: { break: breakRecord },
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  logActivity = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const activity = await timeService.logActivity(
-        req.user!.employeeId,
-        req.body
-      );
-
-      res.status(201).json({
-        success: true,
-        message: 'Activity recorded successfully',
-        data: { activity },
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  getStatus = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const status = await timeService.getCurrentStatus(req.user!.employeeId);
-
-      res.status(200).json({
-        success: true,
-        data: status,
-      });
+      res.status(200).json({ success: true, data: await timeService.getToday(req.user!.employeeId) });
     } catch (error) {
       next(error);
     }
@@ -112,44 +42,18 @@ export class TimeController {
   getHistory = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const query = timeHistoryQuerySchema.parse(req.query);
-      const history = await timeService.getTimesheetHistory(
-        query,
-        req.user!.role,
-        req.user!.employeeId
-      );
-
-      res.status(200).json({
-        success: true,
-        data: { history },
-      });
+      const history = await timeService.getTimesheetHistory(query, req.user!.role, req.user!.employeeId);
+      res.status(200).json({ success: true, data: { history } });
     } catch (error) {
       next(error);
     }
   };
 
-  // ---------------------------------------------------------------------------
-  // PHASE 7: MISSING CLOCK-OUT RESOLUTION
-  // ---------------------------------------------------------------------------
-
   triggerAutoClose = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const cutoffHours = req.query.cutoffHours
-        ? parseInt(req.query.cutoffHours as string, 10)
-        : 16;
-      const defaultShiftHours = req.query.defaultHours
-        ? parseInt(req.query.defaultHours as string, 10)
-        : 8;
-
-      const result = await staleSessionService.autoCloseStaleSessions(
-        cutoffHours,
-        defaultShiftHours
-      );
-
-      res.status(200).json({
-        success: true,
-        message: `Processed stale sessions: ${result.closedCount} closed`,
-        data: result,
-      });
+      const { cutoffHours } = autoCloseQuerySchema.parse(req.query);
+      const result = await staleSessionService.flagMissingClockOuts(cutoffHours, req.user!.userId);
+      res.status(200).json({ success: true, data: result });
     } catch (error) {
       next(error);
     }
@@ -157,34 +61,11 @@ export class TimeController {
 
   getFlaggedDays = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const flagged = await staleSessionService.getFlaggedWorkDays(
-        req.user!.role,
-        req.user!.employeeId
-      );
-
-      res.status(200).json({
-        success: true,
-        data: { flaggedWorkDays: flagged },
-      });
+      const flagged = await staleSessionService.getFlaggedWorkDays(req.user!.role, req.user!.employeeId);
+      res.status(200).json({ success: true, data: { flaggedWorkDays: flagged } });
     } catch (error) {
       next(error);
     }
-  };
-
-  switchContext = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const ipAddress = req.ip || req.socket.remoteAddress;
-      const { projectId, location } = req.body;
-      const segment = await timeService.switchProjectOrLocation(
-        req.user!.employeeId,
-        projectId,
-        location,
-        req.user!.role,
-        req.user!.userId,
-        ipAddress
-      );
-      res.status(200).json({ success: true, message: 'Switched project context', data: { segment } });
-    } catch (error) { next(error); }
   };
 }
 
