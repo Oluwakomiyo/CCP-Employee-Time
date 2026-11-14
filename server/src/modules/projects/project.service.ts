@@ -1,7 +1,8 @@
 import { Prisma, Role, AuditAction, ProjectStatus } from '@prisma/client';
 import { prisma } from '../../config/prisma';
 import { AppError } from '../../errors/AppError';
-import { rateOn } from '../employees/compensation';
+import { reportService } from '../reports/report.service';
+import { TokenPayload } from '../../utils/token';
 import {
   CreateProjectInput,
   UpdateProjectInput,
@@ -304,79 +305,24 @@ export class ProjectService {
   }
 
   /**
-   * Calculates time spent by each employee on this project, their individual earnings,
-   * and the total project cost to date based on hourly rates (CEO only gets financials, PM gets hours).
+   * shortcut: legacy shape for the old client's "Cost & Time" modal, now derived from the
+   * project report (net of breaks, rate in force per day). Remove with client/ in Phase 7.
    */
-  async getProjectCostBreakdown(projectId: string, callerRole: Role) {
-    const project = await prisma.project.findUnique({
-      where: { id: projectId },
-      include: {
-        workSegments: {
-          where: { status: { in: ['COMPLETED', 'AUTO_CLOSED'] } },
-          include: {
-            workDay: {
-              include: {
-                employee: {
-                  include: { compensations: true },
-                },
-              },
-            },
-          },
-        },
-      },
-    });
-
-    if (!project) throw AppError.notFound('Project not found');
-
-    const employeeMap = new Map<string, {
-      employeeId: string;
-      employeeCode: string;
-      name: string;
-      totalSeconds: number;
-      baseHourlyRate: number;
-      cost: number;
-    }>();
-
-    let totalProjectSeconds = 0;
-    let totalProjectCost = 0;
-    const isCeo = callerRole === Role.CEO_ADMIN;
-
-    for (const seg of project.workSegments) {
-      const emp = seg.workDay.employee;
-      const duration = seg.durationSeconds || 0;
-      totalProjectSeconds += duration;
-
-      // Priced at the rate in force on the day the work happened (spec §20).
-      const baseRate = isCeo ? Number(rateOn(emp.compensations, seg.workDay.date)?.baseHourlyRate ?? 0) : 0;
-      const segmentCost = isCeo ? (duration / 3600) * baseRate : 0;
-      totalProjectCost += segmentCost;
-
-      if (!employeeMap.has(emp.id)) {
-        employeeMap.set(emp.id, {
-          employeeId: emp.id,
-          employeeCode: emp.employeeCode,
-          name: `${emp.firstName} ${emp.lastName}`,
-          totalSeconds: 0,
-          baseHourlyRate: baseRate,
-          cost: 0,
-        });
-      }
-
-      const current = employeeMap.get(emp.id)!;
-      current.totalSeconds += duration;
-      current.cost += segmentCost;
-    }
-
+  async getProjectCostBreakdown(projectId: string, user: TokenPayload) {
+    const r = await reportService.projectReport(user, projectId, {});
+    const isCeo = user.role === Role.CEO_ADMIN;
     return {
-      projectId: project.id,
-      projectName: project.name,
-      projectCode: project.code,
-      totalHours: Math.round((totalProjectSeconds / 3600) * 100) / 100,
-      totalProjectCost: isCeo ? Math.round(totalProjectCost * 100) / 100 : null,
-      employeeBreakdown: Array.from(employeeMap.values()).map((e) => ({
-        ...e,
-        totalHours: Math.round((e.totalSeconds / 3600) * 100) / 100,
-        cost: isCeo ? Math.round(e.cost * 100) / 100 : null,
+      projectId: r.project.id,
+      projectName: r.project.name,
+      projectCode: r.project.code,
+      totalHours: r.totalHours,
+      totalProjectCost: isCeo ? r.labourCost ?? 0 : null,
+      employeeBreakdown: r.hoursByEmployee.map((e) => ({
+        employeeId: e.employeeId,
+        employeeCode: e.employeeCode,
+        name: e.name,
+        totalHours: e.hours,
+        cost: isCeo ? (e as { labourCost?: number }).labourCost ?? 0 : null,
       })),
     };
   }

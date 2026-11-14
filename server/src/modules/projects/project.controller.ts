@@ -1,7 +1,4 @@
 import { Request, Response, NextFunction } from 'express';
-import { Role } from '@prisma/client';
-import { AppError } from '../../errors/AppError';
-import { pmLeadsProject } from '../../utils/access';
 import { projectService } from './project.service';
 import { queryProjectsSchema } from './project.schema';
 
@@ -92,10 +89,8 @@ export class ProjectController {
 
   getCostBreakdown = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      if (req.user!.role === Role.PROJECT_MANAGER && !(await pmLeadsProject(req.user!.employeeId, req.params.id))) {
-        throw AppError.forbidden();
-      }
-      const result = await projectService.getProjectCostBreakdown(req.params.id, req.user!.role);
+      // Access (management only; PMs for projects they lead) is enforced by the report service.
+      const result = await projectService.getProjectCostBreakdown(req.params.id, req.user!);
       res.status(200).json({ 
         success: true, 
         data: result });
