@@ -38,9 +38,11 @@ const targetFor = (n: Notification, role: Role): string | null => {
 export function NotificationInbox({ role }: { role: Role }) {
   const router = useRouter();
   const inbox = useNotifications();
-  const { markRead } = useNotificationMutations();
-  // Mark-all-read fires one callback per item in a single loop; only a lone
-  // mark-read navigates, so bulk actions never yank the user somewhere.
+  const { markRead, markAllRead } = useNotificationMutations();
+  // The panel's "Mark all read" fires one callback per item in a single loop. Collect the
+  // callbacks of one tick: one item is a click (mark it, then follow its link); several are
+  // the bulk action (one read-all request, no navigation).
+  const pendingIds = useRef<string[]>([]);
   const pendingTargets = useRef<string[]>([]);
   const flushTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -52,14 +54,20 @@ export function NotificationInbox({ role }: { role: Role }) {
     if (!read) return; // No server-side unread; the panel keeps it local.
     const original = items.find((n) => n.id === item.id);
     if (!original) return;
-    markRead.mutate(original.id);
+    pendingIds.current.push(original.id);
     const target = targetFor(original, role);
-    if (!target) return;
-    pendingTargets.current.push(target);
+    if (target) pendingTargets.current.push(target);
     if (flushTimer.current) clearTimeout(flushTimer.current);
     flushTimer.current = setTimeout(() => {
+      const ids = pendingIds.current;
       const targets = pendingTargets.current;
+      pendingIds.current = [];
       pendingTargets.current = [];
+      if (ids.length > 1) {
+        markAllRead.mutate();
+        return;
+      }
+      if (ids[0]) markRead.mutate(ids[0]);
       if (targets.length === 1 && targets[0]) router.push(targets[0]);
     }, 0);
   };

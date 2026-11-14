@@ -24,11 +24,14 @@ export interface Notification {
 
 export const notificationsKey = ["me", "notifications"] as const;
 
-/** Inbox, polled every 60 s. The badge count is the server's unread total. */
+/**
+ * Inbox, polled every 60 s. The Arc panel counts unread from the items it is given, so load the
+ * server's maximum page (its badge shows "9+" past nine anyway).
+ */
 export const useNotifications = () =>
   useQuery({
     queryKey: notificationsKey,
-    queryFn: () => api.page<Notification[]>("/me/notifications?limit=30"),
+    queryFn: () => api.page<Notification[]>("/me/notifications?limit=100"),
     refetchInterval: 60_000,
     staleTime: 0,
   });
@@ -38,6 +41,10 @@ export const useNotificationMutations = () => {
   return {
     markRead: useMutation({
       mutationFn: (id: string) => api.post(`/me/notifications/${id}/read`),
+      onSettled: () => qc.invalidateQueries({ queryKey: notificationsKey }),
+    }),
+    markAllRead: useMutation({
+      mutationFn: () => api.post("/me/notifications/read-all"),
       onSettled: () => qc.invalidateQueries({ queryKey: notificationsKey }),
     }),
   };
