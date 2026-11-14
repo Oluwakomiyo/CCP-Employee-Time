@@ -192,8 +192,21 @@ export class ActivityService {
     const locations = Array.from(new Set(segments.map((s) => s.location)));
 
     // 2. Calculate Activity Telemetry (Heartbeats)
+    // De-duplicate: one signal per device per minute, so retries and
+    // double-sends never inflate activity. Prefer the desktop agent when it
+    // reported that day; browser signals are the fallback.
     const heartbeats = workDay.heartbeats;
-    const activeHeartbeats = heartbeats.filter(
+    const seen = new Set<string>();
+    const unique = heartbeats.filter((h) => {
+      const minute = Math.floor(new Date(h.receivedAt).getTime() / 60000);
+      const key = `${h.deviceId ?? `browser:${h.employeeId}`}:${minute}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+    const agentBeats = unique.filter((h) => h.source === HeartbeatSource.DESKTOP_AGENT);
+    const measured = agentBeats.length > 0 ? agentBeats : unique;
+    const activeHeartbeats = measured.filter(
       (h) => h.sessionStatus === SessionStatus.ACTIVE && h.idleSeconds < 300
     );
 
@@ -201,16 +214,16 @@ export class ActivityService {
     const detectedActiveSeconds = activeHeartbeats.length * 60;
 
     // Detect idle periods > 15 minutes (900 seconds)
-    const significantIdleHeartbeats = heartbeats.filter((h) => h.idleSeconds >= 900);
+    const significantIdleHeartbeats = measured.filter((h) => h.idleSeconds >= 900);
     const significantIdleSeconds = significantIdleHeartbeats.length * 60;
 
     const devicesSeen = Array.from(
       new Set(
-        heartbeats.filter((h) => h.device).map((h) => `${h.device!.deviceName} (${h.device!.platform})`)
+        measured.filter((h) => h.device).map((h) => `${h.device!.deviceName} (${h.device!.platform})`)
       )
     );
 
-    const isAgentOnline = heartbeats.some(
+    const isAgentOnline = measured.some(
       (h) =>
         h.source === HeartbeatSource.DESKTOP_AGENT &&
         Date.now() - new Date(h.receivedAt).getTime() < 5 * 60 * 1000
@@ -233,7 +246,7 @@ export class ActivityService {
     if (isSiteWork) {
       status = VerificationStatus.SITE_WORK;
       reviewNotes.push('Workday includes on-site work. Reduced computer activity is expected.');
-    } else if (heartbeats.length === 0) {
+    } else if (unique.length === 0) {
       status = VerificationStatus.MISSING_DATA;
       reviewNotes.push('No activity telemetry recorded. Device agent may be offline or uninstalled.');
     } else if (netClockedSeconds > 0) {
@@ -265,7 +278,7 @@ export class ActivityService {
         locations,
       },
       activityEvidence: {
-        heartbeatCount: heartbeats.length,
+        heartbeatCount: unique.length,
         detectedActiveSeconds,
         significantIdleSeconds,
         registeredDevicesSeen: devicesSeen,
