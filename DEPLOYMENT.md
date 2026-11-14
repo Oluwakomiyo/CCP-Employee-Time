@@ -72,6 +72,13 @@ Deploy in this order: each step needs an address from the one before it.
 
 Check it at `https://<api-address>/health`.
 
+On **Railway**, the service is configured by `server/railway.json` (build from `server/Dockerfile`, `/health` check, one replica):
+- **Settings → Source → Root Directory:** `server`.
+- **Settings → Config-as-code → Railway Config File:** `/server/railway.json`. Use the full path from the repo root; Railway doesn't apply the Root Directory to this setting.
+- **Settings → Deploy → Regions:** a European region (e.g. EU West, Amsterdam), close to the Neon database in Frankfurt.
+- **Settings → Networking → Generate Domain:** gives the public `https://….up.railway.app` address that is the web app's `API_ORIGIN`.
+- Keep one replica: the missing clock-out job runs inside the API.
+
 **3. First CEO.** Open a shell on the API service and run:
 ```
 node dist/scripts/create-admin.js --email ceo@yourcompany.ng --first Ada --last Okafor
