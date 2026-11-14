@@ -14,6 +14,7 @@ import { auditRouter } from './modules/audit/audit.routes';
 import { payrollRouter } from './modules/payroll/payroll.routes';
 import { departmentRouter } from './modules/departments/department.routes';
 import { managementRouter, myReportHandler } from './modules/reports/report.routes';
+import notificationRouter from './modules/notifications/notification.routes';
 import { activityController } from './modules/activity-monitoring/activity.controller';
 import { authenticate } from './middleware/auth.middleware';
 import { timeController } from './modules/time/time.controller';
@@ -59,6 +60,7 @@ export const createApp = (): Express => {
   // Employee self-service paths from the spec (§38)
   app.get('/api/v1/me/time', authenticate, timeController.getHistory);
   app.get('/api/v1/me/report', ...myReportHandler);
+  app.use('/api/v1/me/notifications', notificationRouter);
 
   // Canonical Section 92 Browser Heartbeat alias
   app.post('/api/v1/time/heartbeat', authenticate, activityController.recordBrowserHeartbeat);
