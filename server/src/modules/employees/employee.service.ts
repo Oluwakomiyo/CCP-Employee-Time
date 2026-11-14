@@ -11,12 +11,12 @@ import {
 import { generateTemporaryPassword } from '../../utils/password';
 import { CURRENT_RATE, dayBefore } from './compensation';
 
-/**
- * shortcut: unknown department names are created on the fly so existing forms keep working.
- * Once the Settings screen manages departments (Phase 7), reject unknown names instead.
- */
-const ensureDepartment = (tx: DbClient, name: string) =>
-  tx.department.upsert({ where: { name }, create: { name }, update: {} });
+/** Departments are managed in Settings; an unknown name is a mistake, not a new department. */
+const ensureDepartment = async (tx: DbClient, name: string) => {
+  if (!(await tx.department.findUnique({ where: { name }, select: { id: true } }))) {
+    throw new AppError(`Unknown department '${name}'. Add it in Settings first.`, 400, undefined, 'UNKNOWN_DEPARTMENT');
+  }
+};
 
 /** Current rate only, for CEO views. */
 const currentRateSelect = {
