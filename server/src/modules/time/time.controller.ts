@@ -16,7 +16,7 @@ export class TimeController {
       );
 
       res.status(201).json({
-        status: 'success',
+        success: true,
         message: 'Successfully clocked in',
         data: { segment },
       });
@@ -35,7 +35,7 @@ export class TimeController {
       );
 
       res.status(200).json({
-        status: 'success',
+        success: true,
         message: 'Successfully clocked out',
         data: { segment },
       });
@@ -53,7 +53,7 @@ export class TimeController {
       );
 
       res.status(201).json({
-        status: 'success',
+        success: true,
         message: 'Break started',
         data: { break: breakRecord },
       });
@@ -70,7 +70,7 @@ export class TimeController {
       );
 
       res.status(200).json({
-        status: 'success',
+        success: true,
         message: 'Break ended',
         data: { break: breakRecord },
       });
@@ -87,7 +87,7 @@ export class TimeController {
       );
 
       res.status(201).json({
-        status: 'success',
+        success: true,
         message: 'Activity recorded successfully',
         data: { activity },
       });
@@ -101,7 +101,7 @@ export class TimeController {
       const status = await timeService.getCurrentStatus(req.user!.employeeId);
 
       res.status(200).json({
-        status: 'success',
+        success: true,
         data: status,
       });
     } catch (error) {
@@ -119,7 +119,7 @@ export class TimeController {
       );
 
       res.status(200).json({
-        status: 'success',
+        success: true,
         data: { history },
       });
     } catch (error) {
@@ -146,7 +146,7 @@ export class TimeController {
       );
 
       res.status(200).json({
-        status: 'success',
+        success: true,
         message: `Processed stale sessions: ${result.closedCount} closed`,
         data: result,
       });
@@ -163,7 +163,7 @@ export class TimeController {
       );
 
       res.status(200).json({
-        status: 'success',
+        success: true,
         data: { flaggedWorkDays: flagged },
       });
     } catch (error) {
@@ -183,7 +183,7 @@ export class TimeController {
         req.user!.userId,
         ipAddress
       );
-      res.status(200).json({ status: 'success', message: 'Switched project context', data: { segment } });
+      res.status(200).json({ success: true, message: 'Switched project context', data: { segment } });
     } catch (error) { next(error); }
   };
 }

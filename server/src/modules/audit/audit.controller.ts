@@ -13,7 +13,7 @@ export class AuditController {
       );
 
       res.status(200).json({
-        status: 'success',
+        success: true,
         ...result,
       });
     } catch (error) {
