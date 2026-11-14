@@ -317,3 +317,45 @@ describe('spec §31 example day and timezone handling', () => {
     expect(day.segments[0].clockIn.toISOString()).toBe('2026-11-10T07:00:00.000Z');
   });
 });
+
+describe('correction overlap', () => {
+  it('rejects a correction that overlaps another segment', async () => {
+    const e = await newEmployee();
+    await e.post('/start', { projectId: projA.id });
+    at('2026-11-10T10:00:00Z');
+    await e.post('/project', { projectId: projB.id });
+    at('2026-11-10T12:00:00Z');
+    await e.post('/end');
+    const [day] = await daysOf(e.employeeId);
+
+    // Stretching the first segment to 11:00 would overlap the second one (10:00-12:00).
+    const res = await request(app)
+      .post('/api/v1/corrections')
+      .set(auth(e.token))
+      .send({
+        workDayId: day.id,
+        reason: 'Clocked project B too early',
+        requestedChanges: {
+          segmentId: day.segments[0].id,
+          proposedClockIn: '2026-11-10T07:00:00Z',
+          proposedClockOut: '2026-11-10T11:00:00Z',
+        },
+      });
+    expect(res.status).toBe(400);
+
+    // Shortening it does not overlap and is accepted.
+    const ok = await request(app)
+      .post('/api/v1/corrections')
+      .set(auth(e.token))
+      .send({
+        workDayId: day.id,
+        reason: 'Started later than recorded',
+        requestedChanges: {
+          segmentId: day.segments[0].id,
+          proposedClockIn: '2026-11-10T07:30:00Z',
+          proposedClockOut: '2026-11-10T10:00:00Z',
+        },
+      });
+    expect(ok.status).toBe(201);
+  });
+});
