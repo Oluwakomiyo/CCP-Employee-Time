@@ -131,7 +131,8 @@ Seed logins (dev only, all `Password123!`): `ceo@example.com` (CEO), `manager@ex
 - [x] Shared layout for management screens: `app/(app)/manage.module.css`
 - [x] Reports (`web/app/(app)/reports/` + shared `web/components/reports/`): employee/project pickers with date range; Report/HoursList moved out of the detail pages and reused; project report hook takes an optional range; browser-checked as CEO (labour cost) and PM (hours only), 390px; employee denied
 - [x] Work evidence (`web/app/(app)/evidence/` + `web/lib/evidence.ts`): employee + date pickers, new `GET /management/employees/:id/workdays?date=` (tested, PM-scoped); metric cards, assessment, segment timeline; browser-checked as CEO, PM (scoped, 403 path renders), 390px; employee denied; fixed a stuck skeleton on disabled lookups
-- [ ] Delete `client/`; drop the legacy time aliases and the body tokens in login
+- [x] Delete `client/` (electron wrapper moved to `/electron` for Phase 9); drop the legacy time aliases and the `isActive` update toggle; login/refresh keep tokens in httpOnly cookies only (tests read the session cookie; new security test locks it)
+- [ ] Phase 8: notifications UI, Phase 9: desktop, Phase 10: ship
 
 ### 🔄 Phase 8: Notifications
 - [x] Server: `notify()` inside the event's transaction; correction submitted (CEO + lead PMs), approved/rejected (employee), missing clock-out (employee), project assigned (employee); `GET /me/notifications`, `POST /me/notifications/:id/read`, `POST /me/notifications/read-all`; tests (79 total)
@@ -142,18 +143,16 @@ Seed logins (dev only, all `Password123!`): `ceo@example.com` (CEO), `manager@ex
 ---
 
 ## Known gaps / follow-ups
-- The legacy `client/` punch screen has no activity-type picker (its entries save as OTHER); its error toasts read the old error shape. It will be replaced, not fixed.
-- Unknown department names are auto-created on employee create/edit (shortcut until the Settings screen exists; then reject them).
 - Payroll: 8h/day overtime threshold is hard-coded (no policy yet). Days with no rate are skipped and returned as `daysWithoutRate`.
 - Dashboard "hours today" counts the date's segments; employees with no visible projects show only themselves to a PM.
 - Estimate uses current rates for cost (future rates are unknown by definition).
-- Login returns tokens in the body as well as cookies, for the legacy client and Electron (remove in Phase 7).
 - Failed logins are not audited.
 
 ## Session log
 | Date | Work |
 |---|---|
 | 2026-11-14 | Phase 7: corrections review, employees, projects, payroll, audit log, settings (+ device list/revoke API, unknown departments rejected; 81 tests) |
+| 2026-11-14 | Phase 7: work evidence screen + workday lookup API, reports screen + shared report blocks, legacy cleanup (client/ deleted, time aliases and isActive toggle dropped, tokens cookie-only; 86 tests) |
 | 2026-11-14 | Phase 8 server (notifications), Today punch clock, `SIGNOFF.md` hand-over |
 | 2026-11-14 | Spec and code audit; plan agreed; Phases 0–2 done (23 commits, 37 tests) |
 | 2026-11-14 | Phase 5 done (Next.js 16 + Arc shell, auth screens, theme, maroon accent) |
