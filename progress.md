@@ -116,9 +116,11 @@ Seed logins (dev only, all `Password123!`): `ceo@example.com` (CEO), `manager@ex
 - [x] My corrections (`web/app/(app)/my-corrections/` + `web/lib/corrections.ts`): status filter, table with review notes, dialog with workday/entry/time pickers and reason, edit pending, withdraw via confirm; deep link `?workDayId=` auto-opens; server messages shown; browser-checked as employee (create, overlap error, withdraw)
 - [x] Profile (`web/app/(app)/profile/`): details card plus password change reusing the change-password rules; error path browser-checked; employee opening a management URL still gets no access
 - [x] Phase 6 done: all four employee screens built, typecheck/lint clean, browser-checked
+- [x] Skeleton audit and rebuild (`web/components/loading/`, colocated `*-skeleton.tsx`): every loading state mirrors its real UI; verified live, 390px, dark, reduced-motion; real UI untouched
 
-### ⏳ Phase 7: Management screens
-- [ ] Dashboard, Live status, Employees (+ detail), Projects (+ detail/report/estimate), Corrections review, Payroll, Reports, Work evidence, Audit log, Settings
+### 🔄 Phase 7: Management screens ← **NEXT**
+- [x] Dashboard (`web/app/(app)/dashboard/` + `web/lib/dashboard.ts`): metric cards, hours by project/over time/estimated-vs-actual bars, location/activity donuts, 7/30/90-day ranges; no money anywhere; browser-checked as CEO and PM, 390px, dark, loading skeleton, range switch
+- [ ] Live status, Employees (+ detail), Projects (+ detail/report/estimate), Corrections review, Payroll, Reports, Work evidence, Audit log, Settings
 - [ ] Delete `client/`; drop the legacy time aliases and the body tokens in login
 
 ### 🔄 Phase 8: Notifications
