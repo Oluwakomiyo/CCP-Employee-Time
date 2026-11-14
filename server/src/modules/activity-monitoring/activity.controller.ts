@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { assertCanViewEmployee } from '../../utils/access';
 import { activityService } from './activity.service';
 import {
   browserHeartbeatSchema,
@@ -6,7 +7,6 @@ import {
   registerDeviceSchema,
 } from './activity.schema';
 import { AppError } from '../../errors/AppError';
-import { Role } from '@prisma/client';
 
 export class ActivityController {
   // Browser Heartbeat (Called from Web Client)
@@ -18,7 +18,7 @@ export class ActivityController {
         input
       );
 
-      res.status(200).json({ status: 'success', data: result });
+      res.status(200).json({ success: true, data: result });
     } catch (error) {
       next(error);
     }
@@ -35,7 +35,7 @@ export class ActivityController {
       const input = agentHeartbeatSchema.parse(req.body);
       const result = await activityService.recordAgentHeartbeat(apiKey, input);
 
-      res.status(200).json({ status: 'success', data: result });
+      res.status(200).json({ success: true, data: result });
     } catch (error) {
       next(error);
     }
@@ -48,7 +48,7 @@ export class ActivityController {
       const result = await activityService.registerDevice(input);
 
       res.status(201).json({
-        status: 'success',
+        success: true,
         message: 'Device successfully registered for activity evidence',
         data: result,
       });
@@ -63,13 +63,11 @@ export class ActivityController {
       const { id } = req.params; // workDayId
       const summary = await activityService.getWorkEvidenceSummary(id);
 
-      // Privacy check: standard employees can only view their own evidence
-      if (req.user!.role === Role.EMPLOYEE && req.user!.employeeId !== summary.employee.id) {
-        throw AppError.forbidden('You are not authorized to view this employee\'s telemetry evidence');
-      }
+      // Employees: own only. PMs: employees on projects they lead (spec §111).
+      await assertCanViewEmployee(req.user!, summary.employee.id);
 
       res.status(200).json({
-        status: 'success',
+        success: true,
         data: summary,
       });
     } catch (error) {

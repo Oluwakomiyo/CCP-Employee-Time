@@ -14,10 +14,10 @@ router.use(authenticate);
 // Browser session heartbeat (Section 92 & 112)
 router.post('/browser-heartbeat', activityController.recordBrowserHeartbeat);
 
-// Device Registration (Management only: CEO_ADMIN & PROJECT_MANAGER)
+// Device Registration (CEO_ADMIN only: devices carry credentials)
 router.post(
   '/devices',
-  authorize(Role.CEO_ADMIN, Role.PROJECT_MANAGER),
+  authorize(Role.CEO_ADMIN),
   activityController.registerDevice
 );
 
