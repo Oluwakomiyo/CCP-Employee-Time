@@ -15,12 +15,26 @@ import SortableDataTable, { type DataColumn } from "@/components/arc/sortable-da
 import { TableSkeleton } from "@/components/loading/table-skeleton";
 import { errorMessage } from "@/lib/api";
 import { useMe } from "@/lib/auth";
+import { Progress } from "@/components/arc/progress/progress";
 import { PROJECT_STATUSES, STATUS_TONE, useProjects, type ProjectStatus } from "@/lib/projects";
+import { formatDate } from "@/lib/time";
 import { isCeo } from "@/lib/types";
 import { ProjectForm } from "./project-form";
 import styles from "../manage.module.css";
 
-type Row = Record<string, unknown> & { id: string; project: string; client: string; status: ProjectStatus; team: number; estimate: string; start: string };
+type Row = Record<string, unknown> & {
+  id: string;
+  code: string;
+  name: string;
+  client: string;
+  status: ProjectStatus;
+  team: number;
+  worked: number;
+  estimate: number | null;
+  /** Share of the estimate used, for sorting; -1 when there is no estimate. */
+  used: number;
+  start: string;
+};
 
 export function ProjectList() {
   const router = useRouter();
@@ -36,24 +50,37 @@ export function ProjectList() {
     () =>
       (list.data?.data ?? []).map((p) => ({
         id: p.id,
-        project: `${p.code} ${p.name}`,
+        code: p.code,
+        name: p.name,
         client: p.clientName ?? "–",
         status: p.status,
         team: p._count.members,
-        estimate: p.estimatedHours ? `${Number(p.estimatedHours)}h` : "–",
-        start: p.startDate.slice(0, 10),
+        worked: p.hoursWorked ?? 0,
+        estimate: p.estimatedHours ? Number(p.estimatedHours) : null,
+        used: p.estimatedHours ? (p.hoursWorked ?? 0) / Number(p.estimatedHours) : -1,
+        start: p.startDate,
       })),
     [list.data],
   );
 
   const columns: DataColumn<Row>[] = useMemo(
     () => [
-      { key: "project", label: "Project", render: (_v, row) => <Link href={`/projects/${row.id}`}>{row.project}</Link> },
-      { key: "client", label: "Client" },
+      {
+        key: "code",
+        label: "Project",
+        render: (_v, row) => (
+          <Link href={`/projects/${row.id}`} className={styles.who}>
+            <span>
+              {row.code} {row.name}
+              <small>{row.client}</small>
+            </span>
+          </Link>
+        ),
+      },
       { key: "status", label: "Status", render: (_v, row) => <Badge tone={STATUS_TONE[row.status]} dot>{PROJECT_STATUSES.find((s) => s.value === row.status)?.label}</Badge> },
+      { key: "used", label: "Hours against estimate", numeric: false, render: (_v, row) => <EstimateCell worked={row.worked} estimate={row.estimate} /> },
       { key: "team", label: "Team" },
-      { key: "estimate", label: "Estimate" },
-      { key: "start", label: "Started" },
+      { key: "start", label: "Started", render: (_v, row) => formatDate(row.start) },
     ],
     [],
   );
@@ -120,5 +147,21 @@ export function ProjectList() {
         )}
       </Drawer>
     </div>
+  );
+}
+
+const round1 = (n: number) => Math.round(n * 10) / 10;
+
+/** "92 of 340h" with a bar, or an over-budget badge, or just the hours when there is no estimate. */
+function EstimateCell({ worked, estimate }: { worked: number; estimate: number | null }) {
+  if (estimate === null) return <span className={styles.muted}>{round1(worked)}h, no estimate</span>;
+  if (worked > estimate) return <Badge tone="warning">Over by {round1(worked - estimate)}h</Badge>;
+  return (
+    <span className={styles.estimateCell}>
+      <Progress value={worked} max={estimate} aria-label={`${round1(worked)} of ${estimate} estimated hours`} />
+      <small className={styles.muted}>
+        {round1(worked)} of {estimate}h
+      </small>
+    </span>
   );
 }

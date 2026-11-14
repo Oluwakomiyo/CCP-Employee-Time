@@ -27,6 +27,8 @@ export interface ProjectRow {
   startDate: string;
   endDate: string | null;
   _count: { members: number; workSegments: number };
+  /** Net hours, all time. Management only; absent for employees. */
+  hoursWorked?: number;
 }
 
 /** GET /management/projects/:id/report. Money fields are CEO only. */
