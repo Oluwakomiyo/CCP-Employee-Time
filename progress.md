@@ -136,7 +136,7 @@ Seed logins (dev only, all `Password123!`): `ceo@example.com` (CEO), `manager@ex
 
 ### 🔄 Phase 8: Notifications
 - [x] Server: `notify()` inside the event's transaction; correction submitted (CEO + lead PMs), approved/rejected (employee), missing clock-out (employee), project assigned (employee); `GET /me/notifications`, `POST /me/notifications/:id/read`, `POST /me/notifications/read-all`; tests (79 total)
-- [ ] Web: Arc `notification-center` in the top bar (installed), 60 s polling, deep links
+- [x] Web: `web/components/shell/notification-inbox.tsx` — Arc `notification-center` in the top bar, 60 s polling, server unread count on the bell, mark-read posts + deep-links (correction → review queue for managers, own corrections for employees; workday → my-corrections; project → my-projects); browser-checked as CEO (submit → badge → panel → mark read → /corrections → approve) and employee (approval → badge → panel → mark read → /my-corrections), 390px, dark
 ### ⏳ Phase 9: Electron + desktop agent fixes
 ### ⏳ Phase 10: Docker, CI, docs, backups
 
