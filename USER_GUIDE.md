@@ -170,7 +170,9 @@ Only the CEO can add, edit or deactivate staff.
 The list shows each project you lead, its status, team size, and **hours against estimate** as a progress bar, flagged when a project goes over. Press **New project** to create one; you become its lead automatically.
 
 ![The projects list with hours against each estimate](docs/guide/14-projects.png)
- Inside a project:
+
+Inside a project:
+
 - **Overview:** hours worked, the estimate, hours remaining (or how far over), project details, and who is working on it right now.
 
 ![A project's overview](docs/guide/15-project-detail.png)
