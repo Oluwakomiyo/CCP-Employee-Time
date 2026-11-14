@@ -11,7 +11,9 @@ import { Block } from "@/components/loading/skeleton-block";
 import SegmentedControl from "@/components/arc/segmented-control/segmented-control";
 import { errorMessage } from "@/lib/api";
 import { ACTIVITIES, labelOf, LOCATIONS, type ActivityType, type LocationType } from "@/lib/time";
-import { rangeFor, useDashboard, type DashboardRange } from "@/lib/dashboard";
+import { fillDays, rangeFor, useDashboard, type DashboardRange, type EstimateVsActual } from "@/lib/dashboard";
+import Badge from "@/components/arc/badge/badge";
+import { Progress } from "@/components/arc/progress/progress";
 import styles from "./dashboard.module.css";
 
 const RANGES: { value: DashboardRange; label: string }[] = [
@@ -45,9 +47,12 @@ export function DashboardView() {
 
   const { cards, charts } = dashboard.data;
   const period = `Last ${range} days`;
+  // The server returns only days with hours; fill the gaps so the axis is true to the calendar.
+  const overTime = fillDays(dashboard.data.range.from, dashboard.data.range.to, charts.hoursOverTime);
+  const anyHours = overTime.some((d) => d.hours > 0);
 
   return (
-    <div className={styles.layout}>
+    <div className={styles.layout} aria-busy={dashboard.isFetching}>
       <div className={styles.toolbar}>
         <SegmentedControl label="Range" options={RANGES} value={range} onValueChange={(v: string) => setRange(v as DashboardRange)} />
       </div>
@@ -55,15 +60,17 @@ export function DashboardView() {
       <div className={styles.kpis}>
         <MetricCard label="Working now" value={cards.employeesWorkingToday} context="clocked in" />
         <MetricCard label="On a break" value={cards.employeesOnBreak} context="taking a break" />
+        <MetricCard label="Not clocked in" value={cards.employeesNotClockedIn} context="no time today" />
+        <MetricCard label="Finished" value={cards.employeesFinished} context="done for today" />
         <MetricCard label="Hours today" value={cards.totalHoursToday} suffix="h" context="across the team" />
-        <MetricCard label="Active projects" value={cards.activeProjects} context="in this period" />
+        <MetricCard label="Active projects" value={cards.activeProjects} context="currently active" />
         <MetricCard label="Missing clock-outs" value={cards.missingClockOuts} context="need a correction" />
         <MetricCard label="Pending corrections" value={cards.pendingCorrections} context="awaiting review" />
       </div>
 
       <section className={styles.card} aria-label="Hours over time">
         <h2>Hours over time</h2>
-        {charts.hoursOverTime.length === 0 ? (
+        {!anyHours ? (
           <EmptyState title="No hours in this range" description="Hours appear once the team clocks time." />
         ) : (
           <LineChart
@@ -72,7 +79,7 @@ export function DashboardView() {
             height={240}
             categoryLabel="Day"
             series={[{ key: "hours", label: "Hours" }]}
-            data={charts.hoursOverTime.map((d) => ({ key: d.date, label: dayLabel(d.date), axisLabel: shortDay(d.date), values: { hours: d.hours } }))}
+            data={overTime.map((d) => ({ key: d.date, label: dayLabel(d.date), axisLabel: shortDay(d.date), values: { hours: d.hours } }))}
           />
         )}
       </section>
@@ -88,6 +95,7 @@ export function DashboardView() {
               period={period}
               unit="h"
               valueLabel="Hours"
+              averageLabel="Average per project"
               categoryLabel="Project"
               showAverage={false}
               data={charts.hoursByProject.map((p) => ({ key: p.projectId, label: `${p.code} ${p.name}`, axisLabel: p.code, value: p.hours }))}
@@ -99,20 +107,7 @@ export function DashboardView() {
           {charts.estimatedVsActual.length === 0 ? (
             <EmptyState title="No active projects" description="Estimates appear once projects are created." />
           ) : (
-            <BarChart
-              label="Actual hours against estimates"
-              period="All time"
-              unit="h"
-              valueLabel="Actual hours"
-              categoryLabel="Project"
-              showAverage={false}
-              data={charts.estimatedVsActual.map((p) => ({
-                key: p.projectId,
-                label: p.estimatedHours === null ? `${p.code} ${p.name}: ${p.actualHours}h, no estimate` : `${p.code} ${p.name}: ${p.actualHours} of ${p.estimatedHours}h`,
-                axisLabel: p.code,
-                value: p.actualHours,
-              }))}
-            />
+            <EstimateList projects={charts.estimatedVsActual} />
           )}
         </section>
       </div>
@@ -139,6 +134,38 @@ export function DashboardView() {
   );
 }
 
+/** Actual hours against each project's estimate; over-budget projects are flagged with the overrun. */
+function EstimateList({ projects }: { projects: EstimateVsActual[] }) {
+  return (
+    <ul className={styles.estimates}>
+      {projects.map((p) => {
+        const over = p.estimatedHours !== null && p.actualHours > p.estimatedHours;
+        return (
+          <li key={p.projectId}>
+            <div className={styles.estimateHead}>
+              <span>
+                {p.code} {p.name}
+              </span>
+              {p.estimatedHours === null ? (
+                <span className={styles.estimateMeta}>{p.actualHours}h, no estimate</span>
+              ) : over ? (
+                <Badge tone="warning">Over by {Math.round((p.actualHours - p.estimatedHours) * 100) / 100}h</Badge>
+              ) : (
+                <span className={styles.estimateMeta}>
+                  {p.actualHours} of {p.estimatedHours}h
+                </span>
+              )}
+            </div>
+            {p.estimatedHours !== null && (
+              <Progress value={p.actualHours} max={p.estimatedHours} aria-label={`${p.code} ${p.name}: ${p.actualHours} of ${p.estimatedHours} estimated hours`} />
+            )}
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
 function DashboardSkeleton() {
   return (
     <div className={styles.layout} role="status" aria-label="Loading dashboard" aria-busy="true">
@@ -146,7 +173,7 @@ function DashboardSkeleton() {
         <Block width="16rem" height="2.75rem" radius="var(--radius-control)" index={0} />
       </div>
       <div className={styles.kpis} aria-hidden="true">
-        {[0, 1, 2, 3, 4, 5].map((i) => (
+        {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
           <div key={i} className={styles.card}>
             <Block width="6rem" height="1.125rem" radius="0.25rem" index={1 + i * 2} />
             <Block width="4rem" height="1.75rem" radius="0.375rem" index={2 + i * 2} />
@@ -154,14 +181,14 @@ function DashboardSkeleton() {
         ))}
       </div>
       <div className={styles.card} aria-hidden="true">
-        <Block width="10rem" height="1.4rem" radius="0.375rem" index={13} />
-        <Block width="100%" height={200} radius="0.5rem" index={14} />
+        <Block width="10rem" height="1.4rem" radius="0.375rem" index={17} />
+        <Block width="100%" height={200} radius="0.5rem" index={18} />
       </div>
       <div className={styles.grid2} aria-hidden="true">
         {[0, 1].map((i) => (
           <div key={i} className={styles.card}>
-            <Block width="9rem" height="1.4rem" radius="0.375rem" index={15 + i} />
-            <Block width="100%" height={140} radius="0.5rem" index={17 + i} />
+            <Block width="9rem" height="1.4rem" radius="0.375rem" index={19 + i} />
+            <Block width="100%" height={140} radius="0.5rem" index={21 + i} />
           </div>
         ))}
       </div>

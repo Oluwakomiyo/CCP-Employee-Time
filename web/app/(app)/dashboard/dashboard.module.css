@@ -47,3 +47,34 @@
 .chartSkeleton {
   min-height: 16rem;
 }
+
+.estimates {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.estimates li {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.estimateHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  font-weight: 500;
+}
+
+.estimateMeta {
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
