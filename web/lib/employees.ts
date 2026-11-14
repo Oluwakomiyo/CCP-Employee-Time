@@ -130,3 +130,6 @@ export const useEmployeeMutations = () => {
     }),
   };
 };
+
+/** Arc MoneyInput works in minor units (kobo); the API takes naira. Convert at the boundary only. */
+export const koboToNaira = (kobo: number) => Math.round(kobo) / 100;

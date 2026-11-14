@@ -20,7 +20,7 @@ import { errorMessage } from "@/lib/api";
 import { useMe } from "@/lib/auth";
 import { rangeFor, type DashboardRange } from "@/lib/dashboard";
 import { lagosDay } from "@/lib/history";
-import { formatMoney, fullName, ROLES, useCompensation, useEmployee, useEmployeeMutations, type Employee } from "@/lib/employees";
+import { formatMoney, fullName, ROLES, koboToNaira, useCompensation, useEmployee, useEmployeeMutations, type Employee } from "@/lib/employees";
 import { isCeo } from "@/lib/types";
 import { EmployeeForm } from "../employee-form";
 import { TempPasswordDialog } from "../temp-password-dialog";
@@ -194,6 +194,7 @@ function Report({ id }: { id: string }) {
 function Compensation({ employee: e }: { employee: Employee }) {
   const comp = useCompensation(e.id, true);
   const { changeRate } = useEmployeeMutations();
+  // MoneyInput values are kobo.
   const [base, setBase] = useState<number | null>(null);
   const [overtime, setOvertime] = useState<number | null>(null);
   const [from, setFrom] = useState<Date | undefined>(undefined);
@@ -210,7 +211,7 @@ function Compensation({ employee: e }: { employee: Employee }) {
   const save = () => {
     setError(null);
     return changeRate
-      .mutateAsync({ id: e.id, body: { baseHourlyRate: base!, overtimeHourlyRate: overtime!, currency: "NGN", effectiveDate: lagosDay(from!) } })
+      .mutateAsync({ id: e.id, body: { baseHourlyRate: koboToNaira(base!), overtimeHourlyRate: koboToNaira(overtime!), currency: "NGN", effectiveDate: lagosDay(from!) } })
       .then(() => comp.refetch())
       .then(() => {
         setBase(null);

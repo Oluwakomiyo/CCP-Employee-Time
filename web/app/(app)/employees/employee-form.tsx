@@ -10,7 +10,7 @@ import MoneyInput from "@/components/arc/money-input/money-input";
 import { Select } from "@/components/arc/select/select";
 import { errorMessage } from "@/lib/api";
 import { lagosDay } from "@/lib/history";
-import { ROLES, useDepartments, useEmployeeMutations, type Employee } from "@/lib/employees";
+import { koboToNaira, ROLES, useDepartments, useEmployeeMutations, type Employee } from "@/lib/employees";
 import type { Role } from "@/lib/types";
 import styles from "../manage.module.css";
 
@@ -31,6 +31,7 @@ export function EmployeeForm({ employee, onSaved }: { employee?: Employee; onSav
     position: employee?.position ?? "",
     role: "EMPLOYEE" as Role,
     hireDate: new Date(),
+    // MoneyInput values are kobo.
     base: null as number | null,
     overtime: null as number | null,
   });
@@ -59,7 +60,7 @@ export function EmployeeForm({ employee, onSaved }: { employee?: Employee; onSav
           ...profile,
           role: f.role,
           hireDate: lagosDay(f.hireDate),
-          compensation: { baseHourlyRate: f.base!, overtimeHourlyRate: f.overtime!, currency: "NGN" },
+          compensation: { baseHourlyRate: koboToNaira(f.base!), overtimeHourlyRate: koboToNaira(f.overtime!), currency: "NGN" },
         });
         onSaved({ name, temporaryPassword: res.temporaryPassword });
       }
