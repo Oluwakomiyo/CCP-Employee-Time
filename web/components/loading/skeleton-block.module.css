@@ -25,3 +25,15 @@
 @media (prefers-reduced-motion: reduce) {
   .block { animation: none; }
 }
+
+/* Skeleton-only surface: same frame as the Arc card (border, radius-panel,
+   space-5 padding) without mounting Card, which needs string titles. */
+.surfaceCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-5);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+  background: var(--surface);
+}

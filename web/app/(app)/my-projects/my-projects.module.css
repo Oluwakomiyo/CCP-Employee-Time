@@ -45,6 +45,20 @@
   padding-top: var(--space-3);
 }
 
+.progressSkeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cardFoot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
 .hours {
   font-variant-numeric: tabular-nums;
   font-weight: 500;

@@ -6,8 +6,8 @@ import Badge from "@/components/arc/badge/badge";
 import { Card } from "@/components/arc/card/card";
 import DateRangePicker, { type DateRange } from "@/components/arc/date-range-picker/date-range-picker";
 import EmptyState from "@/components/arc/empty-state/empty-state";
+import { MyProjectsSkeleton } from "./my-projects-skeleton";
 import Progress from "@/components/arc/progress/progress";
-import { Skeleton } from "@/components/arc/skeleton/skeleton";
 import { errorMessage } from "@/lib/api";
 import { formatHours } from "@/lib/time";
 import { lagosDay, useMyProjectsFull, useMyReport, type MineProject } from "@/lib/my-projects";
@@ -54,7 +54,7 @@ export function MyProjectsList() {
   const projects = useMyProjectsFull();
   const report = useMyReport(from, to);
 
-  if (projects.isPending || report.isPending) return <Skeleton lines={6} label="Loading projects" />;
+  if (projects.isPending || report.isPending) return <MyProjectsSkeleton />;
   const error = projects.isError ? projects.error : report.isError ? report.error : null;
   if (error)
     return (
