@@ -7,3 +7,4 @@ desktop-agent/config.json
 .playwright-mcp/
 .neon
 .env.local
+.env.railway
