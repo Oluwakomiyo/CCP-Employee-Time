@@ -10,6 +10,7 @@ import { prisma, DbClient } from '../../config/prisma';
 import { AppError } from '../../errors/AppError';
 import { workDateFor } from '../../utils/time';
 import { pmLeadsEmployee } from '../../utils/access';
+import { withEmployeeLock, recomputeDayTotals, secondsBetween } from '../time/time.totals';
 import {
   CreateCorrectionInput,
   ReviewCorrectionInput,
@@ -80,21 +81,15 @@ export class CorrectionService {
 
     await assertValidChanges(prisma, workDay, input.requestedChanges);
 
-    // Prevent duplicate pending requests on the exact same workday
-    const existingPending = await prisma.timeCorrectionRequest.findFirst({
-      where: {
-        workDayId: input.workDayId,
-        status: CorrectionStatus.PENDING,
-      },
-    });
+    const correction = await withEmployeeLock(employeeId, async (tx) => {
+      // One pending request per workday; checked under the employee lock so double-submits can't race.
+      const existingPending = await tx.timeCorrectionRequest.count({
+        where: { workDayId: input.workDayId, status: CorrectionStatus.PENDING },
+      });
+      if (existingPending > 0) {
+        throw AppError.conflict('A correction request is already pending review for this workday');
+      }
 
-    if (existingPending) {
-      throw AppError.conflict(
-        'A correction request is already pending review for this workday'
-      );
-    }
-
-    const correction = await prisma.$transaction(async (tx) => {
       const req = await tx.timeCorrectionRequest.create({
         data: {
           workDayId: input.workDayId,
@@ -247,14 +242,18 @@ export class CorrectionService {
 
     if (input.status === CorrectionStatus.REJECTED) {
       // Rejection Workflow
-      const rejected = await prisma.$transaction(async (tx) => {
+      const rejected = await withEmployeeLock(correction.employeeId, async (tx) => {
         await claim(tx, CorrectionStatus.REJECTED, input.reviewNotes);
         const updated = await tx.timeCorrectionRequest.findUniqueOrThrow({ where: { id: correctionId } });
 
         // Revert WorkDay status to CLOSED if it was pending
-        if (correction.workDay.status === DayStatus.CORRECTION_PENDING) {
-          await tx.workDay.update({
-            where: { id: correction.workDayId },
+        // The official record is untouched (spec §16). A flagged day stays flagged until fixed.
+        const stillPending = await tx.timeCorrectionRequest.count({
+          where: { workDayId: correction.workDayId, status: CorrectionStatus.PENDING },
+        });
+        if (stillPending === 0) {
+          await tx.workDay.updateMany({
+            where: { id: correction.workDayId, status: DayStatus.CORRECTION_PENDING },
             data: { status: DayStatus.CLOSED },
           });
         }
@@ -285,18 +284,30 @@ export class CorrectionService {
 
     const newClockIn = new Date(changes.proposedClockIn);
     const newClockOut = new Date(changes.proposedClockOut);
-    const reconciledDurationSeconds = Math.max(
-      0,
-      Math.floor((newClockOut.getTime() - newClockIn.getTime()) / 1000)
-    );
+    const reconciledDurationSeconds = secondsBetween(newClockIn, newClockOut);
 
-    const approved = await prisma.$transaction(async (tx) => {
+    const approved = await withEmployeeLock(correction.employeeId, async (tx) => {
       await claim(tx, CorrectionStatus.APPROVED, input.reviewNotes || 'Approved by management');
       // Re-validate at approval time against current data.
       await assertValidChanges(tx, correction.workDay, changes);
 
       if (changes.segmentId) {
-        // 1. Update existing segment
+        // 1. Update existing segment. Anything left open inside it (a break or activity from a
+        //    missing clock-out) ends at the approved clock-out.
+        await tx.break.updateMany({
+          where: { workSegmentId: changes.segmentId, endTime: null },
+          data: { endTime: newClockOut },
+        });
+        const openBreaks = await tx.break.findMany({
+          where: { workSegmentId: changes.segmentId, durationSeconds: null, endTime: { not: null } },
+        });
+        for (const b of openBreaks) {
+          await tx.break.update({ where: { id: b.id }, data: { durationSeconds: secondsBetween(b.startTime, b.endTime!) } });
+        }
+        await tx.activity.updateMany({
+          where: { workSegmentId: changes.segmentId, endTime: null },
+          data: { endTime: newClockOut },
+        });
         await tx.workSegment.update({
           where: { id: changes.segmentId },
           data: {
@@ -320,28 +331,20 @@ export class CorrectionService {
         });
       }
 
-      // 3. Recalculate total work seconds across all segments of the WorkDay
-      const allCompletedSegments = await tx.workSegment.findMany({
+      // 3. Recalculate totals from source records
+      const { totalWorkSeconds, totalBreakSeconds } = await recomputeDayTotals(tx, correction.workDayId);
+
+      // 4. Day is corrected, unless the employee is working on it right now or it still has
+      //    another unresolved missing clock-out.
+      const unresolved = await tx.workSegment.count({
         where: {
           workDayId: correction.workDayId,
-          status: { in: [SegmentStatus.COMPLETED, SegmentStatus.AUTO_CLOSED] },
-        },
-        select: { durationSeconds: true },
-      });
-
-      const totalWorkSeconds = allCompletedSegments.reduce(
-        (sum, s) => sum + (s.durationSeconds || 0),
-        0
-      );
-
-      // 4. Update WorkDay status to APPROVED and update work seconds
-      await tx.workDay.update({
-        where: { id: correction.workDayId },
-        data: {
-          status: DayStatus.APPROVED,
-          totalWorkSeconds,
+          OR: [{ status: SegmentStatus.ACTIVE }, { status: SegmentStatus.AUTO_CLOSED, clockOut: null }],
         },
       });
+      if (unresolved === 0) {
+        await tx.workDay.update({ where: { id: correction.workDayId }, data: { status: DayStatus.APPROVED } });
+      }
 
       // 5. Request was already claimed as APPROVED above
       const updatedReq = await tx.timeCorrectionRequest.findUniqueOrThrow({ where: { id: correctionId } });
@@ -357,6 +360,8 @@ export class CorrectionService {
             status: CorrectionStatus.APPROVED,
             reconciledDurationSeconds,
             totalWorkSeconds,
+            totalBreakSeconds,
+            requestedChanges: changes,
           },
         },
       });
