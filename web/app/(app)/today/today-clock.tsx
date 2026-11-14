@@ -10,7 +10,7 @@ import { Button } from "@/components/arc/button/button";
 import { HoldToConfirm } from "@/components/arc/hold-to-confirm/hold-to-confirm";
 import { Select } from "@/components/arc/select/select";
 import SegmentedControl from "@/components/arc/segmented-control/segmented-control";
-import { Skeleton } from "@/components/arc/skeleton/skeleton";
+import { TodaySkeleton } from "./today-skeleton";
 import { Textarea } from "@/components/arc/textarea/textarea";
 import { Drawer, DrawerContent } from "@/components/arc/drawer/drawer";
 import { errorMessage } from "@/lib/api";
@@ -49,7 +49,7 @@ export function TodayClock() {
   };
   const onError = (e: unknown) => setError(errorMessage(e));
 
-  if (today.isPending) return <Skeleton lines={6} label="Loading today" />;
+  if (today.isPending) return <TodaySkeleton />;
   if (today.isError) return <Alert tone="danger" title="Could not load today">{errorMessage(today.error)}</Alert>;
 
   const t = today.data;
