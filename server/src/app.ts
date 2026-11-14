@@ -24,7 +24,9 @@ export const createApp = (): Express => {
 
   // Basic security middleware
   // Behind one reverse proxy in production, so req.ip is the client address.
-  app.set('trust proxy', 1);
+  // Number of proxies in front of the API, so req.ip (used by the login rate limit) is the visitor,
+  // not a proxy. 1 = one load balancer; 2 = Vercel's rewrite plus the API host's load balancer.
+  app.set('trust proxy', Number(process.env.TRUST_PROXY_HOPS ?? 1));
   app.use(helmet());
   const origins = (process.env.ALLOWED_ORIGINS ?? '').split(',').map((o) => o.trim()).filter(Boolean);
   app.use(cors({ origin: origins, credentials: true }));
