@@ -28,13 +28,6 @@ router.post('/breaks/start', validate(startBreakSchema), timeController.startBre
 router.post('/breaks/end', timeController.endBreak);
 router.post('/end', timeController.endWork);
 
-// shortcut: legacy aliases used by the old Vite client; remove with client/ in Phase 7.
-router.get('/status', timeController.getToday);
-router.post('/clock-in', validate(startWorkSchema), timeController.startWork);
-router.post('/clock-out', timeController.endWork);
-router.post('/switch', validate(changeProjectSchema), timeController.changeProject);
-router.post('/activities', validate(changeActivitySchema), timeController.changeActivity);
-
 // Missing clock-outs
 router.get('/flagged', timeController.getFlaggedDays);
 router.post('/auto-close-stale', authorize(Role.CEO_ADMIN, Role.PROJECT_MANAGER), timeController.triggerAutoClose);
