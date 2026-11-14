@@ -1,8 +1,14 @@
 import type { Metadata } from "next";
-import { ComingSoon } from "@/components/shell/coming-soon";
+import { PageHeading } from "@/components/shell/page-heading";
+import { SettingsView } from "./settings-view";
 
 export const metadata: Metadata = { title: "Settings" };
 
 export default function SettingsPage() {
-  return <ComingSoon title="Settings" description="Departments, devices and company settings." />;
+  return (
+    <>
+      <PageHeading title="Settings" description="Departments and the desktop devices allowed to report activity." />
+      <SettingsView />
+    </>
+  );
 }
