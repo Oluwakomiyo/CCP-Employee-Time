@@ -1,4 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
+import { Role } from '@prisma/client';
+import { AppError } from '../../errors/AppError';
+import { pmLeadsProject } from '../../utils/access';
 import { projectService } from './project.service';
 import { queryProjectsSchema } from './project.schema';
 
@@ -13,7 +16,7 @@ export class ProjectController {
       );
 
       res.status(200).json({
-        status: 'success',
+        success: true,
         ...result,
       });
     } catch (error) {
@@ -31,7 +34,7 @@ export class ProjectController {
       );
 
       res.status(200).json({
-        status: 'success',
+        success: true,
         data: { project },
       });
     } catch (error) {
@@ -48,7 +51,7 @@ export class ProjectController {
       );
 
       res.status(201).json({
-        status: 'success',
+        success: true,
         message: 'Project created successfully',
         data: { project },
       });
@@ -69,7 +72,7 @@ export class ProjectController {
       );
 
       res.status(200).json({
-        status: 'success',
+        success: true,
         message: 'Project updated successfully',
         data: { project },
       });
@@ -82,16 +85,19 @@ export class ProjectController {
     try {
       const result = await projectService.deleteProject(req.params.id, req.user!.userId);
       res.status(200).json({ 
-        status: 'success', 
+        success: true, 
         message: result.message });
     } catch (error) { next(error); }
   };
 
   getCostBreakdown = async (req: Request, res: Response, next: NextFunction) => {
     try {
+      if (req.user!.role === Role.PROJECT_MANAGER && !(await pmLeadsProject(req.user!.employeeId, req.params.id))) {
+        throw AppError.forbidden();
+      }
       const result = await projectService.getProjectCostBreakdown(req.params.id, req.user!.role);
       res.status(200).json({ 
-        status: 'success', 
+        success: true, 
         data: result });
     } catch (error) { next(error); }
   };
@@ -108,7 +114,7 @@ export class ProjectController {
       );
 
       res.status(201).json({
-        status: 'success',
+        success: true,
         message: 'Member successfully assigned to project',
         data: { membership },
       });
@@ -129,7 +135,7 @@ export class ProjectController {
       );
 
       res.status(200).json({
-        status: 'success',
+        success: true,
         message: result.message,
       });
     } catch (error) {

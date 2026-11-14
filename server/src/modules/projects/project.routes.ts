@@ -41,8 +41,10 @@ router.delete('/:id',
   projectController.deleteProject
 );
 
-// 6. Get Project Cost Breakdown (Employees see assigned only; PM & CEO see company projects)
-router.get('/:id/cost-breakdown', 
+// 6. Project hours/cost breakdown: management only. PMs only for projects they lead (checked in controller);
+// labour cost is further restricted to CEO_ADMIN in the service.
+router.get('/:id/cost-breakdown',
+  authorize(Role.CEO_ADMIN, Role.PROJECT_MANAGER),
   projectController.getCostBreakdown
 );
 
