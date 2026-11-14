@@ -1,6 +1,6 @@
 # Sign-off: hand-over to the next AI session
 
-Written 2026-11-14 at the end of a long session. You are picking up a rebuild that is about 60% done.
+Written 2026-11-14, updated at the end of the same day. You are picking up a rebuild that is about 85% done: the API is complete, and every web screen except **Reports** and **Work evidence** is built and browser-checked. A separate review of your work will follow, so keep commits small and claims verifiable.
 **Read this file top to bottom, then `progress.md`, before touching code.**
 
 ---
@@ -101,7 +101,7 @@ The seed includes the following, so screens have data:
   - `lib/api.ts` provides `api.get/page/post/patch/put/delete` and handles the shared 401 refresh.
   - `/api/v1` is rewritten to Express, so cookies are first-party.
   - Use TanStack Query in client components, with `errorMessage(e)` for user-facing errors.
-- **Pattern to copy:** `app/(app)/today/` together with `lib/time.ts`.
+- **Pattern to copy:** for a management screen, copy `app/(app)/employees/` (list + `[id]` detail with tabs) and `lib/employees.ts`. Share layout through `app/(app)/manage.module.css`; don't create a new CSS module unless the screen needs something it lacks.
   - `page.tsx` is a server component holding the metadata, the `PageHeading` and one client component.
   - The client component (`"use client"`) uses query hooks from `lib/*.ts`.
   - Async buttons use Arc `ActionButton` (`onAction` returns a promise, `onActionError` sets an `Alert`).
@@ -109,6 +109,11 @@ The seed includes the following, so screens have data:
   - Side forms use `Drawer` + `DrawerContent`; interrupting confirmations use `Dialog`.
   - Loading uses `Skeleton`, errors use `Alert tone="danger"`, empty lists use `EmptyState`.
 - **Import gotchas:** some Arc modules use a **default** export (`SegmentedControl`, `ActionButton`, `HoldToConfirm`, `Badge`). Check the file before importing.
+- **ConfirmMorph defaults say "Delete / Deleting / Deleted".** Always pass `confirmLabel`, `pendingLabel` and `doneLabel` that match the action (Withdraw, Deactivate, Remove...).
+- **Never put a ConfirmMorph in the last column of a table.** It expands to the right when confirming, gets clipped, and the confirm click lands outside it, which Arc treats as Cancel. That was a real bug on Settings → devices. Use a Button that opens a `Dialog` instead (see `settings-view.tsx`). **Check `/my-corrections` (its Withdraw is a ConfirmMorph in the table's last column) at 1280px and 390px, and fix it the same way if it clips.**
+- **Arc `Alert` renders its children inside a `<p>`.** Never put a list or block elements in it; render them in a card below the alert (see `payroll-view.tsx`).
+- **Alerts other than `tone="danger"` have `role="status"`, not `role="alert"`.** Account for this when testing.
+- **`MoneyInput`:** pass `currencies={["NGN"]}` and `quickAdd={[]}`; its defaults are USD and "+$10" chips.
 - **HoldToConfirm / ConfirmMorph:** always pass `confirmed={state}`. Set it to true in `onConfirm` and back to false when the request settles. Left uncontrolled, the button sticks on its done label after a refused request: a real bug found on Today.
 - **Select:** Arc `Select` is a Radix Select. Keep it controlled with `value=""` (not `undefined`) for the empty state.
 - **Shell:** role-aware nav lives in `components/shell/nav.ts`. Every route already exists; replace the `<ComingSoon/>` in each `page.tsx` as you build it.
@@ -117,6 +122,31 @@ The seed includes the following, so screens have data:
 ---
 
 ## 5. Done this session (latest first)
+
+- **Phase 7 (most of it):**
+  - Corrections review.
+  - Employees list and detail.
+  - Projects list and detail (team, report, estimate).
+  - Payroll.
+  - Audit log.
+  - Settings.
+
+  Every screen was checked in a browser as the CEO, and where relevant as the PM. `progress.md` lists the details.
+- **API additions:**
+  - The correction list now includes the day's recorded entries (segments).
+  - `GET /activity/devices` and `POST /activity/devices/:id/revoke` (CEO only, tested).
+  - Live status now sends `sinceSeconds`.
+  - Employee create/edit rejects unknown departments (`UNKNOWN_DEPARTMENT`).
+  - 81 server tests pass.
+- **Dashboard and live status fixes from the review:** see `progress.md`.
+- **The dev database has test data from browser checks:**
+  - Employee Tola Ade (CCP-090).
+  - The "Interior Design" department.
+  - A revoked device `HW-PETER-LT-01`.
+  - A draft payroll for 1–14 Nov.
+  - Mary's seed correction, now approved.
+
+  Run `cd server && npx prisma db seed` to restore the clean demo data (it also removes `ngozi@example.com`). Ask the owner before re-seeding if they have entered real data.
 
 - Today punch clock (`web/app/(app)/today/`), checked in a browser: start → break → end break → change location → hold to end.
 - `GET /projects?mine=true` lists the caller's own projects; the project picker on Today uses it.
@@ -132,61 +162,32 @@ The seed includes the following, so screens have data:
 
 Tick items in `progress.md` as you go.
 
-### Phase 6: Employee screens (Today is done)
+### Phase 6: Employee screens: done
 
-| Route | API | Arc parts | Notes |
-|---|---|---|---|
-| `/my-time` | `GET /me/time?page&limit&startDate&endDate&projectId&location` (paginated workdays with segments and breaks) | `date-range-picker`, `filter-toolbar`, `sortable-data-table`, `pagination`, `timeline` (expanded day), `badge` for day status | Show net hours = work − breaks. Days marked MISSING_CLOCK_OUT get a "Request correction" action that links to `/my-corrections?workDayId=` |
-| `/my-projects` | `GET /projects?mine=true`, plus `GET /me/report?from&to` for my hours by project | `card` grid, `progress` | **No money anywhere.** |
-| `/my-corrections` | `GET /corrections` (own), `POST /corrections` `{workDayId, reason, requestedChanges:{segmentId? or projectId, proposedClockIn, proposedClockOut}}`, `PATCH /corrections/:id` (edit pending), `DELETE /corrections/:id` (cancel) | `sortable-data-table`, `badge`, `dialog` with `date-picker` + `time-picker` + `textarea`, `confirm-morph` for cancel | Times are Lagos local and must be converted to ISO. The server rejects overlaps, other people's segments and non-member projects; show its message. |
-| `/profile` | `GET /auth/me`, `POST /auth/change-password` | `card`, `password-field`, `password-strength` | Reuse the RULES from `app/change-password/change-password-form.tsx` |
+### Phase 7: what is left
+1. **Reports** (`/reports`, CEO and PM):
+   - Pick an employee (`combobox` fed by `useEmployees`) or a project (fed by `useProjects`).
+   - Show the same blocks as the Report tab on the employee or project detail page.
+   - Move the `Report`/`HoursList` pieces out of `employees/[id]/employee-detail.tsx` and `projects/[id]/project-detail.tsx` into a shared component rather than copying them.
+   - The API is `GET /management/employees/:id/report?from&to` and `GET /management/projects/:id/report?from&to` (the project report accepts a range too).
+   - Add a `date-range-picker`.
+2. **Work evidence** (`/evidence`, CEO and PM):
+   - Pick an employee and a date. `GET /me/time` only returns your own days, so it can't find someone else's workday id.
+   - Add a small management endpoint, for example `GET /management/employees/:id/workdays?date=`, scoped with `assertCanViewEmployee`. Or extend the employee report.
+   - Then call `GET /activity/workdays/:id/evidence` and read `activity.service.ts getWorkEvidenceSummary` for the shape.
+   - Show official time vs device activity in `metric-card`s, plus a `timeline`. Use neutral wording: evidence, not accusation.
+3. **Then:**
+   - Delete `client/`, but move `client/electron` to `/electron` first; Phase 9 needs it.
+   - Remove the legacy time aliases in `server/src/modules/time/time.routes.ts`: `/status`, `/clock-in`, `/clock-out`, `/switch`, `/activities`. Also remove the `isActive` legacy toggle in `project.schema.ts`.
+   - Stop returning tokens in the login response body. Electron and the agent use Bearer; check `client/electron` before removing.
+   - Run the tests after each removal.
 
-### Phase 7: Management screens (CEO and PM)
-
-API map:
-- `GET /management/dashboard?from&to` returns `cards` and `charts`.
-- `GET /management/status` is the live board.
-- `GET /management/employees/:id/report?from&to` and `GET /management/projects/:id/report?from&to`.
-- `GET /management/estimate?projectId&employeeIds=a,b`.
-- Employees: `GET/POST /employees`, `GET/PATCH/DELETE /employees/:id` (DELETE deactivates), `PATCH /employees/:id/password` (returns the temporary password once), `GET/PUT /employees/:id/compensation` (CEO only).
-- Projects: `GET/POST /projects`, `GET/PATCH/DELETE /projects/:id`, `POST /projects/:id/members`, `DELETE /projects/:id/members/:employeeId`.
-- Corrections: `GET /corrections?status=`, `PATCH /corrections/:id/review` `{status:'APPROVED'|'REJECTED', reviewNotes}`.
-- Payroll (CEO only): `GET /payroll`, `POST /payroll/generate` `{periodStart, periodEnd}`, `POST /payroll/finalize`, `GET /payroll/export?periodStart&periodEnd` (CSV).
-- Audit: `GET /audit/logs`.
+API reference for these:
+- Reports: `GET /management/employees/:id/report?from&to`, `GET /management/projects/:id/report?from&to`, `GET /management/estimate?projectId&employeeIds=a,b`.
 - Evidence: `GET /activity/workdays/:id/evidence`.
-- Departments: `GET/POST/PATCH /departments`.
 - Flagged days: `GET /time/flagged`.
 
-Read each service file for the exact response shape before building the screen.
-
-Screens (the Arc component list for each is in the plan file, section "Phase 7"):
-1. **Dashboard:** `metric-card` row, plus `bar-chart` (by project), `donut-chart` (location and activity), `line-chart` (over time) and an estimated-vs-actual bar. Load the `dataviz` skill first.
-2. **Live status:** table with `avatar` + `badge`, polled every 15 s.
-3. **Employees list and detail:**
-   - Detail page uses `tabs`: Profile, Projects, Time, Corrections, Report, and Compensation (CEO only).
-   - Create and edit happen in a `drawer`.
-   - Rate changes use `money-input` + `date-picker`.
-   - Reset password shows the temporary password **once**, with a `copy-button`.
-   - Deactivate uses `confirm-morph`.
-4. **Projects list and detail:**
-   - Tabs: Overview (`progress` estimated vs actual), Members (add with `combobox`, remove with `confirm-morph`), Report, Labour cost (CEO only), Estimate (`multi-select` team → days and cost).
-5. **Corrections review:** `segmented-control` (Pending/Approved/Rejected), table, and a `drawer` showing the original record next to the requested change, with notes and Approve/Reject. A 409 `ALREADY_REVIEWED` means someone else reviewed it first: refetch.
-6. **Payroll (CEO):**
-   - `date-range-picker`, then Generate.
-   - Show `daysWithoutRate` warnings.
-   - Finalize uses `hold-to-confirm`. A 409 `UNRESOLVED_DAYS` lists the days that block it; show them.
-   - CSV download: `window.location.href = '/api/v1/payroll/export?...'`.
-7. **Reports:** employee and project pickers that reuse the report components from 3 and 4.
-8. **Work evidence:** employee + date picker → `timeline`, official vs device numbers in `metric-card`s.
-9. **Audit log:** `filter-toolbar`, `pagination`, and `json-viewer` for before/after.
-10. **Settings (CEO):**
-    - Departments.
-    - Devices (list and revoke; a revoke endpoint may need adding).
-    - When this lands, change employee create/edit to **reject** unknown departments instead of auto-creating them (`ensureDepartment` in `employee.service.ts`).
-11. **Then:**
-    - Delete `client/` (move `client/electron` to `/electron` first; it is needed in Phase 9).
-    - Remove the legacy time aliases in `server/src/modules/time/time.routes.ts`: `/status`, `/clock-in`, `/clock-out`, `/switch`, `/activities`.
-    - Stop returning tokens in the login response body. Electron and the agent use Bearer; check `client/electron` before removing.
+Read each service file for the exact response shape before building.
 
 ### Phase 8: Notifications UI (server is done)
 - `web/components/arc/notification-center` is installed. Put it in the top bar (`components/shell/app-shell.tsx`), and poll `GET /me/notifications` every 60 s with `meta.unread` as the badge count.
@@ -230,6 +231,10 @@ Screens (the Arc component list for each is in the plan file, section "Phase 7")
 ---
 
 ## 8. Known gaps (also listed in `progress.md`)
+
+- PMs can list and open **any** employee's profile (`GET /employees`, `GET /employees/:id`): name, email, department, no money. It's needed to add people to projects. Ask the owner whether PMs should see only their team.
+- The payroll **successful finalize** was never clicked through in the browser (dev data always has an open day); the server tests cover it.
+- There is no idle-threshold setting yet; Settings has departments and devices only.
 
 - The 8h/day overtime threshold is hard-coded; there is no policy yet.
 - Failed logins are not audited.

@@ -122,7 +122,15 @@ Seed logins (dev only, all `Password123!`): `ceo@example.com` (CEO), `manager@ex
 - [x] Dashboard (`web/app/(app)/dashboard/` + `web/lib/dashboard.ts`): metric cards, hours by project/over time/estimated-vs-actual bars, location/activity donuts, 7/30/90-day ranges; no money anywhere; browser-checked as CEO and PM, 390px, dark, loading skeleton, range switch
 - [x] Live status (`web/app/(app)/live/` + `web/lib/live.ts`): avatar + badge table polled every 15 s with ticking elapsed; browser-checked as CEO, 390px
 - [x] Review fixes: live board times a break from its start (`sinceSeconds` from the API) and sorts numerically; dashboard fills empty days, shows estimates as per-project progress (over-budget badge), adds Not clocked in / Finished cards, keeps the old range on screen while switching, fixes chart and card labels
-- [ ] Employees (+ detail), Projects (+ detail/report/estimate), Corrections review, Payroll, Reports, Work evidence, Audit log, Settings
+- [x] Corrections review (`app/(app)/corrections/`): status filter, drawer with recorded entries next to the requested change, notes, approve/reject, ALREADY_REVIEWED handled; API list now includes the day's segments; browser-checked as PM (approve → employee notified)
+- [x] Employees (`app/(app)/employees/` + `lib/employees.ts`): search, status filter, CEO-only rate column, add drawer with one-time temporary password; detail tabs Overview / Report / Compensation (CEO, rate history + change); reset password, deactivate, reactivate; browser-checked as CEO and PM
+- [x] Projects (`app/(app)/projects/` + `lib/projects.ts`): list (PMs see projects they lead), create/edit drawer, detail tabs Overview / Team (add via combobox, remove, CEO-only lead switch) / Report / Estimate (team multi-select); labour cost CEO only; browser-checked as CEO and PM
+- [x] Payroll (`app/(app)/payroll/` + `lib/payroll.ts`): period picker, generate/regenerate draft, missing-rate warning, hold-to-finalize with the unresolved-days list on 409, CSV export; browser-checked (successful finalize covered by server tests only)
+- [x] Audit log (`app/(app)/audit/` + `lib/audit.ts`): action and date filters, before/after JSON drawer; PMs see their own actions
+- [x] Settings (`app/(app)/settings/` + `lib/settings.ts`): departments add/rename; devices list/register (one-time key)/revoke; API: `GET /activity/devices`, `POST /activity/devices/:id/revoke` (tested); employee create/edit now rejects unknown departments (`UNKNOWN_DEPARTMENT`)
+- [x] Shared layout for management screens: `app/(app)/manage.module.css`
+- [ ] Reports (`/reports`): employee and project report pickers; reuse the Report tab pieces from the employee and project detail pages
+- [ ] Work evidence (`/evidence`): employee + date picker → `GET /activity/workdays/:id/evidence`; timeline; official vs device numbers
 - [ ] Delete `client/`; drop the legacy time aliases and the body tokens in login
 
 ### 🔄 Phase 8: Notifications
@@ -145,6 +153,7 @@ Seed logins (dev only, all `Password123!`): `ceo@example.com` (CEO), `manager@ex
 ## Session log
 | Date | Work |
 |---|---|
+| 2026-11-14 | Phase 7: corrections review, employees, projects, payroll, audit log, settings (+ device list/revoke API, unknown departments rejected; 81 tests) |
 | 2026-11-14 | Phase 8 server (notifications), Today punch clock, `SIGNOFF.md` hand-over |
 | 2026-11-14 | Spec and code audit; plan agreed; Phases 0–2 done (23 commits, 37 tests) |
 | 2026-11-14 | Phase 5 done (Next.js 16 + Arc shell, auth screens, theme, maroon accent) |
