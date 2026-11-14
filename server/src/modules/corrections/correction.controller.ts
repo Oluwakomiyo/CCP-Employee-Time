@@ -17,7 +17,7 @@ export class CorrectionController {
       );
 
       res.status(201).json({
-        status: 'success',
+        success: true,
         message: 'Correction request submitted for management review',
         data: { correction },
       });
@@ -36,22 +36,10 @@ export class CorrectionController {
         req.user!.role,
         req.user!.userId
       );
-      res.status(200).json({ status: 'success', data: { correction: result } });
+      res.status(200).json({ success: true, data: { correction: result } });
     } catch (error) { next(error); }
   };
 
-  deleteCorrection = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const { id } = req.params;
-      const result = await correctionService.deleteCorrection(
-        id,
-        req.user!.employeeId,
-        req.user!.role,
-        req.user!.userId
-      );
-      res.status(200).json({ status: 'success', message: result.message });
-    } catch (error) { next(error); }
-  };
 
   reviewCorrection = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -65,7 +53,7 @@ export class CorrectionController {
       );
 
       res.status(200).json({
-        status: 'success',
+        success: true,
         message: `Correction request ${input.status.toLowerCase()} successfully`,
         data: { correction: updated },
       });
@@ -84,7 +72,7 @@ export class CorrectionController {
       );
 
       res.status(200).json({
-        status: 'success',
+        success: true,
         message: 'Correction request cancelled',
         data: { correction: cancelled },
       });
@@ -103,7 +91,7 @@ export class CorrectionController {
       );
 
       res.status(200).json({
-        status: 'success',
+        success: true,
         ...result,
       });
     } catch (error) {

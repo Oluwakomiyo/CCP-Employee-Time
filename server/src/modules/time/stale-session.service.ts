@@ -107,7 +107,7 @@ export class StaleSessionService {
             status: CorrectionStatus.PENDING,
             reason: `System Auto-Close: Missing clock-out detected (segment was active > ${cutoffHours}h). Automatically defaulted to ${defaultShiftHours} hours. Please review and submit exact hours worked.`,
             requestedChanges: {
-              workSegmentId: segment.id,
+              segmentId: segment.id,
               originalClockIn: segment.clockIn.toISOString(),
               proposedClockIn: segment.clockIn.toISOString(),
               proposedClockOut: autoClockOutTime.toISOString(),

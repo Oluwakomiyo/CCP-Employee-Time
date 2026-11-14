@@ -15,9 +15,9 @@ router.get('/', correctionController.listCorrections);
 // 2. Submit new correction request
 router.post('/', validate(createCorrectionSchema), correctionController.submitCorrection);
 
-// 3. Cancel own pending request
+// 3. Edit or withdraw own pending request (withdrawal marks it CANCELLED; requests are never hard-deleted)
 router.patch('/:id', validate(updateCorrectionSchema), correctionController.updateCorrection);
-router.delete('/:id', correctionController.deleteCorrection);
+router.delete('/:id', correctionController.cancelCorrection);
 
 // 4. Review (Approve/Reject) Request - CEO_ADMIN & PROJECT_MANAGER only
 router.patch(
