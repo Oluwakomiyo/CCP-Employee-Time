@@ -16,6 +16,7 @@ import { TableSkeleton } from "@/components/loading/table-skeleton";
 import { errorMessage } from "@/lib/api";
 import { useMe } from "@/lib/auth";
 import { formatMoney, fullName, ROLES, useEmployees, type EmploymentStatus } from "@/lib/employees";
+import { sentenceCase } from "@/lib/time";
 import { isCeo } from "@/lib/types";
 import { EmployeeForm } from "./employee-form";
 import { TempPasswordDialog } from "./temp-password-dialog";
@@ -73,7 +74,7 @@ export function EmployeeList() {
       { key: "code", label: "Number" },
       { key: "department", label: "Department" },
       { key: "role", label: "Role" },
-      { key: "status", label: "Status", render: (_v, row) => <Badge tone={STATUS_TONE[row.status]} dot>{row.status.toLowerCase().replace("_", " ")}</Badge> },
+      { key: "status", label: "Status", render: (_v, row) => <Badge tone={STATUS_TONE[row.status]} dot>{sentenceCase(row.status)}</Badge> },
       // Pay is CEO only; the API omits it for everyone else.
       ...(ceo ? [{ key: "rate", label: "Hourly rate" }] : []),
     ],

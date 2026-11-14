@@ -4,7 +4,9 @@ import { useState } from "react";
 import Link from "next/link";
 import { Alert } from "@/components/arc/alert/alert";
 import { ActionButton } from "@/components/arc/action-button/action-button";
+import { Avatar } from "@/components/arc/avatar/avatar";
 import Badge from "@/components/arc/badge/badge";
+import { MetricCard } from "@/components/arc/metric-card/metric-card";
 import { Button } from "@/components/arc/button/button";
 import ConfirmMorph from "@/components/arc/confirm-morph/confirm-morph";
 import { DatePicker } from "@/components/arc/date-picker/date-picker";
@@ -18,13 +20,16 @@ import { PageHeading } from "@/components/shell/page-heading";
 import { EmployeeReport } from "@/components/reports/employee-report";
 import { errorMessage } from "@/lib/api";
 import { useMe } from "@/lib/auth";
+import { formatDate, sentenceCase } from "@/lib/time";
 import { rangeFor, type DashboardRange } from "@/lib/dashboard";
 import { lagosDay } from "@/lib/history";
-import { formatMoney, fullName, ROLES, koboToNaira, useCompensation, useEmployee, useEmployeeMutations, type Employee } from "@/lib/employees";
+import { formatMoney, fullName, ROLES, koboToNaira, useCompensation, useEmployee, useEmployeeMutations, useEmployeeReport, type Employee } from "@/lib/employees";
 import { isCeo } from "@/lib/types";
 import { EmployeeForm } from "../employee-form";
 import { TempPasswordDialog } from "../temp-password-dialog";
 import styles from "../../manage.module.css";
+
+const STATUS_TONE = { ACTIVE: "success", INACTIVE: "neutral", ON_LEAVE: "info", TERMINATED: "danger" } as const;
 
 const RANGES = [
   { value: "30", label: "30 days" },
@@ -54,6 +59,16 @@ export function EmployeeDetail({ id }: { id: string }) {
       <PageHeading
         title={fullName(e)}
         description={`${e.position} · ${e.department} · ${e.employeeCode}`}
+        leading={<Avatar name={fullName(e)} size="xl" />}
+        meta={
+          <>
+            <Badge tone={STATUS_TONE[e.status]} dot>
+              {sentenceCase(e.status)}
+            </Badge>
+            <Badge tone="neutral">{ROLES.find((r) => r.value === e.user.role)?.label}</Badge>
+            {e.user.mustChangePassword && <Badge tone="info">Must set a new password</Badge>}
+          </>
+        }
         actions={
           ceo && (
             <Button variant="secondary" onClick={() => setEditing(true)}>
@@ -93,9 +108,19 @@ function Overview({ employee: e, ceo, self }: { employee: Employee; ceo: boolean
   const { update, deactivate, resetPassword } = useEmployeeMutations();
   const [password, setPassword] = useState<string | null>(null);
   const active = e.status === "ACTIVE";
+  const { from, to } = rangeFor("30");
+  const recent = useEmployeeReport(e.id, from, to);
 
   return (
     <div className={styles.layout}>
+      {recent.data && (
+        <div className={styles.kpis} aria-label="Last 30 days">
+          <MetricCard label="Hours, last 30 days" value={Math.round(recent.data.totalWorkingHours * 10) / 10} suffix="h" context="net of breaks" />
+          <MetricCard label="Average day" value={recent.data.averageDailyHours} suffix="h" context={`over ${recent.data.validWorkingDays} full days`} />
+          <MetricCard label="Projects worked" value={recent.data.projectsWorked} context="in the last 30 days" />
+          <MetricCard label="Missing clock-outs" value={recent.data.missingClockOuts} context={recent.data.missingClockOuts ? "need a correction" : "all clear"} />
+        </div>
+      )}
       <section className={styles.card} aria-labelledby="profile">
         <h2 id="profile">Profile</h2>
         <dl className={styles.details}>
@@ -104,21 +129,19 @@ function Overview({ employee: e, ceo, self }: { employee: Employee; ceo: boolean
             <dd>{e.user.email}</dd>
           </div>
           <div>
-            <dt>Role</dt>
-            <dd>{ROLES.find((r) => r.value === e.user.role)?.label}</dd>
-          </div>
-          <div>
-            <dt>Status</dt>
-            <dd>
-              <Badge tone={active ? "success" : "neutral"} dot>
-                {e.status.toLowerCase().replace("_", " ")}
-              </Badge>
-            </dd>
+            <dt>Department</dt>
+            <dd>{e.department}</dd>
           </div>
           <div>
             <dt>Hired</dt>
-            <dd>{e.hireDate.slice(0, 10)}</dd>
+            <dd>{formatDate(e.hireDate)}</dd>
           </div>
+          {ceo && (
+            <div>
+              <dt>Hourly rate</dt>
+              <dd>{e.compensation ? `${formatMoney(e.compensation.baseHourlyRate, e.compensation.currency)}/h` : "Not set"}</dd>
+            </div>
+          )}
         </dl>
       </section>
 
@@ -128,7 +151,7 @@ function Overview({ employee: e, ceo, self }: { employee: Employee; ceo: boolean
           <ul className={styles.list}>
             {e.projectMemberships.map((m) => (
               <li key={m.id}>
-                <Link href={`/projects/${m.project.id}`}>
+                <Link href={`/projects/${m.project.id}`} className={styles.link}>
                   {m.project.code} {m.project.name}
                 </Link>
                 {m.isProjectLead && <Badge tone="info">Lead</Badge>}
