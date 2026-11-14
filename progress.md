@@ -18,7 +18,7 @@ Single source of truth for where the rebuild stands. **Update this file in the s
 
 ## Assumptions in force (confirm with the owner if they change)
 - **Payable day:** a day is payable once it is CLOSED or APPROVED (corrected) with no PENDING correction. Formal timesheet approval is a future feature.
-- **Breaks:** unpaid in V1; the client can't mark a break as paid. **Overtime:** hours above 8/day are stored separately and paid at the base rate until a policy is set.
+- **Breaks:** unpaid in V1; the client can't mark a break as paid. **Overtime:** hours above 8/day are paid at the employee's overtime rate (fixed 8h threshold until a policy is set).
 - **Corrections:** a PM reviews only employees on projects they lead; the CEO reviews anything. Requesters edit or withdraw; reviewers approve or reject.
 - **Missing clock-out:** the job flags the day and leaves the end time **blank**. It does **not** create a correction (that would require guessing a time); the employee submits one.
 - **Changes during a break:** project, location and activity changes are refused while on a break, so a break always belongs to one segment.
@@ -61,7 +61,7 @@ Seed logins (dev only, all `Password123!`): `ceo@example.com` (CEO), `manager@ex
 ### ✅ Phase 2: Time engine
 - [x] Per-employee advisory lock for every time action (`modules/time/time.totals.ts`)
 - [x] Partial unique indexes: one ACTIVE segment per day, one open break per segment, one open activity per segment
-- [x] Spec endpoints: `POST /time/start|project|location|activity|breaks/start|breaks/end|end`, `GET /time/today`, `GET /me/time` (legacy aliases kept for `client/`)
+- [x] Spec endpoints: `POST /time/start|project|location|activity|breaks/start|breaks/end|end`, `GET /time/today`, `GET /me/time` (the legacy aliases were removed with `client/` in Phase 7)
 - [x] `ActivityType` enum; `LocationType.OTHER`; all timestamps generated on the server
 - [x] Missing clock-out flagged without guessing; idempotent job (`stale-session.service.ts`)
 - [x] Correction approval closes open breaks and activities at the approved time; totals recomputed from source records
@@ -118,7 +118,7 @@ Seed logins (dev only, all `Password123!`): `ceo@example.com` (CEO), `manager@ex
 - [x] Phase 6 done: all four employee screens built, typecheck/lint clean, browser-checked
 - [x] Skeleton audit and rebuild (`web/components/loading/`, colocated `*-skeleton.tsx`): every loading state mirrors its real UI; verified live, 390px, dark, reduced-motion; real UI untouched
 
-### 🔄 Phase 7: Management screens ← **NEXT**
+### ✅ Phase 7: Management screens
 - [x] Dashboard (`web/app/(app)/dashboard/` + `web/lib/dashboard.ts`): metric cards, hours by project/over time/estimated-vs-actual bars, location/activity donuts, 7/30/90-day ranges; no money anywhere; browser-checked as CEO and PM, 390px, dark, loading skeleton, range switch
 - [x] Live status (`web/app/(app)/live/` + `web/lib/live.ts`): avatar + badge table polled every 15 s with ticking elapsed; browser-checked as CEO, 390px
 - [x] Review fixes: live board times a break from its start (`sinceSeconds` from the API) and sorts numerically; dashboard fills empty days, shows estimates as per-project progress (over-budget badge), adds Not clocked in / Finished cards, keeps the old range on screen while switching, fixes chart and card labels
@@ -132,16 +132,16 @@ Seed logins (dev only, all `Password123!`): `ceo@example.com` (CEO), `manager@ex
 - [x] Reports (`web/app/(app)/reports/` + shared `web/components/reports/`): employee/project pickers with date range; Report/HoursList moved out of the detail pages and reused; project report hook takes an optional range; browser-checked as CEO (labour cost) and PM (hours only), 390px; employee denied
 - [x] Work evidence (`web/app/(app)/evidence/` + `web/lib/evidence.ts`): employee + date pickers, new `GET /management/employees/:id/workdays?date=` (tested, PM-scoped); metric cards, assessment, segment timeline; browser-checked as CEO, PM (scoped, 403 path renders), 390px; employee denied; fixed a stuck skeleton on disabled lookups
 - [x] Delete `client/` (electron wrapper moved to `/electron` for Phase 9); drop the legacy time aliases and the `isActive` update toggle; login/refresh keep tokens in httpOnly cookies only (tests read the session cookie; new security test locks it)
-- [x] Phase 8 web, Phase 9, Phase 10 all done — see below
-- [ ] Owner action: revoke `HW-SARAH-CAD-01` wherever it was issued (not in this dev DB)
+- [x] Phase 8 web, Phase 9, Phase 10 all done (see below)
 
-### 🔄 Phase 8: Notifications
+### ✅ Phase 8: Notifications
 - [x] Server: `notify()` inside the event's transaction; correction submitted (CEO + lead PMs), approved/rejected (employee), missing clock-out (employee), project assigned (employee); `GET /me/notifications`, `POST /me/notifications/:id/read`, `POST /me/notifications/read-all`; tests (79 total)
 - [x] Web: `web/components/shell/notification-inbox.tsx` — Arc `notification-center` in the top bar, 60 s polling, server unread count on the bell, mark-read posts + deep-links (correction → review queue for managers, own corrections for employees; workday → my-corrections; project → my-projects); browser-checked as CEO (submit → badge → panel → mark read → /corrections → approve) and employee (approval → badge → panel → mark read → /my-corrections), 390px, dark
+- [x] "Mark all read" sends one `POST /me/notifications/read-all`; the inbox loads 100 items so the panel's unread count matches the server (badge shows 9+ beyond nine); browser-checked
 ### ✅ Phase 9: Electron + desktop agent fixes
 - [x] Server: heartbeats de-duplicated per device per minute; agent source preferred when it reported that day (`activity.service.ts` + `tests/activity-evidence.test.ts`)
 - [x] Agent: async idle reads, macOS (`ioreg`) + Linux (`xprintidle`) readers, UNKNOWN when unreadable (verified: stored UNKNOWN), HTTPS enforced off-localhost; error log shows the server message
-- [x] Electron (`electron/`): loads `CCP_WEB_URL` (default localhost:3000), single tray instance, before-quit flag + tray destroy, heartbeats only while `/time/today` reports WORKING/ON_BREAK; icon path fixed to `web/public`; runnable `package.json`
+- [x] Electron (`electron/`): loads `CCP_WEB_URL` (default localhost:3000), single tray instance, quit handling, sandboxed, locked to the CCP origin (other links open in the browser); **no activity tracking** (owner decision; the desktop agent does it); Electron 45 installed with a lockfile
 - [ ] Owner action: revoke `HW-SARAH-CAD-01` — confirmed **not** in this dev DB; revoke it wherever it was issued
 ### ✅ Phase 10: Docker, CI, docs, backups
 - [x] `server/Dockerfile` (+ entrypoint running `prisma migrate deploy` on start) and `web/Dockerfile` (standalone build, verified locally); compose runs db, api, worker (`src/worker.ts` entrypoint), web
@@ -154,10 +154,7 @@ Seed logins (dev only, all `Password123!`): `ceo@example.com` (CEO), `manager@ex
 
 ## Known gaps / follow-ups
 - **Electron: no activity tracking (decided).** The desktop agent is the only telemetry source; install it beside Electron with a device key from Settings.
-- **Notification bell quirks:**
-  - "Mark all read" sends one request per item instead of `POST /me/notifications/read-all`.
-  - "Mark unread" and "Dismiss" are local only and revert on the next poll.
-  - The unread badge counts only the 30 loaded items, not the server's `meta.unread`.
+- **Notification bell:** "Mark unread" and "Dismiss" come with the Arc panel but have no server counterpart, so they revert on the next poll. Add `POST /me/notifications/:id/unread` and a dismiss flag if the owner wants them.
 - Payroll: 8h/day overtime threshold is hard-coded (no policy yet). Days with no rate are skipped and returned as `daysWithoutRate`.
 - Dashboard "hours today" counts the date's segments; employees with no visible projects show only themselves to a PM.
 - Estimate uses current rates for cost (future rates are unknown by definition).
@@ -166,6 +163,7 @@ Seed logins (dev only, all `Password123!`): `ceo@example.com` (CEO), `manager@ex
 ## Session log
 | Date | Work |
 |---|---|
+| 2026-11-14 | Phases 7 and 8 closed: one read-all request for "Mark all read", exact unread count; progress corrected (overtime rate, aliases, Electron); `USER_GUIDE.md` written |
 | 2026-11-14 | Review of phases 7–10: rates saved 100× too high fixed (MoneyInput kobo), duplicate stale job in compose fixed, Employees/Projects UI improved, `hoursWorked` on the project list; 89 tests |
 | 2026-11-14 | Phase 7: corrections review, employees, projects, payroll, audit log, settings (+ device list/revoke API, unknown departments rejected; 81 tests) |
 | 2026-11-14 | Phase 7: work evidence screen + workday lookup API, reports screen + shared report blocks, legacy cleanup (client/ deleted, time aliases and isActive toggle dropped, tokens cookie-only; 86 tests) |

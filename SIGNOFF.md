@@ -245,10 +245,7 @@ Read each service file for the exact response shape before building.
 ## 8. Known gaps (also listed in `progress.md`)
 
 - **Electron (decided 2026-11-14): no activity tracking.** It is a window onto the web app with a tray icon, locked to the CCP origin (other links open in the browser). Device activity comes only from `desktop-agent/`, installed beside it with a key issued in Settings → Desktop devices. Do not add a token bridge or self-registration to Electron.
-- **Notification bell quirks:**
-  - "Mark all read" sends one request per item instead of `POST /me/notifications/read-all`.
-  - "Mark unread" and "Dismiss" are local only and revert on the next poll.
-  - The unread badge counts only the 30 loaded items, not the server's `meta.unread`.
+- **Notification bell:** "Mark unread" and "Dismiss" are local only (no server counterpart) and revert on the next poll. "Mark all read" and the unread count are fixed.
 
 - PMs can list and open **any** employee's profile (`GET /employees`, `GET /employees/:id`): name, email, department, no money. It's needed to add people to projects. Ask the owner whether PMs should see only their team.
 - The payroll **successful finalize** was never clicked through in the browser (dev data always has an open day); the server tests cover it.
