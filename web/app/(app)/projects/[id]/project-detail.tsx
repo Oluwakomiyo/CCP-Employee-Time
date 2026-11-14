@@ -22,7 +22,7 @@ import { errorMessage } from "@/lib/api";
 import { useMe } from "@/lib/auth";
 import { fullName, useEmployees } from "@/lib/employees";
 import { PROJECT_STATUSES, STATUS_TONE, useEstimate, useProjectMutations, useProjectReport, type ProjectReport } from "@/lib/projects";
-import { formatTime, labelOf, LOCATIONS } from "@/lib/time";
+import { formatDate, formatTime, labelOf, LOCATIONS } from "@/lib/time";
 import { isCeo } from "@/lib/types";
 import { ProjectForm } from "../project-form";
 import styles from "../../manage.module.css";
@@ -91,32 +91,62 @@ export function ProjectDetail({ id }: { id: string }) {
   );
 }
 
+const round1 = (n: number) => Math.round(n * 10) / 10;
+
 function Overview({ r, ceo }: { r: ProjectReport; ceo: boolean }) {
+  const p = r.project;
+  const lead = r.assignedEmployees.find((m) => m.isProjectLead);
   return (
     <div className={styles.layout}>
       <div className={styles.kpis}>
-        <MetricCard label="Hours worked" value={r.totalHours} suffix="h" context="all time, net of breaks" />
+        <MetricCard label="Hours worked" value={round1(r.totalHours)} suffix="h" context="all time, net of breaks" />
         {r.estimatedHours !== null && <MetricCard label="Estimate" value={r.estimatedHours} suffix="h" context="planned for the project" />}
         {r.estimatedHours !== null &&
           (r.overEstimate ? (
-            <MetricCard label="Over estimate" value={r.overByHours} suffix="h" context="beyond the plan" />
+            <MetricCard label="Over estimate" value={round1(r.overByHours)} suffix="h" context="beyond the plan" />
           ) : (
-            <MetricCard label="Remaining" value={r.remainingEstimatedHours ?? 0} suffix="h" context="left in the estimate" />
+            <MetricCard label="Remaining" value={round1(r.remainingEstimatedHours ?? 0)} suffix="h" context="left in the estimate" />
           ))}
         {ceo && r.labourCost !== undefined && <MetricCard label="Labour cost (₦)" value={r.labourCost} context="at each day's rate" />}
       </div>
       {r.estimatedHours !== null && (
         <section className={styles.card} aria-label="Progress against the estimate">
-          <Progress value={r.totalHours} max={r.estimatedHours} label={`${r.totalHours} of ${r.estimatedHours} estimated hours`} showValue />
-          {r.overEstimate && <Badge tone="warning">Over by {r.overByHours}h</Badge>}
+          <Progress value={r.totalHours} max={r.estimatedHours} label={`${round1(r.totalHours)} of ${r.estimatedHours} estimated hours`} showValue />
+          {r.overEstimate && <Badge tone="warning">Over by {round1(r.overByHours)}h</Badge>}
         </section>
       )}
-      {r.project.description && (
-        <section className={styles.card} aria-labelledby="about">
-          <h2 id="about">About</h2>
-          <p>{r.project.description}</p>
-        </section>
-      )}
+      <section className={styles.card} aria-labelledby="about">
+        <h2 id="about">Details</h2>
+        <dl className={styles.details}>
+          <div>
+            <dt>Client</dt>
+            <dd>{p.clientName ?? "Not set"}</dd>
+          </div>
+          <div>
+            <dt>Site</dt>
+            <dd>{p.location ?? "Not set"}</dd>
+          </div>
+          <div>
+            <dt>Started</dt>
+            <dd>{formatDate(p.startDate)}</dd>
+          </div>
+          <div>
+            <dt>Due</dt>
+            <dd>{p.endDate ? formatDate(p.endDate) : "No end date"}</dd>
+          </div>
+          <div>
+            <dt>Lead</dt>
+            <dd>{lead ? fullName(lead) : "No lead yet"}</dd>
+          </div>
+          <div>
+            <dt>Team</dt>
+            <dd>
+              {r.assignedEmployees.length} {r.assignedEmployees.length === 1 ? "person" : "people"}
+            </dd>
+          </div>
+        </dl>
+        {p.description && <p>{p.description}</p>}
+      </section>
       <section className={styles.card} aria-labelledby="now">
         <h2 id="now">Working on it now</h2>
         {r.currentWorkers.length === 0 ? (
