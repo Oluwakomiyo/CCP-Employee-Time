@@ -104,3 +104,13 @@ export const formatHours = (seconds: number) => {
 
 export const formatTime = (iso: string) =>
   new Intl.DateTimeFormat("en-NG", { hour: "numeric", minute: "2-digit", timeZone: "Africa/Lagos" }).format(new Date(iso));
+
+/** "1 Sept 2026" for a date-only value (YYYY-MM-DD or a UTC-midnight ISO). UTC so the day never shifts. */
+export const formatDate = (value: string) =>
+  new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }).format(new Date(`${value.slice(0, 10)}T00:00:00Z`));
+
+/** "ON_LEAVE" -> "On leave". */
+export const sentenceCase = (value: string) => {
+  const s = value.toLowerCase().replace(/_/g, " ");
+  return s.charAt(0).toUpperCase() + s.slice(1);
+};
