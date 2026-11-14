@@ -59,3 +59,33 @@
   display: flex;
   justify-content: center;
 }
+
+/* Skeleton-only: mirrors the filter toolbar and timeline rows the real UI renders. */
+.toolbarSkeleton {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex: 1;
+  min-width: min(20rem, 100%);
+}
+
+.timelineSkeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.timelineRow {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.timelineLines {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  flex: 1;
+  padding-top: 2px;
+}

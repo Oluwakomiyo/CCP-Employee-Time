@@ -9,8 +9,8 @@ import DateRangePicker, { type DateRange } from "@/components/arc/date-range-pic
 import EmptyState from "@/components/arc/empty-state/empty-state";
 import FilterToolbar, { type FilterChip, type FilterField } from "@/components/arc/filter-toolbar/filter-toolbar";
 import { Pagination } from "@/components/arc/pagination/pagination";
-import { Skeleton } from "@/components/arc/skeleton/skeleton";
 import SortableDataTable, { type DataColumn } from "@/components/arc/sortable-data-table/sortable-data-table";
+import { MyTimeSkeleton } from "./my-time-skeleton";
 import Timeline, { type TimelineEvent } from "@/components/arc/timeline/timeline";
 import { errorMessage } from "@/lib/api";
 import {
@@ -178,7 +178,7 @@ export function MyTimeList() {
     });
   }, [selected]);
 
-  if (history.isPending) return <Skeleton lines={6} label="Loading work history" />;
+  if (history.isPending) return <MyTimeSkeleton />;
   if (history.isError)
     return (
       <Alert tone="danger" title="Could not load work history">
