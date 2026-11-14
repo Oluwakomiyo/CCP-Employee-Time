@@ -137,7 +137,11 @@ Seed logins (dev only, all `Password123!`): `ceo@example.com` (CEO), `manager@ex
 ### 🔄 Phase 8: Notifications
 - [x] Server: `notify()` inside the event's transaction; correction submitted (CEO + lead PMs), approved/rejected (employee), missing clock-out (employee), project assigned (employee); `GET /me/notifications`, `POST /me/notifications/:id/read`, `POST /me/notifications/read-all`; tests (79 total)
 - [x] Web: `web/components/shell/notification-inbox.tsx` — Arc `notification-center` in the top bar, 60 s polling, server unread count on the bell, mark-read posts + deep-links (correction → review queue for managers, own corrections for employees; workday → my-corrections; project → my-projects); browser-checked as CEO (submit → badge → panel → mark read → /corrections → approve) and employee (approval → badge → panel → mark read → /my-corrections), 390px, dark
-### ⏳ Phase 9: Electron + desktop agent fixes
+### ✅ Phase 9: Electron + desktop agent fixes
+- [x] Server: heartbeats de-duplicated per device per minute; agent source preferred when it reported that day (`activity.service.ts` + `tests/activity-evidence.test.ts`)
+- [x] Agent: async idle reads, macOS (`ioreg`) + Linux (`xprintidle`) readers, UNKNOWN when unreadable (verified: stored UNKNOWN), HTTPS enforced off-localhost; error log shows the server message
+- [x] Electron (`electron/`): loads `CCP_WEB_URL` (default localhost:3000), single tray instance, before-quit flag + tray destroy, heartbeats only while `/time/today` reports WORKING/ON_BREAK; icon path fixed to `web/public`; runnable `package.json`
+- [ ] Owner action: revoke `HW-SARAH-CAD-01` — confirmed **not** in this dev DB; revoke it wherever it was issued
 ### ⏳ Phase 10: Docker, CI, docs, backups
 
 ---
