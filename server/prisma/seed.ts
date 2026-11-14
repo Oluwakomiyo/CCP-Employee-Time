@@ -135,6 +135,10 @@ async function writeDay(employeeId: string, date: Date, blocks: Block[], lunch?:
 }
 
 async function main() {
+  // This seed wipes every table. Never let it touch a live database.
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('Refusing to run the demo seed with NODE_ENV=production: it deletes all data. Use `node dist/scripts/create-admin.js` to create the first CEO.');
+  }
   console.log('🌱 Seeding development data...');
   await wipe();
 
