@@ -1,5 +1,7 @@
 # API + worker image. The worker runs the same image with another command.
 FROM node:22-alpine AS deps
+# Prisma's query engine needs OpenSSL, which the Alpine base image doesn't ship.
+RUN apk add --no-cache openssl
 WORKDIR /app
 COPY package*.json ./
 COPY prisma ./prisma
@@ -12,6 +14,7 @@ COPY . .
 RUN npm run build
 
 FROM node:22-alpine AS runner
+RUN apk add --no-cache openssl
 WORKDIR /app
 ENV NODE_ENV=production
 COPY --from=deps /app/node_modules ./node_modules
