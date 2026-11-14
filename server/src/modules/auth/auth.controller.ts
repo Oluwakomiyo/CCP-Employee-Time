@@ -11,15 +11,19 @@ const baseCookie = (): CookieOptions => ({
 
 const setSessionCookies = (res: Response, tokens: { accessToken: string; refreshToken: string }) => {
   res.cookie(ACCESS_COOKIE, tokens.accessToken, { ...baseCookie(), path: '/', maxAge: 15 * 60 * 1000 });
+  // Path '/' so the web app's proxy can tell "session may be refreshable" from "signed out"
+  // on page requests. It stays httpOnly + SameSite=Lax; only /auth/refresh ever reads it.
   res.cookie(REFRESH_COOKIE, tokens.refreshToken, {
     ...baseCookie(),
-    path: '/api/v1/auth',
+    path: '/',
     maxAge: 7 * 24 * 60 * 60 * 1000,
   });
 };
 
 const clearSessionCookies = (res: Response) => {
   res.clearCookie(ACCESS_COOKIE, { ...baseCookie(), path: '/' });
+  res.clearCookie(REFRESH_COOKIE, { ...baseCookie(), path: '/' });
+  // shortcut: also clear the old path from sessions issued before this change; remove later.
   res.clearCookie(REFRESH_COOKIE, { ...baseCookie(), path: '/api/v1/auth' });
 };
 
