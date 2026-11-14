@@ -4,7 +4,7 @@
 
 One module per domain, each with `*.routes.ts`, `*.controller.ts`, `*.service.ts`, `*.schema.ts` (zod). Cross-cutting code lives in `config/`, `middleware/`, `errors/`, `utils/`, `jobs/`.
 
-- `auth` — login, refresh rotation, logout, change password. Sessions are httpOnly cookies (`ccp_at`, `ccp_rt`); Bearer tokens are accepted too (Electron, tests). JWT is pinned to HS256; the user row is re-checked on every request; `mustChangePassword` gates everything except `/me`, password change and logout.
+- `auth` — login, refresh rotation, logout, change password. Sessions are httpOnly cookies (`ccp_at`, `ccp_rt`); Bearer tokens are accepted too (tests, scripts). Electron uses the cookies like any browser. JWT is pinned to HS256; the user row is re-checked on every request; `mustChangePassword` gates everything except `/me`, password change and logout.
 - `time` — the punch clock. Every mutation runs inside `withEmployeeLock` (per-employee advisory lock), generates its own timestamps, and recomputes day totals from source records. Partial unique indexes enforce one active segment per day, one open break per segment, one open activity per segment.
 - `employees` (+ `compensation.ts`) — rate history as `effectiveFrom`/`effectiveTo` rows, one open row per employee; `rateOn()` prices any day at the rate in force that day.
 - `projects` — members are soft-removed (`removedAt`); only the CEO appoints/removes leads; projects with recorded time can't be deleted.

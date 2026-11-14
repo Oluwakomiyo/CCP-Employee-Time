@@ -6,7 +6,7 @@ Architecture firm time tracking: employees clock in on projects (office or site)
 
 - `server/` — Express 4 + Prisma 5 + PostgreSQL API (the contract; 87 tests)
 - `web/` — Next.js 16 App Router frontend (Arc primitives, no Tailwind)
-- `electron/` — thin desktop wrapper around the hosted web app
+- `electron/` — thin desktop wrapper around the hosted web app (no activity tracking; install `desktop-agent/` beside it for that)
 - `desktop-agent/` — idle-time agent reporting per-device heartbeats
 
 ## Run it

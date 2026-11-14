@@ -244,7 +244,7 @@ Read each service file for the exact response shape before building.
 
 ## 8. Known gaps (also listed in `progress.md`)
 
-- **Electron activity tracking can't work as built (owner decision needed).** `electron/main.cjs` waits for the web app to call `window.electronAPI.notifyLogin({ token, employee })`, but nothing in `web/` calls it. Login no longer returns tokens, and Electron's self-registration (`POST /activity/devices`) is CEO-only, so an employee gets a 403. The separate `desktop-agent/` (device key from Settings) is the working path. Options: (a) Electron stops doing telemetry and the desktop agent is installed beside it; or (b) Electron reads a device key issued in Settings, like the agent does. Don't add an employee-facing token or self-registration.
+- **Electron (decided 2026-11-14): no activity tracking.** It is a window onto the web app with a tray icon, locked to the CCP origin (other links open in the browser). Device activity comes only from `desktop-agent/`, installed beside it with a key issued in Settings → Desktop devices. Do not add a token bridge or self-registration to Electron.
 - **Notification bell quirks:**
   - "Mark all read" sends one request per item instead of `POST /me/notifications/read-all`.
   - "Mark unread" and "Dismiss" are local only and revert on the next poll.

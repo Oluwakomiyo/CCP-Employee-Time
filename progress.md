@@ -13,7 +13,7 @@ Single source of truth for where the rebuild stands. **Update this file in the s
 | Order | Backend correctness and security first, then the UI is built once. |
 | Timezone | `COMPANY_TZ=Africa/Lagos`. Timestamps are stored in UTC; a workday is the Lagos date at clock-in (`server/src/utils/time.ts`). |
 | UI kit | **Arc** (uiarc.dev, via the Arc MCP and the shadcn CLI) for **every** primitive: dialogs, drawers, inputs, selects, pickers, buttons, tables, badges, toasts, charts. Hand-build only what Arc lacks (the sidebar shell), and compose that from Arc parts. Font: **Plus Jakarta Sans** (mapped onto Arc's font tokens). |
-| Desktop | Keep Electron (it will become a thin wrapper that loads the hosted web URL) and `desktop-agent/`. Both are fixed in Phase 9. |
+| Desktop | Electron is a thin wrapper that loads the hosted web URL and does **no** activity tracking (owner decision, 2026-11-14). `desktop-agent/` alone reports device activity, using a device key issued in Settings. |
 | Commits | Small, logical commits (one real change each, every commit typechecks). Never add Claude or AI attribution. Don't push unless asked. |
 
 ## Assumptions in force (confirm with the owner if they change)
@@ -49,7 +49,7 @@ Seed logins (dev only, all `Password123!`): `ceo@example.com` (CEO), `manager@ex
 
 ### ✅ Phase 1: Backend security
 - [x] Boot fails without secrets; JWT pinned to HS256 (`config/env.ts`, `utils/token.ts`)
-- [x] httpOnly cookie sessions (`ccp_at`, `ccp_rt`); Bearer still accepted for Electron and the agent
+- [x] httpOnly cookie sessions (`ccp_at`, `ccp_rt`); Bearer still accepted for tests and scripts (the agent uses its device key)
 - [x] Auth re-checks the user in the DB on every request; `mustChangePassword` blocks everything except `/auth/me`, `/auth/change-password` and `/auth/logout`
 - [x] Reversible passwords removed (`managedPassword` column + `utils/crypto.ts` gone); server-generated temp password shown once; reset revokes the session
 - [x] Audit snapshots scrubbed of hashes (Prisma extension in `config/prisma.ts`); the `AuditLog` table is append-only (DB trigger)
@@ -153,7 +153,7 @@ Seed logins (dev only, all `Password123!`): `ceo@example.com` (CEO), `manager@ex
 ---
 
 ## Known gaps / follow-ups
-- **Electron activity tracking can't work as built (owner decision needed).** `electron/main.cjs` waits for the web app to call `window.electronAPI.notifyLogin({ token, employee })`, but nothing in `web/` calls it. Login no longer returns tokens, and Electron's self-registration (`POST /activity/devices`) is CEO-only, so an employee gets a 403. The separate `desktop-agent/` (device key from Settings) is the working path. Options: (a) Electron stops doing telemetry and the desktop agent is installed beside it; or (b) Electron reads a device key issued in Settings, like the agent does. Don't add an employee-facing token or self-registration.
+- **Electron: no activity tracking (decided).** The desktop agent is the only telemetry source; install it beside Electron with a device key from Settings.
 - **Notification bell quirks:**
   - "Mark all read" sends one request per item instead of `POST /me/notifications/read-all`.
   - "Mark unread" and "Dismiss" are local only and revert on the next poll.
