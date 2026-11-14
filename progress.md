@@ -108,13 +108,14 @@ Seed logins (dev only, all `Password123!`): `ceo@example.com` (CEO), `manager@ex
 - [x] Every route exists with a `ComingSoon` placeholder (delete each one as its screen lands)
 - [x] Checked in a browser: employee/CEO nav, dark mode, 390px, the password change, the access-denied page
 
-### 🔄 Phase 6: Employee screens ← **NEXT**
+### ✅ Phase 6: Employee screens
 - [x] Today punch clock (`web/app/(app)/today/`, hooks in `web/lib/time.ts`): start, break, change project/location/activity in a drawer, hold to end; polls every 15 s; browser-checked
 - [x] `GET /projects?mine=true` (the caller's own projects, for pickers)
 - [x] My time (`web/app/(app)/my-time/` + `web/lib/history.ts`): paginated workdays with date-range, project and location filters, day timeline detail, missing clock-out correction link; browser-checked (light/dark, 390px)
 - [x] My projects (`web/app/(app)/my-projects/` + `web/lib/my-projects.ts`): card grid with team, lead, my hours in range and progress against estimate, summary stats; no money anywhere; browser-checked (390px)
 - [x] My corrections (`web/app/(app)/my-corrections/` + `web/lib/corrections.ts`): status filter, table with review notes, dialog with workday/entry/time pickers and reason, edit pending, withdraw via confirm; deep link `?workDayId=` auto-opens; server messages shown; browser-checked as employee (create, overlap error, withdraw)
-- [ ] Profile
+- [x] Profile (`web/app/(app)/profile/`): details card plus password change reusing the change-password rules; error path browser-checked; employee opening a management URL still gets no access
+- [x] Phase 6 done: all four employee screens built, typecheck/lint clean, browser-checked
 
 ### ⏳ Phase 7: Management screens
 - [ ] Dashboard, Live status, Employees (+ detail), Projects (+ detail/report/estimate), Corrections review, Payroll, Reports, Work evidence, Audit log, Settings

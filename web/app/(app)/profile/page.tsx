@@ -1,8 +1,14 @@
 import type { Metadata } from "next";
-import { ComingSoon } from "@/components/shell/coming-soon";
+import { PageHeading } from "@/components/shell/page-heading";
+import { ProfileDetails } from "./profile-details";
 
 export const metadata: Metadata = { title: "Profile" };
 
 export default function ProfilePage() {
-  return <ComingSoon title="Profile" description="Your details and password." />;
+  return (
+    <>
+      <PageHeading title="Profile" description="Your details and password." />
+      <ProfileDetails />
+    </>
+  );
 }
