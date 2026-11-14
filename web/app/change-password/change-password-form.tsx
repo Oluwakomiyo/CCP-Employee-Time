@@ -10,6 +10,7 @@ import { Alert } from "@/components/arc/alert/alert";
 import { AuthLayout, formClass } from "@/components/auth/auth-layout";
 import { api, errorMessage } from "@/lib/api";
 import { homeFor, meKey, useLogout, useMe } from "@/lib/auth";
+import type { Me } from "@/lib/types";
 
 // Same rules the API enforces (server/src/modules/auth/auth.schema.ts: passwordRule).
 const RULES: PasswordRule[] = [
@@ -39,7 +40,9 @@ export function ChangePasswordForm() {
     setPending(true);
     try {
       await api.post("/auth/change-password", { currentPassword: current, newPassword: next });
-      const user = await qc.fetchQuery({ queryKey: meKey, queryFn: () => api.get<{ user: typeof me }>("/auth/me").then((d) => d.user!) });
+      // Fetch fresh: the cached user still says mustChangePassword.
+      const { user } = await api.get<{ user: Me }>("/auth/me");
+      qc.setQueryData(meKey, user);
       router.replace(homeFor(user));
     } catch (err) {
       setError(errorMessage(err));
