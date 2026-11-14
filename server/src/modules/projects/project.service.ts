@@ -242,9 +242,7 @@ export class ProjectService {
           clientName: input.clientName,
           location: input.location,
           estimatedHours: input.estimatedHours,
-          status:
-            input.status ??
-            (input.isActive === undefined ? undefined : input.isActive ? ProjectStatus.ACTIVE : ProjectStatus.COMPLETED),
+          status: input.status,
           startDate: input.startDate ? new Date(input.startDate) : undefined,
           endDate:
             input.endDate === null

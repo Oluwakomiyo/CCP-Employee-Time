@@ -31,8 +31,6 @@ export const updateProjectSchema = z.object({
   ...details,
   estimatedHours: details.estimatedHours.nullable(),
   status: z.nativeEnum(ProjectStatus).optional(),
-  // shortcut: legacy client toggle; true -> ACTIVE, false -> COMPLETED. Remove with client/.
-  isActive: z.boolean().optional(),
   startDate: date.optional(),
   endDate: date.nullable().optional(),
 }).refine(endAfterStart, { message: 'End date must be on or after the start date', path: ['endDate'] });
