@@ -14,6 +14,8 @@ export interface LiveRow {
   activity: ActivityType | null;
   breakType: string | null;
   since: string | null;
+  /** Seconds in the current state at fetch time: since the break started, or since the segment started. */
+  sinceSeconds: number;
   segmentSeconds: number;
 }
 

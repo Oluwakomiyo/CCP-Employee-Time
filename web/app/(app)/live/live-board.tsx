@@ -30,6 +30,7 @@ type Row = Record<string, unknown> & {
   doing: string;
   elapsed: number;
   elapsedLabel: string;
+  elapsedSort: number;
 };
 
 export function LiveBoard() {
@@ -41,7 +42,8 @@ export function LiveBoard() {
     () =>
       (live.data ?? []).map((r) => {
         const name = `${r.employee.firstName} ${r.employee.lastName}`;
-        const elapsed = r.state === "WORKING" || r.state === "ON_BREAK" ? r.segmentSeconds + Math.max(0, (now - live.dataUpdatedAt) / 1000) : r.segmentSeconds;
+        // Measured from `since` (the break start while on a break), plus the time since the last fetch.
+        const elapsed = r.since ? r.sinceSeconds + Math.max(0, (now - live.dataUpdatedAt) / 1000) : 0;
         return {
           id: r.employee.id,
           name,
@@ -54,6 +56,7 @@ export function LiveBoard() {
               : [labelOf(LOCATIONS, r.location), r.activity ? labelOf(ACTIVITIES, r.activity) : ""].filter(Boolean).join(" · ") || "–",
           elapsed,
           elapsedLabel: r.since ? `${formatHours(elapsed)} (since ${formatTime(r.since)})` : "–",
+          elapsedSort: r.since ? elapsed : -1,
         };
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -86,7 +89,8 @@ export function LiveBoard() {
       },
       { key: "project", label: "Project" },
       { key: "doing", label: "Doing" },
-      { key: "elapsedLabel", label: "Elapsed" },
+      // Sorts on the number; the label is only what is shown.
+      { key: "elapsedSort", label: "In this state", render: (_v, row) => String(row.elapsedLabel) },
     ],
     [],
   );
