@@ -6,7 +6,7 @@ import { TokenPayload } from './token';
 /** True when the PM is lead on the given project. */
 export const pmLeadsProject = async (pmEmployeeId: string, projectId: string) =>
   (await prisma.projectMember.count({
-    where: { projectId, employeeId: pmEmployeeId, isProjectLead: true },
+    where: { projectId, employeeId: pmEmployeeId, isProjectLead: true, removedAt: null },
   })) > 0;
 
 /** True when the employee is a member of any project the PM leads. */
@@ -14,7 +14,8 @@ export const pmLeadsEmployee = async (pmEmployeeId: string, employeeId: string) 
   (await prisma.projectMember.count({
     where: {
       employeeId,
-      project: { members: { some: { employeeId: pmEmployeeId, isProjectLead: true } } },
+      removedAt: null,
+      project: { members: { some: { employeeId: pmEmployeeId, isProjectLead: true, removedAt: null } } },
     },
   })) > 0;
 

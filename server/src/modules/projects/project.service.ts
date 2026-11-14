@@ -47,6 +47,7 @@ export class ProjectService {
       where.members = {
         some: {
           employeeId: userEmployeeId,
+          removedAt: null,
         },
       };
     }
@@ -61,11 +62,12 @@ export class ProjectService {
         include: {
           _count: {
             select: {
-              members: true,
+              members: { where: { removedAt: null } },
               workSegments: true,
             },
           },
           members: {
+            where: { removedAt: null },
             take: 5,
             select: {
               id: true,
@@ -104,6 +106,7 @@ export class ProjectService {
       where: { id: projectId },
       include: {
         members: {
+          where: { removedAt: null },
           include: {
             employee: {
               select: {
@@ -210,7 +213,7 @@ export class ProjectService {
   ) {
     const project = await prisma.project.findUnique({
       where: { id: projectId },
-      include: { members: true },
+      include: { members: { where: { removedAt: null } } },
     });
 
     if (!project) {
@@ -388,7 +391,7 @@ export class ProjectService {
   ) {
     const project = await prisma.project.findUnique({
       where: { id: projectId },
-      include: { members: true },
+      include: { members: { where: { removedAt: null } } },
     });
 
     if (!project) {
@@ -414,14 +417,14 @@ export class ProjectService {
       throw AppError.badRequest('Target employee does not exist or is not active');
     }
 
-    // Check if membership already exists
-    const existingMember = await prisma.projectMember.findUnique({
-      where: {
-        projectId_employeeId: {
-          projectId,
-          employeeId: input.employeeId,
-        },
-      },
+    // Only CEO can appoint project leads; a PM lead manages ordinary members.
+    if (input.isProjectLead && actorRole !== Role.CEO_ADMIN) {
+      throw AppError.forbidden('Only the CEO can appoint a project lead');
+    }
+
+    // Check if a current membership already exists (past memberships are kept as history)
+    const existingMember = await prisma.projectMember.findFirst({
+      where: { projectId, employeeId: input.employeeId, removedAt: null },
     });
 
     if (existingMember) {
@@ -480,7 +483,7 @@ export class ProjectService {
   ) {
     const project = await prisma.project.findUnique({
       where: { id: projectId },
-      include: { members: true },
+      include: { members: { where: { removedAt: null } } },
     });
 
     if (!project) {
@@ -496,31 +499,30 @@ export class ProjectService {
       }
     }
 
-    const member = await prisma.projectMember.findUnique({
-      where: {
-        projectId_employeeId: {
-          projectId,
-          employeeId: targetEmployeeId,
-        },
-      },
+    const member = await prisma.projectMember.findFirst({
+      where: { projectId, employeeId: targetEmployeeId, removedAt: null },
     });
 
     if (!member) {
       throw AppError.notFound('Employee is not assigned to this project');
     }
+    if (member.isProjectLead && actorRole !== Role.CEO_ADMIN) {
+      throw AppError.forbidden('Only the CEO can remove a project lead');
+    }
 
+    // Soft removal: history of who was on the project is preserved (spec §22).
+    const removedAt = new Date();
     await prisma.$transaction(async (tx) => {
-      await tx.projectMember.delete({
-        where: { id: member.id },
-      });
+      await tx.projectMember.update({ where: { id: member.id }, data: { removedAt } });
 
       await tx.auditLog.create({
         data: {
           actorId: actorUserId,
-          action: AuditAction.DELETE,
+          action: AuditAction.UPDATE,
           entityName: 'ProjectMember',
           entityId: member.id,
           beforeState: member as unknown as Prisma.JsonObject,
+          afterState: { event: 'EMPLOYEE_REMOVED_FROM_PROJECT', removedAt: removedAt.toISOString() },
         },
       });
     });

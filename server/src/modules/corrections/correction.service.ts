@@ -44,8 +44,13 @@ const assertValidChanges = async (
     if (!segment) throw AppError.badRequest('The segment does not belong to this workday');
   }
   if (changes.projectId) {
+    // Must have been a member at the corrected time (current, or removed afterwards).
     const member = await db.projectMember.findFirst({
-      where: { projectId: changes.projectId, employeeId: workDay.employeeId },
+      where: {
+        projectId: changes.projectId,
+        employeeId: workDay.employeeId,
+        OR: [{ removedAt: null }, { removedAt: { gt: new Date(changes.proposedClockIn) } }],
+      },
     });
     if (!member) throw AppError.badRequest('The project is not assigned to this employee');
   }
@@ -452,7 +457,10 @@ export class CorrectionService {
           {
             employee: {
               projectMemberships: {
-                some: { project: { members: { some: { employeeId: userEmployeeId, isProjectLead: true } } } },
+                some: {
+                  removedAt: null,
+                  project: { members: { some: { employeeId: userEmployeeId, isProjectLead: true, removedAt: null } } },
+                },
               },
             },
           },

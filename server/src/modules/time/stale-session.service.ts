@@ -71,7 +71,7 @@ export class StaleSessionService {
         {
           employee: {
             projectMemberships: {
-              some: { project: { members: { some: { employeeId, isProjectLead: true } } } },
+              some: { removedAt: null, project: { members: { some: { employeeId, isProjectLead: true, removedAt: null } } } },
             },
           },
         },

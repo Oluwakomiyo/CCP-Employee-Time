@@ -57,7 +57,7 @@ const requireNotOnBreak = (segment: ActiveSegment, action: string) => {
 const assertCanWorkOn = async (tx: DbClient, actor: TimeActor, projectId: string) => {
   const project = await tx.project.findUnique({
     where: { id: projectId },
-    include: { members: { where: { employeeId: actor.employeeId } } },
+    include: { members: { where: { employeeId: actor.employeeId, removedAt: null } } },
   });
   if (!project) throw AppError.badRequest('Project does not exist');
   if (project.status !== ProjectStatus.ACTIVE) throw AppError.badRequest('Project is not active');

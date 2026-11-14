@@ -205,12 +205,14 @@ model ProjectMember {
   projectId     String
   employeeId    String
   isProjectLead Boolean  @default(false)
-  assignedAt    DateTime @default(now()) @db.Timestamptz(6)
+  assignedAt    DateTime  @default(now()) @db.Timestamptz(6)
+  // Soft removal keeps membership history (spec §22). One open membership per pair is enforced
+  // by the partial unique index "ProjectMember_one_active" (see migration).
+  removedAt     DateTime? @db.Timestamptz(6)
 
   project  Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
-  @@unique([projectId, employeeId])
   @@index([employeeId])
   @@index([projectId])
 }

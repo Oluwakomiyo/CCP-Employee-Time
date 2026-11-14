@@ -130,6 +130,7 @@ export class EmployeeService {
           }
           : false,
         projectMemberships: {
+          where: { removedAt: null },
           select: {
             id: true,
             isProjectLead: true,
