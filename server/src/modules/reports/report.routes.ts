@@ -2,7 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { Role } from '@prisma/client';
 import { authenticate, authorize } from '../../middleware/auth.middleware';
 import { reportService } from './report.service';
-import { estimateQuerySchema, idParamSchema, rangeQuerySchema } from './report.schema';
+import { estimateQuerySchema, idParamSchema, rangeQuerySchema, workdayQuerySchema } from './report.schema';
 
 type Handler = (req: Request) => Promise<unknown>;
 const send = (fn: Handler) => async (req: Request, res: Response, next: NextFunction) => {
@@ -26,6 +26,10 @@ managementRouter.get(
 managementRouter.get(
   '/employees/:id/report',
   send((req) => reportService.employeeReport(req.user!, idParamSchema.parse(req.params).id, rangeQuerySchema.parse(req.query)))
+);
+managementRouter.get(
+  '/employees/:id/workdays',
+  send((req) => reportService.findWorkDay(req.user!, idParamSchema.parse(req.params).id, workdayQuerySchema.parse(req.query).date))
 );
 managementRouter.get(
   '/estimate',

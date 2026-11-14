@@ -85,6 +85,33 @@ const projectNames = (segments: LoadedSegment[]) =>
   new Map(segments.map((s) => [s.projectId, { projectId: s.project.id, code: s.project.code, name: s.project.name }]));
 
 export class ReportService {
+  /**
+   * GET /management/employees/:id/workdays?date=: one day with its segments,
+   * so the evidence screen can resolve a workday id for an employee and date.
+   */
+  async findWorkDay(user: TokenPayload, employeeId: string, date: string) {
+    await assertCanViewEmployee(user, employeeId);
+    const workDay = await prisma.workDay.findUnique({
+      where: { employeeId_date: { employeeId, date: new Date(`${date}T00:00:00.000Z`) } },
+      select: {
+        id: true,
+        date: true,
+        status: true,
+        segments: {
+          orderBy: { clockIn: 'asc' },
+          select: {
+            id: true,
+            clockIn: true,
+            clockOut: true,
+            location: true,
+            project: { select: { id: true, code: true, name: true } },
+          },
+        },
+      },
+    });
+    return { workDay };
+  }
+
   /** GET /management/employees/:id/report and GET /me/report. Never includes money. */
   async employeeReport(user: TokenPayload, employeeId: string, range: DateRange) {
     await assertCanViewEmployee(user, employeeId);

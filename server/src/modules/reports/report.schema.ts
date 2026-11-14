@@ -8,6 +8,9 @@ export const rangeQuerySchema = z
 
 export const idParamSchema = z.object({ id: z.string().uuid('Invalid id') });
 
+/** One company date for the workday lookup behind the evidence screen. */
+export const workdayQuerySchema = z.object({ date });
+
 export const estimateQuerySchema = z.object({
   projectId: z.string().uuid(),
   // Comma-separated list: ?employeeIds=a,b,c
