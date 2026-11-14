@@ -46,7 +46,7 @@ export class PayrollService {
             gte: startDate,
             lte: endDate,
           },
-          status: { in: [DayStatus.APPROVED, DayStatus.CLOSED] },
+          status: { in: [DayStatus.CORRECTED, DayStatus.COMPLETED] },
         },
       });
 

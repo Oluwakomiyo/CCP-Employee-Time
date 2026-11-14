@@ -62,7 +62,7 @@ describe('spec §62 critical time-tracking cases', () => {
     const days = await daysOf(e.employeeId);
     expect(days).toHaveLength(1);
     expect(days[0].date.toISOString().slice(0, 10)).toBe('2026-11-10');
-    expect(days[0].status).toBe(DayStatus.CLOSED);
+    expect(days[0].status).toBe(DayStatus.COMPLETED);
     expect(days[0].segments).toHaveLength(1);
     expect(days[0].segments[0].durationSeconds).toBe(3 * H);
     expect(days[0].totalWorkSeconds).toBe(3 * H);
@@ -173,7 +173,7 @@ describe('spec §62 critical time-tracking cases', () => {
     expect((await staleSessionService.flagMissingClockOuts(16)).flaggedCount).toBe(0);
 
     const [day] = await daysOf(e.employeeId);
-    expect(day.status).toBe(DayStatus.FLAGGED_MISSING_CLOCKOUT);
+    expect(day.status).toBe(DayStatus.MISSING_CLOCK_OUT);
     expect(day.segments[0].status).toBe(SegmentStatus.AUTO_CLOSED);
     expect(day.segments[0].clockOut).toBeNull();
     expect(day.segments[0].durationSeconds).toBeNull();
@@ -214,7 +214,7 @@ describe('spec §62 critical time-tracking cases', () => {
     expect(review.status).toBe(200);
 
     const [day] = await daysOf(e.employeeId);
-    expect(day.status).toBe(DayStatus.APPROVED);
+    expect(day.status).toBe(DayStatus.CORRECTED);
     expect(day.segments[0].status).toBe(SegmentStatus.COMPLETED);
     expect(day.segments[0].durationSeconds).toBe(9.25 * H);
     expect(day.segments[0].breaks[0].endTime!.toISOString()).toBe('2026-11-10T16:15:00.000Z');
@@ -250,7 +250,7 @@ describe('spec §62 critical time-tracking cases', () => {
     expect(review.status).toBe(200);
 
     const [day] = await daysOf(e.employeeId);
-    expect(day.status).toBe(DayStatus.FLAGGED_MISSING_CLOCKOUT);
+    expect(day.status).toBe(DayStatus.MISSING_CLOCK_OUT);
     expect(day.segments[0].clockOut).toBeNull();
     const corr = await prisma.timeCorrectionRequest.findUniqueOrThrow({ where: { id } });
     expect(corr.reviewNotes).toBe('Site closed at 17:00');

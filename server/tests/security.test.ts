@@ -157,12 +157,12 @@ describe('sessions', () => {
 describe('correction IDOR (spec §16)', () => {
   it('cannot point a correction at another employee\'s segment', async () => {
     const date = new Date('2026-11-10T00:00:00Z');
-    const day1 = await prisma.workDay.create({ data: { employeeId: emp1.employeeId, date, status: DayStatus.CLOSED } });
+    const day1 = await prisma.workDay.create({ data: { employeeId: emp1.employeeId, date, status: DayStatus.COMPLETED } });
     const day2 = await prisma.workDay.create({
       data: {
         employeeId: emp2.employeeId,
         date,
-        status: DayStatus.CLOSED,
+        status: DayStatus.COMPLETED,
         segments: {
           create: {
             projectId: projB.id,
@@ -223,7 +223,7 @@ describe('error handling', () => {
 describe('PM correction review scope', () => {
   it('PM cannot review a correction from an employee outside their projects', async () => {
     const day = await prisma.workDay.create({
-      data: { employeeId: emp2.employeeId, date: new Date('2026-11-11T00:00:00Z'), status: DayStatus.CLOSED },
+      data: { employeeId: emp2.employeeId, date: new Date('2026-11-11T00:00:00Z'), status: DayStatus.COMPLETED },
     });
     const corr = await prisma.timeCorrectionRequest.create({
       data: {

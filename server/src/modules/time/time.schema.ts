@@ -44,7 +44,7 @@ export const changeActivitySchema = z.object({
 });
 
 export const startBreakSchema = z.object({
-  breakType: z.nativeEnum(BreakType).default(BreakType.REST),
+  breakType: z.nativeEnum(BreakType).default(BreakType.SHORT_BREAK),
 });
 
 export const timeHistoryQuerySchema = z.object({

@@ -101,7 +101,7 @@ export class CorrectionService {
       });
 
       // Mark the WorkDay as CORRECTION_PENDING if not already flagged
-      if (workDay.status !== DayStatus.FLAGGED_MISSING_CLOCKOUT) {
+      if (workDay.status !== DayStatus.MISSING_CLOCK_OUT) {
         await tx.workDay.update({
           where: { id: workDay.id },
           data: { status: DayStatus.CORRECTION_PENDING },
@@ -254,7 +254,7 @@ export class CorrectionService {
         if (stillPending === 0) {
           await tx.workDay.updateMany({
             where: { id: correction.workDayId, status: DayStatus.CORRECTION_PENDING },
-            data: { status: DayStatus.CLOSED },
+            data: { status: DayStatus.COMPLETED },
           });
         }
 
@@ -343,7 +343,7 @@ export class CorrectionService {
         },
       });
       if (unresolved === 0) {
-        await tx.workDay.update({ where: { id: correction.workDayId }, data: { status: DayStatus.APPROVED } });
+        await tx.workDay.update({ where: { id: correction.workDayId }, data: { status: DayStatus.CORRECTED } });
       }
 
       // 5. Request was already claimed as APPROVED above
@@ -406,7 +406,7 @@ export class CorrectionService {
       if (remaining === 0) {
         await tx.workDay.updateMany({
           where: { id: correction.workDayId, status: DayStatus.CORRECTION_PENDING },
-          data: { status: DayStatus.CLOSED },
+          data: { status: DayStatus.COMPLETED },
         });
       }
 

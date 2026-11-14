@@ -33,7 +33,7 @@ export class StaleSessionService {
 
         await tx.workDay.update({
           where: { id: segment.workDayId },
-          data: { status: DayStatus.FLAGGED_MISSING_CLOCKOUT },
+          data: { status: DayStatus.MISSING_CLOCK_OUT },
         });
         await tx.auditLog.create({
           data: {
@@ -62,7 +62,7 @@ export class StaleSessionService {
    * they lead. CEO: all.
    */
   async getFlaggedWorkDays(userRole: Role, employeeId: string) {
-    const where: Prisma.WorkDayWhereInput = { status: DayStatus.FLAGGED_MISSING_CLOCKOUT };
+    const where: Prisma.WorkDayWhereInput = { status: DayStatus.MISSING_CLOCK_OUT };
     if (userRole === Role.EMPLOYEE) {
       where.employeeId = employeeId;
     } else if (userRole === Role.PROJECT_MANAGER) {

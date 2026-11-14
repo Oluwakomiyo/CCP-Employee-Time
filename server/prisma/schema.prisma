@@ -22,10 +22,10 @@ enum EmploymentStatus {
 
 enum DayStatus {
   OPEN
-  CLOSED
-  FLAGGED_MISSING_CLOCKOUT
+  COMPLETED
+  MISSING_CLOCK_OUT
   CORRECTION_PENDING
-  APPROVED
+  CORRECTED
 }
 
 enum SegmentStatus {
@@ -36,10 +36,9 @@ enum SegmentStatus {
 }
 
 enum BreakType {
-  REST
   LUNCH
-  MEDICAL
-  UNPAID
+  SHORT_BREAK
+  OTHER
 }
 
 enum CorrectionStatus {
@@ -279,7 +278,7 @@ model EmployeeDevice {
 model Break {
   id            String    @id @default(uuid())
   workSegmentId String
-  breakType     BreakType @default(REST)
+  breakType     BreakType @default(SHORT_BREAK)
   isPaid        Boolean   @default(false)
 
   startTime       DateTime  @db.Timestamptz(6)

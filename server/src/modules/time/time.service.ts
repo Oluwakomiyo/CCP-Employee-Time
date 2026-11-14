@@ -125,7 +125,7 @@ export class TimeService {
       const workDay =
         existing ??
         (await tx.workDay.create({ data: { employeeId: actor.employeeId, date, status: DayStatus.OPEN } }));
-      if (existing && existing.status === DayStatus.CLOSED) {
+      if (existing && existing.status === DayStatus.COMPLETED) {
         await tx.workDay.update({ where: { id: existing.id }, data: { status: DayStatus.OPEN } });
       }
 
@@ -279,7 +279,7 @@ export class TimeService {
       // Only an OPEN day becomes CLOSED; flagged or under-correction days keep their status.
       await tx.workDay.updateMany({
         where: { id: current.workDayId, status: DayStatus.OPEN },
-        data: { status: DayStatus.CLOSED },
+        data: { status: DayStatus.COMPLETED },
       });
       await audit(tx, actor, AuditAction.CLOCK_OUT, 'WorkDay', current.workDayId, {
         event: 'WORKDAY_ENDED',
