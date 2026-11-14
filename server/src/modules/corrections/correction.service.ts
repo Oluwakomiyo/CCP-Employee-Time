@@ -61,6 +61,22 @@ const assertValidChanges = async (
   if (workDateFor(clockIn).getTime() !== workDay.date.getTime()) {
     throw AppError.badRequest("The corrected clock-in must fall on the workday's date");
   }
+
+  // The corrected period may not overlap any other recorded segment of this employee.
+  const overlapping = await db.workSegment.findFirst({
+    where: {
+      workDay: { employeeId: workDay.employeeId },
+      ...(changes.segmentId ? { id: { not: changes.segmentId } } : {}),
+      clockIn: { lt: clockOut },
+      OR: [{ clockOut: { gt: clockIn } }, { clockOut: null, status: SegmentStatus.ACTIVE }],
+    },
+    select: { clockIn: true, clockOut: true },
+  });
+  if (overlapping) {
+    throw AppError.badRequest('The corrected times overlap another recorded work period', {
+      overlapsWith: overlapping,
+    });
+  }
 };
 
 export class CorrectionService {
