@@ -1,6 +1,9 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
+import { assertRequiredEnv } from './config/env';
+assertRequiredEnv();
+
 import { createApp } from './app';
 import { prisma } from './config/prisma';
 import { startStaleSessionWorker } from './jobs/staleSessionWorker';
