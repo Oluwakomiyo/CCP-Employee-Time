@@ -3,6 +3,8 @@
   "private": true,
   "scripts": {
     "dev": "npm --prefix server run dev",
-    "test": "npm --prefix server test"
+    "dev:web": "npm --prefix web run dev",
+    "test": "npm --prefix server test",
+    "lint:web": "npm --prefix web run lint"
   }
 }

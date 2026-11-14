@@ -28,7 +28,8 @@ Single source of truth for where the rebuild stands. **Update this file in the s
 #   sudo -u postgres psql -c "CREATE ROLE ccp LOGIN PASSWORD 'ccp' CREATEDB;"
 cp server/.env.example server/.env   # then fill in the JWT secrets (command in the file)
 cd server && npm install && npx prisma migrate deploy && npx prisma db seed
-npm run dev            # API on http://localhost:5000 (from repo root or server/)
+npm run dev            # API on http://localhost:5000
+npm run dev:web        # web app on http://localhost:3000 (cd web && npm install first)
 npm test               # resets ccp_time_test, then runs every test
 ```
 Seed logins (dev only, all `Password123!`): `ceo@example.com` (CEO), `manager@example.com` (PM, lead of all 3 projects), `john@example.com`, `mary@example.com`, `peter@example.com`.
@@ -93,13 +94,20 @@ Seed logins (dev only, all `Password123!`): `ceo@example.com` (CEO), `manager@ex
 - [x] Legacy cost breakdown derived from the project report (net of breaks)
 - [x] Tests: `aggregate.unit`, `reports`, `payroll`, `listing` (76 total)
 
-### 🔄 Phase 5: Next.js app + design system (`web/`) ← **NEXT**
-- [ ] App Router + TS + Tailwind (layout only) + TanStack Query + zod; rewrite `/api/v1/*` to Express (same origin, so cookies work)
-- [ ] Plus Jakarta Sans via `next/font`, mapped onto Arc's `--font-geist` / `--font-inter`
-- [ ] Arc set up (`components.json` registry `@uiarc`, `foundation.css`), install the full primitive set (see the plan's table)
-- [ ] App shell (sidebar + bottom-sheet on mobile, `user-menu`, `theme-switch`, `notification-center`, `breadcrumb`), sign-in, forced password change
+### ✅ Phase 5: Next.js app + design system (`web/`)
+- [x] Next.js **16.4** App Router + TypeScript, **no Tailwind** (Arc uses CSS modules and tokens; page layout uses CSS modules with Arc tokens)
+- [x] Next 16 renamed middleware to **`proxy.ts`**: it redirects signed-out visitors to `/login?next=` (UX only; the API authorizes)
+- [x] `/api/v1/*` rewrites to Express (`API_ORIGIN`, default `http://localhost:5000`), so httpOnly cookies are first-party; the refresh cookie path is `/` so the proxy can see sessions
+- [x] Arc: `components.json` (`@uiarc` registry), `components/arc/foundation.css`, full free primitive set installed under `components/arc/`
+- [x] Plus Jakarta Sans (400/500) mapped to `--font-geist` and `--font-inter`; **CCP maroon accent** `data-accent="ccp"` defined in `app/globals.css` (red stays Arc's danger colour)
+- [x] Light/dark/system theme (`lib/theme.tsx`, `useSyncExternalStore`), applied before first paint by a script in `app/layout.tsx`
+- [x] `lib/api.ts`: fetch wrapper, envelope errors → `ApiError`, one shared refresh on 401; TanStack Query provider (no retries on 4xx)
+- [x] `/login` and `/change-password` composed from Arc inputs (the Arc `sign-in` block is email-code/passkey only, so not used); the forced change works end to end
+- [x] App shell (`components/shell/`): sidebar + bottom-sheet menu on phones, Arc `user-menu` (theme, profile, sign out), role-aware nav (`nav.ts`), access-denied state, `PageHeading`
+- [x] Every route exists with a `ComingSoon` placeholder (delete each one as its screen lands)
+- [x] Checked in a browser: employee/CEO nav, dark mode, 390px, the password change, the access-denied page
 
-### ⏳ Phase 6: Employee screens
+### 🔄 Phase 6: Employee screens ← **NEXT**
 - [ ] Today (punch clock), My time, My projects, My corrections, Profile
 
 ### ⏳ Phase 7: Management screens
@@ -118,6 +126,7 @@ Seed logins (dev only, all `Password123!`): `ceo@example.com` (CEO), `manager@ex
 - Payroll: 8h/day overtime threshold is hard-coded (no policy yet). Days with no rate are skipped and returned as `daysWithoutRate`.
 - Dashboard "hours today" counts the date's segments; employees with no visible projects show only themselves to a PM.
 - Estimate uses current rates for cost (future rates are unknown by definition).
+- The Arc blocks `notification-center` and `command-palette` did not install with the batch; add them when Phase 7/8 needs them.
 - Login returns tokens in the body as well as cookies, for the legacy client and Electron (remove in Phase 7).
 - Failed logins are not audited.
 
@@ -125,5 +134,6 @@ Seed logins (dev only, all `Password123!`): `ceo@example.com` (CEO), `manager@ex
 | Date | Work |
 |---|---|
 | 2026-11-14 | Spec and code audit; plan agreed; Phases 0–2 done (23 commits, 37 tests) |
+| 2026-11-14 | Phase 5 done (Next.js 16 + Arc shell, auth screens, theme, maroon accent) |
 | 2026-11-14 | Phase 4 done (reports, dashboard, live status, estimate, payroll finalize/CSV, lists; 76 tests) |
 | 2026-11-14 | Phase 3 done (data model: rate history, soft membership, project status, departments, notifications table, new seed; 51 tests) |
