@@ -34,6 +34,8 @@ services:
       JWT_EXPIRES_IN: 15m
       JWT_REFRESH_EXPIRES_IN: 7d
       COOKIE_DOMAIN: ${COOKIE_DOMAIN:-}
+      # The worker service runs the missing clock-out job; don't run it twice.
+      RUN_STALE_WORKER: "false"
     ports:
       - "5000:5000"
     depends_on:

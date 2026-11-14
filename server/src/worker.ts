@@ -9,8 +9,8 @@ import { startStaleSessionWorker } from './jobs/staleSessionWorker';
 
 /**
  * Standalone entry for the stale-session job (compose `worker` service).
- * The API also starts this worker in-process; run only one of them against
- * a database (the job is idempotent, so overlap is safe but wasteful).
+ * The API runs the same job in-process unless RUN_STALE_WORKER=false, which
+ * docker-compose sets on the api service so the job runs once.
  */
 async function main() {
   await prisma.$connect();

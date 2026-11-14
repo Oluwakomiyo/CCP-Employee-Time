@@ -17,8 +17,9 @@ async function bootstrap() {
     await prisma.$connect();
     console.log('✅ Connected to PostgreSQL database via Prisma');
 
-    // Start the missing clock-out auto-close background worker
-    const stopWorker = startStaleSessionWorker();
+    // The missing clock-out job runs here unless a separate worker process owns it
+    // (docker-compose sets RUN_STALE_WORKER=false on the api and runs src/worker.ts).
+    const stopWorker = process.env.RUN_STALE_WORKER === 'false' ? () => undefined : startStaleSessionWorker();
 
     const server = app.listen(PORT, () => {
       console.log(`🚀 API Server running at http://localhost:${PORT}`);
