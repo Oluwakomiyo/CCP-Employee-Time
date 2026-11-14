@@ -109,6 +109,7 @@ The seed includes the following, so screens have data:
   - Side forms use `Drawer` + `DrawerContent`; interrupting confirmations use `Dialog`.
   - Loading uses `Skeleton`, errors use `Alert tone="danger"`, empty lists use `EmptyState`.
 - **Import gotchas:** some Arc modules use a **default** export (`SegmentedControl`, `ActionButton`, `HoldToConfirm`, `Badge`). Check the file before importing.
+- **HoldToConfirm / ConfirmMorph:** always pass `confirmed={state}`. Set it to true in `onConfirm` and back to false when the request settles. Left uncontrolled, the button sticks on its done label after a refused request: a real bug found on Today.
 - **Select:** Arc `Select` is a Radix Select. Keep it controlled with `value=""` (not `undefined`) for the empty state.
 - **Shell:** role-aware nav lives in `components/shell/nav.ts`. Every route already exists; replace the `<ComingSoon/>` in each `page.tsx` as you build it.
 - **Types:** shared types go in `lib/types.ts`, or a domain file like `lib/time.ts`. Mirror the server's enum values exactly.
