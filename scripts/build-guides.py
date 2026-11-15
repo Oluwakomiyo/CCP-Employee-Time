@@ -3,6 +3,7 @@
 Builds the static guide site in docs/ from USER_GUIDE.md and DEVELOPER_SETUP.md:
   docs/index.html, docs/user-guide.html, docs/developer-setup.html (screenshots stay in docs/guide/).
 Run from the repo root after editing either guide:  python3 scripts/build-guides.py
+Also copies the user guide into web/public/help/ (served by the app at /help).
 Needs:  pip install markdown
 Deploy: Vercel project with Root Directory "docs", framework "Other", no build command.
 """
@@ -151,6 +152,16 @@ def guide(src, out, title, heading, lede, tags=()):
 
 guide("USER_GUIDE.md", "docs/user-guide.html", "CCP Time User Guide", "User guide",
       "How employees record their time, how project managers run their projects, and how the CEO manages staff, pay rates and payroll.")
+# The same user guide inside the web app, at /help (screenshots alongside it).
+import os, shutil
+os.makedirs("web/public/help/guide", exist_ok=True)
+# Served at /help (no trailing slash), so relative paths would resolve from "/": make them absolute.
+help_html = open("docs/user-guide.html", encoding="utf-8").read()
+help_html = help_html.replace('src="guide/', 'src="/help/guide/').replace('class="brand" href="./"', 'class="brand" href="/"')
+open("web/public/help/index.html", "w", encoding="utf-8").write(help_html)
+for f in os.listdir("docs/guide"):
+    shutil.copyfile(os.path.join("docs/guide", f), os.path.join("web/public/help/guide", f))
+
 guide("DEVELOPER_SETUP.md", "docs/developer-setup.html", "CCP Time Developer Setup", "Developer setup",
       "Get the web app, the API and the database running on your own computer in about 20 minutes.", ("Windows", "macOS", "Linux"))
 
