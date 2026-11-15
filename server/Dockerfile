@@ -1,20 +1,21 @@
 # API + worker image. The worker runs the same image with another command.
-FROM node:22-alpine AS deps
-# Prisma's query engine needs OpenSSL, which the Alpine base image doesn't ship.
-RUN apk add --no-cache openssl
+# Debian slim rather than Alpine: Prisma's engines detect OpenSSL reliably here (on Alpine they
+# failed with "Prisma failed to detect the libssl/openssl version" on Railway).
+FROM node:22-bookworm-slim AS deps
+RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY package*.json ./
 COPY prisma ./prisma
 RUN npm ci && npx prisma generate
 
-FROM node:22-alpine AS build
+FROM node:22-bookworm-slim AS build
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npm run build
 
-FROM node:22-alpine AS runner
-RUN apk add --no-cache openssl
+FROM node:22-bookworm-slim AS runner
+RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 ENV NODE_ENV=production
 COPY --from=deps /app/node_modules ./node_modules
