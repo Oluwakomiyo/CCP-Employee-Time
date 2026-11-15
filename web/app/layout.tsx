@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import "@/components/arc/foundation.css";
 import "./globals.css";
@@ -8,10 +8,39 @@ import { Providers } from "./providers";
 const jakartaDisplay = Plus_Jakarta_Sans({ subsets: ["latin"], weight: ["400", "500"], variable: "--font-geist", display: "swap" });
 const jakartaBody = Plus_Jakarta_Sans({ subsets: ["latin"], weight: ["400", "500"], variable: "--font-inter", display: "swap" });
 
+// Absolute base for share previews (the OG image URL must be absolute). Set NEXT_PUBLIC_SITE_URL for a
+// custom domain; on Vercel the production address is used automatically.
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ??
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "http://localhost:3000");
+
+const description =
+  "CCP's time and attendance system: clock in on projects at the office or on site, see hours worked per project, review corrections and run payroll.";
+
+// Icons and the share image come from files in app/: favicon.ico, icon.png, apple-icon.png,
+// opengraph-image.png and twitter-image.png (all built from the CCP logo).
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: { default: "CCP Time", template: "%s · CCP Time" },
-  description: "Employee and project time management for CCP.",
-  icons: { icon: "/ccp-logo.png" },
+  description,
+  applicationName: "CCP Time",
+  openGraph: {
+    type: "website",
+    siteName: "CCP Time",
+    title: "CCP Time",
+    description,
+    locale: "en_NG",
+    url: "/",
+  },
+  twitter: { card: "summary_large_image", title: "CCP Time", description },
+};
+
+export const viewport: Viewport = {
+  // The browser bar on phones in CCP maroon (light) and the app's dark background (dark).
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#922d36" },
+    { media: "(prefers-color-scheme: dark)", color: "#161415" },
+  ],
 };
 
 // Applies the saved (or system) theme before first paint so there is no light flash in dark mode.
