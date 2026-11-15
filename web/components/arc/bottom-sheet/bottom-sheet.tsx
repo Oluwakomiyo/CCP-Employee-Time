@@ -35,7 +35,9 @@ type Stop = number | "closed";
 type Drag = { startY: number; origin: number; from: number; moved: boolean; samples: { t: number; y: number }[] };
 
 /** Extra surface below the viewport, so an upward stretch never shows a gap under the sheet. */
-const EXTENSION = 160;
+// CCP change: no hidden extension below the fold (see the .sheet rule in the CSS module); kept as a named 0 so the
+// height math below reads the same.
+const EXTENSION = 0;
 /** Enough travel below the edge to hide the floating shadow as well as the sheet. */
 const CLOSED_GAP = 40;
 /** How far a release coasts, in seconds of its velocity, before the nearest detent is chosen. */
@@ -52,8 +54,6 @@ const settle = motionTokens.spring.smooth;
 const leave = motionTokens.spring.smooth;
 const fade = { duration: motionTokens.duration.fast, ease: [...motionTokens.ease.standard] as [number, number, number, number] };
 
-/** iOS-style resistance: follows the finger at first, then approaches STRETCH. */
-const rubber = (distance: number) => (1 - 1 / (distance * .55 / STRETCH + 1)) * STRETCH;
 const unrubber = (stretch: number) => (1 / (1 - Math.min(stretch, STRETCH - 1) / STRETCH) - 1) * STRETCH / .55;
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
@@ -195,8 +195,9 @@ function Sheet({ title, description, detents = [.45, .92], initialDetent = 0, on
       sheetRef.current?.setAttribute("data-dragging", "");
     }
     const raw = state.origin + delta;
-    // Down follows the finger 1:1 so it can dismiss; up past the tallest detent resists like a rubber band.
-    y.set(raw < 0 ? -rubber(-raw) : raw);
+    // Down follows the finger 1:1 so it can dismiss. CCP change: up stops at the tallest detent (no rubber band),
+    // because with the sheet anchored at the bottom edge a stretch would open a gap beneath it.
+    y.set(Math.max(0, raw));
     state.samples.push({ t: time, y: clientY });
     if (state.samples.length > 12) state.samples.shift();
   }, [y]);
