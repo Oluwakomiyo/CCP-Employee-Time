@@ -87,6 +87,8 @@ It prints a temporary password once. **Never run `prisma db seed` in production*
 
 **4. Web app.** Vercel → New Project → the repository → **Root Directory `web`** (Next.js is detected). Add the environment variable `API_ORIGIN` = `https://<api-address>` (no trailing slash, no `/api/v1`), then Deploy. The browser only ever talks to the web app's own address; Vercel forwards `/api/v1/*` to the API, so sign-in cookies just work.
 
+`web/vercel.json` holds the site's redirects (for example `/user-guide` → `/help` and `/developers` → `/help/developers`). Vercel applies them before the app runs; add new ones there.
+
 **5. Link-up.** Set the API's `ALLOWED_ORIGINS` to the web app's address (for example `https://ccp-time.vercel.app`, plus your own domain if you add one) and redeploy the API. Sign in as the CEO, choose a password, add departments in Settings, then add staff and projects.
 
 **After go-live:**

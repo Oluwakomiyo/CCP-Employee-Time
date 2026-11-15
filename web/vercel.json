@@ -1,0 +1,14 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "redirects": [
+    { "source": "/dashboard/user-guide", "destination": "/help", "permanent": true },
+    { "source": "/user-guide", "destination": "/help", "permanent": true },
+    { "source": "/guide", "destination": "/help", "permanent": true },
+    { "source": "/docs", "destination": "/help", "permanent": true },
+    { "source": "/developers", "destination": "/help/developers", "permanent": true },
+    { "source": "/developer-setup", "destination": "/help/developers", "permanent": true },
+    { "source": "/help/developer-setup", "destination": "/help/developers", "permanent": true },
+    { "source": "/home", "destination": "/", "permanent": false }
+  ]
+}
