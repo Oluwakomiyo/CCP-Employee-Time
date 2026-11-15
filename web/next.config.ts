@@ -14,7 +14,11 @@ const nextConfig: NextConfig = {
   // Standalone build for the Docker image (`web/Dockerfile`); `next dev` is unaffected.
   output: "standalone",
   async rewrites() {
-    return [{ source: "/api/v1/:path*", destination: `${API_ORIGIN}/api/v1/:path*` }];
+    return [
+      { source: "/api/v1/:path*", destination: `${API_ORIGIN}/api/v1/:path*` },
+      // The user guide (public/help, built by scripts/build-guides.py).
+      { source: "/help", destination: "/help/index.html" },
+    ];
   },
 };
 

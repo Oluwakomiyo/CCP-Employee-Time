@@ -88,7 +88,11 @@ export function AppShell({ me, children }: { me: Me; children: React.ReactNode }
               user={{ name, email: me.email, plan: ROLE_LABEL[me.role] }}
               theme={preference}
               onThemeChange={setPreference}
-              items={[{ label: "Profile", onSelect: () => router.push("/profile") }]}
+              items={[
+                { label: "Profile", onSelect: () => router.push("/profile") },
+                // The guide is a static page (public/help, built from USER_GUIDE.md); a new tab keeps the user's place.
+                { label: "User guide", onSelect: () => window.open("/help", "_blank", "noopener") },
+              ]}
               onSignOut={logout}
               showName
             />

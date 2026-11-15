@@ -19,6 +19,6 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // Everything except the API rewrite, Next internals and static files.
-  matcher: ["/((?!api/|_next/|favicon.ico|ccp-logo.png).*)"],
+  // Everything except the API rewrite, Next internals, static files and the public user guide (/help).
+  matcher: ["/((?!api/|_next/|help|favicon.ico|ccp-logo.png).*)"],
 };
