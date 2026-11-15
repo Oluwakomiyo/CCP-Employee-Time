@@ -8,3 +8,4 @@ desktop-agent/config.json
 .neon
 .env.local
 .env.railway
+sample-accounts.txt
