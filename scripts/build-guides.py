@@ -159,6 +159,10 @@ os.makedirs("web/public/help/guide", exist_ok=True)
 help_html = open("docs/user-guide.html", encoding="utf-8").read()
 help_html = help_html.replace('src="guide/', 'src="/help/guide/').replace('class="brand" href="./"', 'class="brand" href="/"')
 open("web/public/help/index.html", "w", encoding="utf-8").write(help_html)
+# The developer guide too, at /help/developers (not linked from the app's menu; share the link).
+dev_html = open("docs/developer-setup.html", encoding="utf-8").read()
+dev_html = dev_html.replace('class="brand" href="./"', 'class="brand" href="/"').replace('href="user-guide.html"', 'href="/help"')
+open("web/public/help/developers.html", "w", encoding="utf-8").write(dev_html)
 for f in os.listdir("docs/guide"):
     shutil.copyfile(os.path.join("docs/guide", f), os.path.join("web/public/help/guide", f))
 
