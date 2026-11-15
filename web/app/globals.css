@@ -7,7 +7,7 @@
 :root[data-accent="ccp"] {
   --accent: #922d36;
   --accent-strong: #6e1f27;
-  --accent-subtle: rgb(146 45 54 / .12);
+  --accent-subtle: rgb(146 45 54 / 0.12);
   --accent-foreground: #fff;
   --control-on: #922d36;
   --control-thumb-on: #fff;
@@ -16,7 +16,7 @@
 :root[data-theme="dark"][data-accent="ccp"] {
   --accent: #f08c95;
   --accent-strong: #f8bcc1;
-  --accent-subtle: rgb(240 140 149 / .18);
+  --accent-subtle: rgb(240 140 149 / 0.18);
   --accent-foreground: #2a0c10;
   --control-on: #c4505b;
   --control-thumb-on: #fff;

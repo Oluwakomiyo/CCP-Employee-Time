@@ -1,8 +1,18 @@
+.page {
+  width: 100%;
+  max-width: 44rem;
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+}
+
 .layout {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
+  width: 100%;
   max-width: 44rem;
+  margin-inline: auto;
 }
 
 .panel {

@@ -1,12 +1,12 @@
 import type { Metadata, Viewport } from "next";
-import { Plus_Jakarta_Sans } from "next/font/google";
+import { Geist, Inter } from "next/font/google";
 import "@/components/arc/foundation.css";
 import "./globals.css";
 import { Providers } from "./providers";
 
-// One family for the whole app: mapped onto both of Arc's font tokens (display and body).
-const jakartaDisplay = Plus_Jakarta_Sans({ subsets: ["latin"], weight: ["400", "500"], variable: "--font-geist", display: "swap" });
-const jakartaBody = Plus_Jakarta_Sans({ subsets: ["latin"], weight: ["400", "500"], variable: "--font-inter", display: "swap" });
+// Geist for display, Inter for body: mapped onto Arc's font tokens.
+const geistDisplay = Geist({ subsets: ["latin"], variable: "--font-geist", display: "swap" });
+const interBody = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
 
 // Absolute base for share previews (the OG image URL must be absolute). Set NEXT_PUBLIC_SITE_URL for a
 // custom domain; on Vercel the production address is used automatically.
@@ -48,7 +48,7 @@ const themeScript = `try{var t=localStorage.getItem("ccp-theme");if(t!=="light"&
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" data-accent="ccp" data-theme="light" className={`${jakartaDisplay.variable} ${jakartaBody.variable}`} suppressHydrationWarning>
+    <html lang="en" data-accent="ccp" data-theme="light" className={`${geistDisplay.variable} ${interBody.variable}`} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
