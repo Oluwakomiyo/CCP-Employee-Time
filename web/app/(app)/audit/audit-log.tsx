@@ -13,6 +13,7 @@ import { Pagination } from "@/components/arc/pagination/pagination";
 import { Select } from "@/components/arc/select/select";
 import SortableDataTable, { type DataColumn } from "@/components/arc/sortable-data-table/sortable-data-table";
 import { TableSkeleton } from "@/components/loading/table-skeleton";
+import { InlineBusy } from "@/components/loading/spinner";
 import { errorMessage } from "@/lib/api";
 import { AUDIT_ACTIONS, useAuditLog, type AuditEntry } from "@/lib/audit";
 import { useMe } from "@/lib/auth";
@@ -98,11 +99,12 @@ export function AuditLog() {
             <CalendarX size={16} aria-hidden="true" /> Clear dates
           </Button>
         )}
+        <InlineBusy active={log.isPlaceholderData} />
       </div>
 
       {log.isPending ? (
         <div className={styles.tableWrap}>
-          <TableSkeleton rows={8} columns={[{ grow: 1 }, { grow: 1 }, { grow: 0.8, pill: true }, { grow: 1.6 }, { grow: 0.4 }]} />
+          <TableSkeleton rows={10} columns={[{ grow: 1 }, { grow: 1 }, { grow: 0.8, pill: true }, { grow: 1.6 }, { grow: 0.4, kind: "button" }]} />
         </div>
       ) : log.isError ? (
         <Alert tone="danger" title="Could not load the audit log">
@@ -112,7 +114,7 @@ export function AuditLog() {
         <EmptyState title="No entries" description="Nothing matches these filters." />
       ) : (
         <>
-          <div className={styles.tableWrap}>
+          <div className={styles.tableWrap} data-stale={log.isPlaceholderData} aria-busy={log.isPlaceholderData}>
             <SortableDataTable rows={rows} columns={columns} rowKey="id" caption="Change history" />
           </div>
           {(log.data?.meta?.totalPages ?? 0) > 1 && (

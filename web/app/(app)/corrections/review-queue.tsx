@@ -13,6 +13,7 @@ import SegmentedControl from "@/components/arc/segmented-control/segmented-contr
 import SortableDataTable, { type DataColumn } from "@/components/arc/sortable-data-table/sortable-data-table";
 import { Textarea } from "@/components/arc/textarea/textarea";
 import { TableSkeleton } from "@/components/loading/table-skeleton";
+import { InlineBusy } from "@/components/loading/spinner";
 import { ApiError, errorMessage } from "@/lib/api";
 import { useMe } from "@/lib/auth";
 import { isoToTime, useReviewCorrection, useReviewQueue, type CorrectionStatus, type ReviewCorrection } from "@/lib/corrections";
@@ -94,11 +95,12 @@ export function ReviewQueue() {
             setPage(1);
           }}
         />
+        <InlineBusy active={queue.isPlaceholderData} />
       </div>
 
       {queue.isPending ? (
         <div className={styles.tableWrap}>
-          <TableSkeleton rows={5} columns={[{ grow: 1.4 }, { grow: 0.8 }, { grow: 1.6 }, { grow: 1.4 }, { grow: 0.8, pill: true }, { grow: 0.6 }]} />
+          <TableSkeleton rows={10} columns={[{ grow: 1.4 }, { grow: 0.8 }, { grow: 1.6 }, { grow: 1.4 }, { grow: 0.8, pill: true }, { grow: 0.6, kind: "button" }]} />
         </div>
       ) : queue.isError ? (
         <Alert tone="danger" title="Could not load corrections">
@@ -111,7 +113,7 @@ export function ReviewQueue() {
         />
       ) : (
         <>
-          <div className={styles.tableWrap}>
+          <div className={styles.tableWrap} data-stale={queue.isPlaceholderData} aria-busy={queue.isPlaceholderData}>
             <SortableDataTable rows={rows} columns={columns} rowKey="id" caption="Correction requests" />
           </div>
           {(queue.data?.meta?.totalPages ?? 0) > 1 && (

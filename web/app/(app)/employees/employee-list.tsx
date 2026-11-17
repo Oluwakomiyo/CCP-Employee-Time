@@ -14,6 +14,7 @@ import { SearchField } from "@/components/arc/search-field/search-field";
 import SegmentedControl from "@/components/arc/segmented-control/segmented-control";
 import SortableDataTable, { type DataColumn } from "@/components/arc/sortable-data-table/sortable-data-table";
 import { TableSkeleton } from "@/components/loading/table-skeleton";
+import { InlineBusy } from "@/components/loading/spinner";
 import { errorMessage } from "@/lib/api";
 import { useMe } from "@/lib/auth";
 import { formatMoney, fullName, ROLES, useEmployees, type EmploymentStatus } from "@/lib/employees";
@@ -104,6 +105,7 @@ export function EmployeeList() {
               setPage(1);
             }}
           />
+          <InlineBusy active={list.isPlaceholderData} />
         </div>
         {ceo && (
           <Button variant="primary" onClick={() => setAdding(true)}>
@@ -114,7 +116,7 @@ export function EmployeeList() {
 
       {list.isPending ? (
         <div className={styles.tableWrap}>
-          <TableSkeleton rows={6} columns={[{ grow: 1.6 }, { grow: 0.6 }, { grow: 1.4 }, { grow: 0.8 }, { grow: 0.6, pill: true }]} />
+          <TableSkeleton tall rows={10} columns={[{ grow: 1.6, kind: "avatar" }, { grow: 0.6 }, { grow: 1.4 }, { grow: 0.8 }, { grow: 0.6, pill: true }, ...(ceo ? [{ grow: 0.8 }] : [])]} />
         </div>
       ) : list.isError ? (
         <Alert tone="danger" title="Could not load employees">
@@ -124,7 +126,7 @@ export function EmployeeList() {
         <EmptyState title="No employees found" description={search ? "Try another name or number." : "Nobody matches this filter."} />
       ) : (
         <>
-          <div className={styles.tableWrap}>
+          <div className={styles.tableWrap} data-stale={list.isPlaceholderData} aria-busy={list.isPlaceholderData}>
             <SortableDataTable rows={rows} columns={columns} rowKey="id" caption="Employees" itemName={{ one: "employee", other: "employees" }} />
           </div>
           {(list.data?.meta?.totalPages ?? 0) > 1 && (

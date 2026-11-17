@@ -14,6 +14,7 @@ import { SearchField } from "@/components/arc/search-field/search-field";
 import { Select } from "@/components/arc/select/select";
 import SortableDataTable, { type DataColumn } from "@/components/arc/sortable-data-table/sortable-data-table";
 import { TableSkeleton } from "@/components/loading/table-skeleton";
+import { InlineBusy } from "@/components/loading/spinner";
 import { errorMessage } from "@/lib/api";
 import { useMe } from "@/lib/auth";
 import { Progress } from "@/components/arc/progress/progress";
@@ -108,6 +109,7 @@ export function ProjectList() {
               setPage(1);
             }}
           />
+          <InlineBusy active={list.isPlaceholderData} />
         </div>
         <Button variant="primary" onClick={() => setCreating(true)}>
           <FolderPlus size={16} aria-hidden="true" /> New project
@@ -116,7 +118,7 @@ export function ProjectList() {
 
       {list.isPending ? (
         <div className={styles.tableWrap}>
-          <TableSkeleton rows={5} columns={[{ grow: 1.6 }, { grow: 1 }, { grow: 0.7, pill: true }, { grow: 0.4 }, { grow: 0.5 }, { grow: 0.7 }]} />
+          <TableSkeleton tall rows={10} columns={[{ grow: 1.6, kind: "twoLine" }, { grow: 0.7, pill: true }, { grow: 1.2, kind: "progress" }, { grow: 0.4 }, { grow: 0.7 }]} />
         </div>
       ) : list.isError ? (
         <Alert tone="danger" title="Could not load projects">
@@ -126,7 +128,7 @@ export function ProjectList() {
         <EmptyState title="No projects found" description={search ? "Try another code or name." : "Create a project to start tracking time on it."} />
       ) : (
         <>
-          <div className={styles.tableWrap}>
+          <div className={styles.tableWrap} data-stale={list.isPlaceholderData} aria-busy={list.isPlaceholderData}>
             <SortableDataTable rows={rows} columns={columns} rowKey="id" caption="Projects" itemName={{ one: "project", other: "projects" }} />
           </div>
           {(list.data?.meta?.totalPages ?? 0) > 1 && (
