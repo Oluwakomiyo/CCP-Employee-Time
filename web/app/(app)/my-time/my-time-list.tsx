@@ -12,6 +12,7 @@ import FilterToolbar, { type FilterChip, type FilterField } from "@/components/a
 import { Pagination } from "@/components/arc/pagination/pagination";
 import SortableDataTable, { type DataColumn } from "@/components/arc/sortable-data-table/sortable-data-table";
 import { MyTimeSkeleton } from "./my-time-skeleton";
+import { InlineBusy } from "@/components/loading/spinner";
 import Timeline, { type TimelineEvent } from "@/components/arc/timeline/timeline";
 import { errorMessage } from "@/lib/api";
 import {
@@ -194,6 +195,7 @@ export function MyTimeList() {
     <div className={styles.layout}>
       <div className={styles.filters}>
         <DateRangePicker value={range} onChange={(r) => { setRange(r); setPage(1); }} label="Date range" />
+        <InlineBusy active={history.isPlaceholderData} />
       </div>
       <FilterToolbar
         filters={chips}
@@ -228,7 +230,7 @@ export function MyTimeList() {
         />
       ) : (
         <>
-          <div className={styles.tableWrap}>
+          <div className={styles.tableWrap} data-stale={history.isPlaceholderData} aria-busy={history.isPlaceholderData}>
             <SortableDataTable rows={rows} columns={columns} rowKey="id" caption="Workdays" defaultSort={{ key: "date", direction: "desc" }} />
           </div>
           {pageCount > 1 && (

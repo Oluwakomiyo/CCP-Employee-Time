@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "./api";
 
 export type CorrectionStatus = "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED";
@@ -35,6 +35,7 @@ export const useCorrections = (status: CorrectionStatus | null, page: number) =>
       if (status) p.set("status", status);
       return api.page<Correction[]>(`/corrections?${p.toString()}`);
     },
+    placeholderData: keepPreviousData,
   });
 
 export interface CorrectionPayload {
@@ -88,6 +89,7 @@ export const useReviewQueue = (status: CorrectionStatus | null, page: number) =>
       if (status) p.set("status", status);
       return api.page<ReviewCorrection[]>(`/corrections?${p.toString()}`);
     },
+    placeholderData: keepPreviousData,
   });
 
 export const useReviewCorrection = () => {

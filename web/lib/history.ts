@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { api, type PageMeta } from "./api";
 import type { ActivityType, BreakType, DayStatus, LocationType } from "./time";
 
@@ -66,6 +66,8 @@ export const useWorkHistory = (f: HistoryFilters) =>
   useQuery({
     queryKey: historyKey(f),
     queryFn: () => api.page<{ history: WorkDay[] }>(`/me/time?${toQuery(f)}`),
+    // Filters and pages keep the previous rows on screen (dimmed) instead of flashing the skeleton.
+    placeholderData: keepPreviousData,
   });
 
 export type HistoryPage = { data: { history: WorkDay[] }; meta?: PageMeta };

@@ -75,6 +75,12 @@ a {
   text-decoration: none;
 }
 
+/* Previous results stay on screen while new ones load (React Query keepPreviousData). */
+[data-stale="true"] {
+  opacity: 0.6;
+  transition: opacity 150ms ease;
+}
+
 /* Visually hidden but available to screen readers. */
 .sr-only {
   position: absolute;

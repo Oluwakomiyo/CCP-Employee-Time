@@ -61,14 +61,7 @@
 }
 
 /* Skeleton-only: mirrors the filter toolbar and timeline rows the real UI renders. */
-.toolbarSkeleton {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-  flex: 1;
-  min-width: min(20rem, 100%);
-}
+
 
 .timelineSkeleton {
   display: flex;

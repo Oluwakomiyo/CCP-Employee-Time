@@ -10,7 +10,8 @@ import { Button } from "@/components/arc/button/button";
 import { Dialog, DialogContent } from "@/components/arc/dialog/dialog";import { Pagination } from "@/components/arc/pagination/pagination";
 import { Select } from "@/components/arc/select/select";
 import SegmentedControl from "@/components/arc/segmented-control/segmented-control";
-import { MyCorrectionsSkeleton, CorrectionFormSkeleton } from "./my-corrections-skeleton";
+import { MyCorrectionsSkeleton } from "./my-corrections-skeleton";
+import { InlineBusy, Spinner } from "@/components/loading/spinner";
 import SortableDataTable, { type DataColumn } from "@/components/arc/sortable-data-table/sortable-data-table";
 import { Textarea } from "@/components/arc/textarea/textarea";
 import { TimePicker } from "@/components/arc/time-picker/time-picker";
@@ -115,6 +116,7 @@ export function MyCorrectionsList() {
           value={filter}
           onValueChange={(v: string) => { setFilter(v); setPage(1); }}
         />
+        <InlineBusy active={list.isPlaceholderData} />
         <Button variant="primary" onClick={() => setDialog({})}>
           <FilePen size={16} aria-hidden="true" /> Request correction
         </Button>
@@ -132,7 +134,7 @@ export function MyCorrectionsList() {
         />
       ) : (
         <>
-          <div className={styles.tableWrap}>
+          <div className={styles.tableWrap} data-stale={list.isPlaceholderData} aria-busy={list.isPlaceholderData}>
             <SortableDataTable rows={rows} columns={columns} rowKey="id" caption="Fix my hours" />
           </div>
           {(list.data?.meta?.totalPages ?? 0) > 1 && (
@@ -210,8 +212,17 @@ function CorrectionForm({ correction, dayId, onDone }: { correction?: Correction
 
   const [segmentId, setSegmentId] = useState(changes?.segmentId ?? "");
   const [projectId, setProjectId] = useState(changes?.projectId ?? "");
-  const initialSegment = selectedDay?.segments.find((s) => s.id === (segmentId || selectedDay.segments[0]?.id));  const [clockIn, setClockIn] = useState(() => (changes ? isoToTime(changes.proposedClockIn) : initialSegment ? isoToTime(initialSegment.clockIn) : "08:00"));
+  const initialSegment = selectedDay?.segments.find((s) => s.id === (segmentId || selectedDay.segments[0]?.id));
+  const [clockIn, setClockIn] = useState(() => (changes ? isoToTime(changes.proposedClockIn) : initialSegment ? isoToTime(initialSegment.clockIn) : "08:00"));
   const [clockOut, setClockOut] = useState(() => (changes ? isoToTime(changes.proposedClockOut) : initialSegment?.clockOut ? isoToTime(initialSegment.clockOut) : "17:00"));
+  // Workdays load after the first render, so a new request seeds its times from the chosen entry once it is known
+  // (adjusting state during render, React's pattern for state derived from changing props).
+  const [seededFrom, setSeededFrom] = useState(changes ? "edit" : initialSegment?.id ?? null);
+  if (!changes && initialSegment && seededFrom !== initialSegment.id) {
+    setSeededFrom(initialSegment.id);
+    setClockIn(isoToTime(initialSegment.clockIn));
+    setClockOut(initialSegment.clockOut ? isoToTime(initialSegment.clockOut) : "17:00");
+  }
   const [reason, setReason] = useState(correction?.reason ?? "");
 
   const valid = day !== "" && (mode === "fix" ? segmentId !== "" || segmentOptions.length > 0 : projectId !== "") && /^\d{2}:\d{2}$/.test(clockIn) && /^\d{2}:\d{2}$/.test(clockOut) && reason.trim().length >= 5;
@@ -232,7 +243,7 @@ function CorrectionForm({ correction, dayId, onDone }: { correction?: Correction
     }
   };
 
-  if (days.isPending) return <CorrectionFormSkeleton />;
+  if (days.isPending) return <Spinner label="Loading your workdays" showLabel center />;
   if (days.isError)
     return (
       <Alert tone="danger" title="Could not load workdays">
