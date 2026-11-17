@@ -6,6 +6,8 @@ import {
   SegmentStatus,
   LocationType,
   Role,
+  AuditAction,
+  DeviceEnrollment,
 } from '@prisma/client';
 import { prisma } from '../../config/prisma';
 import { AppError } from '../../errors/AppError';
@@ -14,8 +16,17 @@ import {
   BrowserHeartbeatInput,
   AgentHeartbeatInput,
   RegisterDeviceInput,
+  EnrollDeviceInput,
 } from './activity.schema';
 import { WorkEvidenceSummary } from './activity.types';
+
+const hashKey = (raw: string) => crypto.createHash('sha256').update(raw).digest('hex');
+
+/** A new device key: the raw value goes to the device once, only its SHA-256 is stored. */
+const newDeviceKey = () => {
+  const rawApiKey = `dev_${crypto.randomBytes(24).toString('hex')}`;
+  return { rawApiKey, apiKeyHash: hashKey(rawApiKey) };
+};
 
 export class ActivityService {
   /**
@@ -62,13 +73,15 @@ export class ActivityService {
    * Called by installed company desktop agent with device credentials.
    */
   async recordAgentHeartbeat(apiKey: string, input: AgentHeartbeatInput) {
-    const hashedKey = crypto.createHash('sha256').update(apiKey).digest('hex');
+    const hashedKey = hashKey(apiKey);
 
     const device = await prisma.employeeDevice.findUnique({
       where: { deviceIdentifier: input.deviceIdentifier },
     });
 
-    if (!device || !device.isActive || device.apiKeyHash !== hashedKey) {
+    // Constant-time compare, so response timing never hints at a correct key prefix.
+    const matches = !!device && crypto.timingSafeEqual(Buffer.from(device.apiKeyHash, 'hex'), Buffer.from(hashedKey, 'hex'));
+    if (!device || !device.isActive || !matches) {
       throw AppError.forbidden('Invalid device credentials or device inactive');
     }
 
@@ -118,18 +131,29 @@ export class ActivityService {
    * Register a new company device (CEO_ADMIN / PM only).
    * Generates a revocable device API key.
    */
-  async registerDevice(input: RegisterDeviceInput) {
-    const rawApiKey = `dev_${crypto.randomBytes(24).toString('hex')}`;
-    const apiKeyHash = crypto.createHash('sha256').update(rawApiKey).digest('hex');
+  async registerDevice(input: RegisterDeviceInput, actorUserId: string) {
+    const { rawApiKey, apiKeyHash } = newDeviceKey();
 
-    const device = await prisma.employeeDevice.create({
-      data: {
-        employeeId: input.employeeId,
-        deviceName: input.deviceName,
-        deviceIdentifier: input.deviceIdentifier,
-        platform: input.platform,
-        apiKeyHash,
-      },
+    const device = await prisma.$transaction(async (tx) => {
+      const created = await tx.employeeDevice.create({
+        data: {
+          employeeId: input.employeeId,
+          deviceName: input.deviceName,
+          deviceIdentifier: input.deviceIdentifier,
+          platform: input.platform,
+          apiKeyHash,
+        },
+      });
+      await tx.auditLog.create({
+        data: {
+          actorId: actorUserId,
+          action: AuditAction.CREATE,
+          entityName: 'EmployeeDevice',
+          entityId: created.id,
+          afterState: { event: 'DEVICE_REGISTERED', deviceIdentifier: created.deviceIdentifier, employeeId: created.employeeId },
+        },
+      });
+      return created;
     });
 
     return {
@@ -141,6 +165,45 @@ export class ActivityService {
       },
       apiKey: rawApiKey, // Return plaintext ONCE upon creation for agent configuration
     };
+  }
+
+  /**
+   * The desktop app enrolling the computer it runs on, for the signed-in person.
+   * New computer: created as theirs. Theirs already: a fresh key (reinstall or lost key).
+   * Turned off by an admin, or someone else's: refused, an admin decides.
+   */
+  async enrollDevice(employeeId: string, userId: string, input: EnrollDeviceInput) {
+    const { rawApiKey, apiKeyHash } = newDeviceKey();
+    return prisma.$transaction(async (tx) => {
+      const existing = await tx.employeeDevice.findUnique({ where: { deviceIdentifier: input.deviceIdentifier } });
+      if (existing && existing.employeeId !== employeeId) {
+        throw AppError.conflict('This computer is registered to another person. Ask an admin to revoke it first.', 'DEVICE_OWNED');
+      }
+      if (existing && !existing.isActive) {
+        throw new AppError('This computer was turned off by an admin. Ask them to reinstate it.', 403, undefined, 'DEVICE_REVOKED');
+      }
+      const device = existing
+        ? await tx.employeeDevice.update({
+            where: { id: existing.id },
+            data: { apiKeyHash, deviceName: input.deviceName, platform: input.platform },
+          })
+        : await tx.employeeDevice.create({
+            data: { employeeId, deviceIdentifier: input.deviceIdentifier, deviceName: input.deviceName, platform: input.platform, apiKeyHash, enrolledBy: DeviceEnrollment.SELF },
+          });
+      await tx.auditLog.create({
+        data: {
+          actorId: userId,
+          action: existing ? AuditAction.UPDATE : AuditAction.CREATE,
+          entityName: 'EmployeeDevice',
+          entityId: device.id,
+          afterState: { event: existing ? 'DEVICE_KEY_REISSUED' : 'DEVICE_ENROLLED', deviceName: device.deviceName, platform: device.platform },
+        },
+      });
+      return {
+        device: { id: device.id, deviceName: device.deviceName, deviceIdentifier: device.deviceIdentifier, platform: device.platform },
+        apiKey: rawApiKey, // shown once; the app stores it encrypted
+      };
+    });
   }
 
   /**

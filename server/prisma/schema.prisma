@@ -327,15 +327,22 @@ model WorkSegment {
   @@index([status])
 }
 
+enum DeviceEnrollment {
+  ADMIN
+  SELF
+}
+
 model EmployeeDevice {
-  id               String    @id @default(uuid())
+  id               String           @id @default(uuid())
   employeeId       String
-  deviceName       String    @db.VarChar(100)
-  deviceIdentifier String    @unique @db.VarChar(128)
-  platform         String    @db.VarChar(50) // e.g., Windows 11, macOS, Linux
-  apiKeyHash       String    @db.VarChar(64) // For agent authentication
-  isActive         Boolean   @default(true)
-  lastSeenAt       DateTime? @db.Timestamptz(6)
+  deviceName       String           @db.VarChar(100)
+  deviceIdentifier String           @unique @db.VarChar(128)
+  platform         String           @db.VarChar(50) // e.g., Windows 11, macOS, Linux
+  apiKeyHash       String           @db.VarChar(64) // For agent authentication
+  /// How the device was added: by an admin in Company settings, or by the desktop app itself.
+  enrolledBy       DeviceEnrollment @default(ADMIN)
+  isActive         Boolean          @default(true)
+  lastSeenAt       DateTime?        @db.Timestamptz(6)
 
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @db.Timestamptz(6)

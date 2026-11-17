@@ -5,6 +5,7 @@ import {
   browserHeartbeatSchema,
   agentHeartbeatSchema,
   registerDeviceSchema,
+  enrollDeviceSchema,
 } from './activity.schema';
 import { AppError } from '../../errors/AppError';
 
@@ -42,10 +43,21 @@ export class ActivityController {
   };
 
   // Register Device (Management only)
+  // The desktop app enrolling its own computer for the signed-in person.
+  enrollDevice = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const input = enrollDeviceSchema.parse(req.body);
+      const result = await activityService.enrollDevice(req.user!.employeeId, req.user!.userId, input);
+      res.status(201).json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  };
+
   registerDevice = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const input = registerDeviceSchema.parse(req.body);
-      const result = await activityService.registerDevice(input);
+      const result = await activityService.registerDevice(input, req.user!.userId);
 
       res.status(201).json({
         success: true,

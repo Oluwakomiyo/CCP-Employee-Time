@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { Router, Request, Response, NextFunction } from 'express';
 import { AuditAction } from '@prisma/client';
 import { activityController } from './activity.controller';
@@ -18,7 +19,10 @@ router.use(authenticate);
 // Browser session heartbeat (Section 92 & 112)
 router.post('/browser-heartbeat', activityController.recordBrowserHeartbeat);
 
-// Device Registration (CEO_ADMIN only: devices carry credentials)
+// The desktop app enrolls the computer it runs on for whoever is signed in (anyone who tracks time).
+router.post('/devices/enroll', requirePermission('time.track'), activityController.enrollDevice);
+
+// Manual registration from Company settings (devices carry credentials)
 router.post(
   '/devices',
   requirePermission('settings.devices'),
@@ -36,6 +40,7 @@ router.get('/devices', requirePermission('settings.devices'), async (_req: Reque
         deviceIdentifier: true,
         platform: true,
         isActive: true,
+        enrolledBy: true,
         lastSeenAt: true,
         createdAt: true,
         employee: { select: { id: true, employeeCode: true, firstName: true, lastName: true } },
@@ -66,6 +71,36 @@ router.post('/devices/:id/revoke', requirePermission('settings.devices'), async 
         });
       }
       return found;
+    });
+    res.json({ success: true, data: device });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// Turn a revoked device back on. Its old key stays dead: the desktop app enrolls again and gets a new one.
+router.post('/devices/:id/reinstate', requirePermission('settings.devices'), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = z.string().uuid().parse(req.params.id);
+    const device = await prisma.$transaction(async (tx) => {
+      const found = await tx.employeeDevice.findUnique({ where: { id }, select: { id: true, deviceIdentifier: true } });
+      if (!found) throw AppError.notFound('Device not found');
+      const updated = await tx.employeeDevice.update({
+        where: { id },
+        // A fresh random hash: nothing can sign in with the pre-revoke key.
+        data: { isActive: true, apiKeyHash: crypto.randomBytes(32).toString('hex') },
+        select: { id: true, deviceIdentifier: true, isActive: true },
+      });
+      await tx.auditLog.create({
+        data: {
+          actorId: req.user!.userId,
+          action: AuditAction.UPDATE,
+          entityName: 'EmployeeDevice',
+          entityId: id,
+          afterState: { event: 'DEVICE_REINSTATED', deviceIdentifier: found.deviceIdentifier },
+        },
+      });
+      return updated;
     });
     res.json({ success: true, data: device });
   } catch (e) {
