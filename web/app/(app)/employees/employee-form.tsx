@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Check, UserPlus } from "lucide-react";
 import { Alert } from "@/components/arc/alert/alert";
 import { ActionButton } from "@/components/arc/action-button/action-button";
 import { DatePicker } from "@/components/arc/date-picker/date-picker";
@@ -10,7 +11,7 @@ import MoneyInput from "@/components/arc/money-input/money-input";
 import { Select } from "@/components/arc/select/select";
 import { errorMessage } from "@/lib/api";
 import { lagosDay } from "@/lib/history";
-import { koboToNaira, ROLES, useDepartments, useEmployeeMutations, type Employee } from "@/lib/employees";
+import { koboToNaira, ROLES, useDepartments, useEmployeeMutations, usePositions, type Employee } from "@/lib/employees";
 import type { Role } from "@/lib/types";
 import styles from "../manage.module.css";
 
@@ -20,13 +21,13 @@ import styles from "../manage.module.css";
  */
 export function EmployeeForm({ employee, onSaved }: { employee?: Employee; onSaved: (result: { name: string; temporaryPassword?: string }) => void }) {
   const departments = useDepartments();
+  const positions = usePositions();
   const { create, update } = useEmployeeMutations();
   const [error, setError] = useState<string | null>(null);
   const [f, setF] = useState({
     firstName: employee?.firstName ?? "",
     lastName: employee?.lastName ?? "",
     email: employee?.user.email ?? "",
-    employeeCode: employee?.employeeCode ?? "",
     department: employee?.department ?? "",
     position: employee?.position ?? "",
     role: "EMPLOYEE" as Role,
@@ -38,7 +39,7 @@ export function EmployeeForm({ employee, onSaved }: { employee?: Employee; onSav
   const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => setF((prev) => ({ ...prev, [k]: v }));
 
   const missing =
-    !f.firstName.trim() || !f.lastName.trim() || !f.email.trim() || f.employeeCode.trim().length < 3 || !f.department || !f.position.trim() || (!employee && (!f.base || !f.overtime));
+    !f.firstName.trim() || !f.lastName.trim() || !f.email.trim() || !f.department || !f.position.trim() || (!employee && (!f.base || !f.overtime));
 
   const save = async () => {
     setError(null);
@@ -47,7 +48,6 @@ export function EmployeeForm({ employee, onSaved }: { employee?: Employee; onSav
       firstName: f.firstName.trim(),
       lastName: f.lastName.trim(),
       email: f.email.trim(),
-      employeeCode: f.employeeCode.trim(),
       department: f.department,
       position: f.position.trim(),
     };
@@ -84,16 +84,27 @@ export function EmployeeForm({ employee, onSaved }: { employee?: Employee; onSav
         </div>
         <Input label="Email" type="email" value={f.email} onChange={(e) => set("email", e.target.value)} autoComplete="off" />
         <div className={styles.formRow}>
-          <Input label="Employee number" description="For example CCP-014." value={f.employeeCode} onChange={(e) => set("employeeCode", e.target.value.toUpperCase())} />
-          <Input label="Position" value={f.position} onChange={(e) => set("position", e.target.value)} />
+          <Select
+            label="Department"
+            placeholder={departments.isPending ? "Loading departments" : "Choose a department"}
+            options={(departments.data ?? []).map((d) => ({ value: d.name, label: d.name }))}
+            value={f.department}
+            onValueChange={(v: string) => set("department", v)}
+          />
+          <Select
+            label="Position"
+            placeholder={positions.isPending ? "Loading positions" : positions.data?.length ? "Choose a position" : "Add positions in Settings first"}
+            options={(positions.data ?? []).map((p) => ({ value: p.name, label: p.name }))}
+            value={f.position}
+            onValueChange={(v: string) => set("position", v)}
+            disabled={!positions.data?.length}
+          />
         </div>
-        <Select
-          label="Department"
-          placeholder={departments.isPending ? "Loading departments" : "Choose a department"}
-          options={(departments.data ?? []).map((d) => ({ value: d.name, label: d.name }))}
-          value={f.department}
-          onValueChange={(v: string) => set("department", v)}
-        />
+        {employee ? (
+          <p className={styles.muted}>Employee number {employee.employeeCode}. Numbers are issued by the system and never change.</p>
+        ) : (
+          <p className={styles.muted}>The employee number (EMP-001, EMP-002, ...) is issued automatically when you save.</p>
+        )}
         {!employee && (
           <>
             <div className={styles.formRow}>
@@ -106,7 +117,7 @@ export function EmployeeForm({ employee, onSaved }: { employee?: Employee; onSav
             </div>
           </>
         )}
-        <ActionButton label={employee ? "Save changes" : "Add employee"} pendingLabel="Saving" successLabel="Saved" disabled={missing} onAction={save} onActionError={() => undefined} />
+        <ActionButton icon={employee ? <Check size={17} aria-hidden="true" /> : <UserPlus size={17} aria-hidden="true" />} label={employee ? "Save changes" : "Add employee"} pendingLabel="Saving" successLabel="Saved" disabled={missing} onAction={save} onActionError={() => undefined} />
       </form>
     </DrawerContent>
   );

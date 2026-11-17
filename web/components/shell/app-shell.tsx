@@ -51,8 +51,8 @@ export function AppShell({ me, children }: { me: Me; children: React.ReactNode }
     <div className={styles.shell}>
       <aside className={styles.sidebar} aria-label="Main navigation">
         <Link href="/" className={styles.brand}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
           <span className={styles.logoTile}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/ccp-logo.png" alt="" />
           </span>
           <span className={styles.brandText}>

@@ -18,20 +18,27 @@ export const useDevices = () => useQuery({ queryKey: ["devices"], queryFn: () =>
 
 export const useSettingsMutations = () => {
   const qc = useQueryClient();
-  const departments = () => qc.invalidateQueries({ queryKey: ["departments"] });
   const devices = () => qc.invalidateQueries({ queryKey: ["devices"] });
   return {
-    addDepartment: useMutation({ mutationFn: (name: string) => api.post<unknown>("/departments", { name }), onSuccess: departments }),
-    renameDepartment: useMutation({
-      mutationFn: ({ id, name }: { id: string; name: string }) => api.patch<unknown>(`/departments/${id}`, { name }),
-      // Renaming cascades to employees, so their cached rows are stale too.
-      onSuccess: () => Promise.all([departments(), qc.invalidateQueries({ queryKey: ["employees"] })]),
-    }),
     registerDevice: useMutation({
       mutationFn: (body: { employeeId: string; deviceName: string; deviceIdentifier: string; platform: string }) =>
         api.post<{ device: Pick<Device, "id" | "deviceName">; apiKey: string }>("/activity/devices", body),
       onSuccess: devices,
     }),
     revokeDevice: useMutation({ mutationFn: (id: string) => api.post<unknown>(`/activity/devices/${id}/revoke`), onSuccess: devices }),
+  };
+};
+
+/** Add and rename for the managed name lists (departments, positions). */
+export const useNamedListMutations = (resource: "departments" | "positions") => {
+  const qc = useQueryClient();
+  const refresh = () => qc.invalidateQueries({ queryKey: [resource] });
+  return {
+    add: useMutation({ mutationFn: (name: string) => api.post<unknown>(`/${resource}`, { name }), onSuccess: refresh }),
+    rename: useMutation({
+      mutationFn: ({ id, name }: { id: string; name: string }) => api.patch<unknown>(`/${resource}/${id}`, { name }),
+      // Renaming cascades to employees, so their cached rows are stale too.
+      onSuccess: () => Promise.all([refresh(), qc.invalidateQueries({ queryKey: ["employees"] })]),
+    }),
   };
 };

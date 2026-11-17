@@ -93,11 +93,12 @@ export const useCompensation = (id: string, enabled: boolean) =>
   });
 
 export const useDepartments = () => useQuery({ queryKey: ["departments"], queryFn: () => api.get<Department[]>("/departments") });
+/** Positions share the department shape (id, name, head count). */
+export const usePositions = () => useQuery({ queryKey: ["positions"], queryFn: () => api.get<Department[]>("/positions") });
 
 export interface EmployeeInput {
   email: string;
   role: Role;
-  employeeCode: string;
   firstName: string;
   lastName: string;
   department: string;

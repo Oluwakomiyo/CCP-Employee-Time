@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { BadgeCheck, Building2, Check, Pencil, Plus } from "lucide-react";
 import { Alert } from "@/components/arc/alert/alert";
 import { ActionButton } from "@/components/arc/action-button/action-button";
 import Badge from "@/components/arc/badge/badge";
@@ -13,22 +14,38 @@ import { Input } from "@/components/arc/input/input";
 import { Skeleton } from "@/components/arc/skeleton/skeleton";
 import SortableDataTable, { type DataColumn } from "@/components/arc/sortable-data-table/sortable-data-table";
 import { errorMessage } from "@/lib/api";
-import { fullName, useDepartments, useEmployees, type Department } from "@/lib/employees";
-import { useDevices, useSettingsMutations } from "@/lib/settings";
+import { fullName, useDepartments, useEmployees, usePositions, type Department } from "@/lib/employees";
+import { useDevices, useNamedListMutations, useSettingsMutations } from "@/lib/settings";
 import styles from "../manage.module.css";
 
 export function SettingsView() {
   return (
     <div className={styles.layout}>
-      <Departments />
+      <div className={styles.grid2}>
+        <NamedList resource="departments" title="Departments" noun="department" icon={<Building2 size={18} aria-hidden="true" />} query={useDepartments} />
+      <NamedList resource="positions" title="Positions" noun="position" icon={<BadgeCheck size={18} aria-hidden="true" />} query={usePositions} />
+      </div>
       <Devices />
     </div>
   );
 }
 
-function Departments() {
-  const departments = useDepartments();
-  const { addDepartment, renameDepartment } = useSettingsMutations();
+/** Departments and positions: a managed list of names the employee form picks from. */
+function NamedList({
+  resource,
+  title,
+  noun,
+  icon,
+  query,
+}: {
+  resource: "departments" | "positions";
+  title: string;
+  noun: string;
+  icon: React.ReactNode;
+  query: typeof useDepartments;
+}) {
+  const departments = query();
+  const { add: addDepartment, rename: renameDepartment } = useNamedListMutations(resource);
   const [name, setName] = useState("");
   const [renaming, setRenaming] = useState<Department | null>(null);
   const [newName, setNewName] = useState("");
@@ -40,17 +57,19 @@ function Departments() {
   };
 
   return (
-    <section className={styles.card} aria-labelledby="departments">
-      <h2 id="departments">Departments</h2>
+    <section className={styles.card} aria-labelledby={resource}>
+      <h2 id={resource} className={styles.cardTitle}>
+        {icon} {title}
+      </h2>
       {error && (
         <Alert tone="danger" title="That didn't work" onDismiss={() => setError(null)}>
           {error}
         </Alert>
       )}
       {departments.isPending ? (
-        <Skeleton lines={4} label="Loading departments" />
+        <Skeleton lines={4} label={`Loading ${resource}`} />
       ) : departments.isError ? (
-        <Alert tone="danger" title="Could not load departments">
+        <Alert tone="danger" title={`Could not load ${resource}`}>
           {errorMessage(departments.error)}
         </Alert>
       ) : (
@@ -68,16 +87,17 @@ function Departments() {
                   setNewName(d.name);
                 }}
               >
-                Rename
+                <Pencil size={14} aria-hidden="true" /> Rename
               </Button>
             </li>
           ))}
         </ul>
       )}
       <div className={styles.toolbar}>
-        <Input label="New department" value={name} onChange={(e) => setName(e.target.value)} maxLength={100} />
+        <Input label={`New ${noun}`} value={name} onChange={(e) => setName(e.target.value)} maxLength={100} />
         <ActionButton
-          label="Add department"
+          icon={<Plus size={17} aria-hidden="true" />}
+          label={`Add ${noun}`}
           pendingLabel="Adding"
           successLabel="Added"
           disabled={name.trim().length < 2}
@@ -97,6 +117,7 @@ function Departments() {
             <div className={styles.form}>
               <Input label="Name" value={newName} onChange={(e) => setNewName(e.target.value)} maxLength={100} />
               <ActionButton
+                icon={<Check size={17} aria-hidden="true" />}
                 label="Save name"
                 pendingLabel="Saving"
                 successLabel="Saved"
