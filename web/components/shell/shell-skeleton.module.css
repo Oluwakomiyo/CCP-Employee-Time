@@ -1,6 +1,4 @@
-.lines {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  max-width: 44rem;
+/* Blocks on the dark sidebar: a light tint instead of the grey used on surfaces. */
+.onInk span[aria-hidden="true"] {
+  background: rgb(255 255 255 / 0.12);
 }

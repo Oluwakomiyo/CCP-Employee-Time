@@ -1,34 +1,45 @@
 import { Block } from "@/components/loading/skeleton-block";
 import shell from "./app-shell.module.css";
-import heading from "./page-heading.module.css";
 import styles from "./shell-skeleton.module.css";
 
 /**
- * Placeholder for the whole app shell while the user loads. Reuses the shell's
- * own grid, sidebar, topbar and content classes, so the 900px breakpoint
- * (sidebar hidden, menu button shown) matches the real shell exactly.
+ * Placeholder for the app shell while the signed-in user loads. Reuses the
+ * shell's own classes (same 900px breakpoint). The brand is static, so it is
+ * drawn for real; the identity card and the "My work" links (which every role
+ * has) are blocks. The content area stays empty: each page draws its own
+ * skeleton next, and two skeleton stages in a row would read as a flicker.
  */
 export function ShellSkeleton() {
   return (
     <div className={shell.shell} role="status" aria-label="Loading your workspace" aria-busy="true">
-      <aside className={shell.sidebar} aria-hidden="true">
+      <aside className={`${shell.sidebar} ${styles.onInk}`} aria-hidden="true">
         <div className={shell.brand}>
-          <Block shape="circle" width={32} height={32} index={0} />
-          <Block width="6rem" height="1.5rem" radius="0.375rem" index={1} />
+          <span className={shell.logoTile}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/ccp-logo.png" alt="" />
+          </span>
+          <span className={shell.brandText}>
+            CCP Time
+            <small>Time systems</small>
+          </span>
+        </div>
+        <div className={shell.identity}>
+          <Block width="5rem" height="0.875rem" index={0} />
+          <Block width="8rem" height="1.125rem" index={1} />
+          <Block width="4rem" height="0.875rem" index={2} />
         </div>
         <nav className={shell.nav}>
-          {[0, 1].map((s) => (
-            <div className={shell.section} key={s}>
-              <span className={shell.sectionLabel}>
-                <Block width="4rem" height="1.0625rem" radius="0.375rem" index={2 + s} />
+          <div className={shell.section}>
+            <span className={shell.sectionLabel}>
+              <Block width="4rem" height="0.875rem" index={3} />
+            </span>
+            {[0, 1, 2, 3].map((l) => (
+              <span className={shell.link} key={l}>
+                <Block width={18} height={18} index={4 + l} />
+                <Block width={`${[6, 7, 6.5, 6][l]}rem`} height="1rem" index={4 + l} />
               </span>
-              {[0, 1, 2].map((l) => (
-                <span className={shell.link} key={l}>
-                  <Block width="100%" height="1.125rem" radius="0.375rem" index={3 + s * 3 + l} />
-                </span>
-              ))}
-            </div>
-          ))}
+            ))}
+          </div>
         </nav>
       </aside>
       <div className={shell.main} aria-hidden="true">
@@ -41,21 +52,12 @@ export function ShellSkeleton() {
               <Block width="7rem" height="1.3125rem" radius="0.375rem" index={10} />
             </span>
           </div>
-          <Block shape="circle" width={32} height={32} index={11} />
+          <div className={shell.topbarRight}>
+            {/* Notification bell, then the user menu (avatar + name). */}
+            <Block width={40} height={40} radius="var(--radius-control)" index={11} />
+            <Block shape="pill" width="8.5rem" height={36} index={12} />
+          </div>
         </header>
-        <main className={shell.content}>
-          <div className={heading.heading}>
-            <div className={heading.text}>
-              <Block width="12rem" height="calc(var(--text-3xl) * 1.1)" radius="0.5rem" index={12} />
-              <Block width="18rem" height="1.3125rem" radius="0.375rem" index={13} />
-            </div>
-          </div>
-          <div className={styles.lines}>
-            <Block width="100%" height="1.3125rem" radius="0.375rem" index={14} />
-            <Block width="85%" height="1.3125rem" radius="0.375rem" index={15} />
-            <Block width="60%" height="1.3125rem" radius="0.375rem" index={16} />
-          </div>
-        </main>
       </div>
     </div>
   );

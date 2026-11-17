@@ -7,7 +7,6 @@ import { Button } from "@/components/arc/button/button";
 import { Card } from "@/components/arc/card/card";
 import { PasswordField } from "@/components/arc/password-field/password-field";
 import { PasswordStrength } from "@/components/arc/password-strength/password-strength";
-import { ProfileSkeleton } from "./profile-skeleton";
 import { api, errorMessage } from "@/lib/api";
 import { useMe } from "@/lib/auth";
 import { RULES } from "@/app/change-password/change-password-form";
@@ -24,7 +23,8 @@ export function ProfileDetails() {
   const [saved, setSaved] = useState(false);
   const [pending, setPending] = useState(false);
 
-  if (isPending) return <ProfileSkeleton />;
+  // The (app) layout only renders once `me` has loaded, so there is no loading state here.
+  if (isPending) return null;
   if (isError)
     return (
       <div className={styles.layout}>

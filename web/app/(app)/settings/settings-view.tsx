@@ -11,7 +11,7 @@ import { CopyButton } from "@/components/arc/copy-button/copy-button";
 import { Dialog, DialogContent } from "@/components/arc/dialog/dialog";
 import EmptyState from "@/components/arc/empty-state/empty-state";
 import { Input } from "@/components/arc/input/input";
-import { Skeleton } from "@/components/arc/skeleton/skeleton";
+import { Spinner } from "@/components/loading/spinner";
 import SortableDataTable, { type DataColumn } from "@/components/arc/sortable-data-table/sortable-data-table";
 import { errorMessage } from "@/lib/api";
 import { fullName, useDepartments, useEmployees, usePositions, type Department } from "@/lib/employees";
@@ -67,7 +67,7 @@ function NamedList({
         </Alert>
       )}
       {departments.isPending ? (
-        <Skeleton lines={4} label={`Loading ${resource}`} />
+        <Spinner label={`Loading ${resource}`} showLabel center />
       ) : departments.isError ? (
         <Alert tone="danger" title={`Could not load ${resource}`}>
           {errorMessage(departments.error)}
@@ -190,7 +190,7 @@ function Devices() {
       </div>
       <p className={styles.hint}>Each device has its own key for the desktop agent. Revoke a lost or replaced device; its key stops working at once.</p>
       {devices.isPending ? (
-        <Skeleton lines={3} label="Loading devices" />
+        <Spinner label="Loading devices" showLabel center />
       ) : devices.isError ? (
         <Alert tone="danger" title="Could not load devices">
           {errorMessage(devices.error)}
@@ -283,7 +283,8 @@ function RegisterDevice({ onDone }: { onDone: (device: string, apiKey: string) =
         )}
         <Combobox
           label="Assigned to"
-          placeholder="Search by name"
+          placeholder={people.isPending ? "Loading people…" : "Search by name"}
+          disabled={people.isPending}
           options={(people.data?.data ?? []).map((e) => ({ value: e.id, label: `${fullName(e)} (${e.employeeCode})` }))}
           value={f.employeeId}
           onValueChange={(v) => set("employeeId", v)}
