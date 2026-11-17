@@ -10,11 +10,12 @@
   height: 100dvh;
   display: flex;
   flex-direction: column;
-  gap: var(--space-6);
+  gap: var(--space-5);
   padding: var(--space-5) var(--space-3);
-  border-right: 1px solid var(--border);
-  background: var(--surface);
+  background: var(--brand-ink, var(--surface));
+  color: #fff;
   overflow-y: auto;
+  scrollbar-color: var(--brand-ink-muted) transparent;
 }
 
 .brand {
@@ -26,9 +27,60 @@
   font-weight: 500;
 }
 
-.brand img {
-  width: 32px;
-  height: 32px;
+.logoTile {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex: none;
+  place-items: center;
+  border-radius: var(--radius-control);
+  background: #fff;
+}
+
+.logoTile img {
+  width: 26px;
+  height: 26px;
+}
+
+.brandText {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.brandText small {
+  color: var(--brand-ink-muted);
+  font-size: var(--text-xs);
+  font-weight: 400;
+}
+
+/* Who is signed in, so a shared screen never leaves it in doubt. */
+.identity {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-3);
+  border-radius: var(--radius-control);
+  background: var(--brand-ink-raised);
+}
+
+.identityRole {
+  color: var(--brand-ink-muted);
+  font-size: var(--text-xs);
+}
+
+.identityName {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.identityCode {
+  color: var(--brand-ink-text);
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: var(--text-xs);
 }
 
 .nav {
@@ -70,6 +122,30 @@
   background: var(--accent-subtle);
   color: var(--accent);
   font-weight: 500;
+}
+
+/* Dark sidebar overrides; the phone menu sheet keeps the light styles above. */
+.sidebar .sectionLabel {
+  color: var(--brand-ink-muted);
+}
+
+.sidebar .link {
+  color: var(--brand-ink-text);
+}
+
+.sidebar .link:hover {
+  background: var(--brand-ink-raised);
+  color: #fff;
+}
+
+.sidebar .link[aria-current="page"] {
+  background: var(--brand-ink-active);
+  color: #fff;
+}
+
+.sidebar .link:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
 }
 
 .main {

@@ -52,9 +52,19 @@ export function AppShell({ me, children }: { me: Me; children: React.ReactNode }
       <aside className={styles.sidebar} aria-label="Main navigation">
         <Link href="/" className={styles.brand}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/ccp-logo.png" alt="" />
-          CCP Time
+          <span className={styles.logoTile}>
+            <img src="/ccp-logo.png" alt="" />
+          </span>
+          <span className={styles.brandText}>
+            CCP Time
+            <small>Time systems</small>
+          </span>
         </Link>
+        <div className={styles.identity}>
+          <span className={styles.identityRole}>{ROLE_LABEL[me.role]}</span>
+          <span className={styles.identityName}>{name}</span>
+          {me.employee && <span className={styles.identityCode}>{me.employee.employeeCode}</span>}
+        </div>
         <nav className={styles.nav}>
           <NavLinks me={me} />
         </nav>
