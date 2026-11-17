@@ -133,7 +133,7 @@ export function MyCorrectionsList() {
       ) : (
         <>
           <div className={styles.tableWrap}>
-            <SortableDataTable rows={rows} columns={columns} rowKey="id" caption="My corrections" />
+            <SortableDataTable rows={rows} columns={columns} rowKey="id" caption="Fix my hours" />
           </div>
           {(list.data?.meta?.totalPages ?? 0) > 1 && (
             <div className={styles.pager}>

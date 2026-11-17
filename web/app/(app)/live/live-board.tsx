@@ -110,7 +110,7 @@ export function LiveBoard() {
         <EmptyState title="Nobody to show" description="There are no active employees in your scope." />
       ) : (
         <div className={styles.tableWrap}>
-          <SortableDataTable rows={rows} columns={columns} rowKey="id" caption="Live status" defaultSort={{ key: "name", direction: "asc" }} />
+          <SortableDataTable rows={rows} columns={columns} rowKey="id" caption="Who's working now" defaultSort={{ key: "name", direction: "asc" }} />
         </div>
       )}
     </div>

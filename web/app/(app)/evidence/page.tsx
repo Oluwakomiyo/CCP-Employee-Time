@@ -2,12 +2,12 @@ import type { Metadata } from "next";
 import { PageHeading } from "@/components/shell/page-heading";
 import { EvidenceView } from "./evidence-view";
 
-export const metadata: Metadata = { title: "Work evidence" };
+export const metadata: Metadata = { title: "Hours vs activity" };
 
 export default function EvidencePage() {
   return (
     <>
-      <PageHeading title="Work evidence" description="Recorded time next to device activity, stated plainly." />
+      <PageHeading title="Hours vs activity" description="Compare the hours someone clocked with what their work computer recorded." />
       <EvidenceView />
     </>
   );

@@ -113,7 +113,7 @@ export function AuditLog() {
       ) : (
         <>
           <div className={styles.tableWrap}>
-            <SortableDataTable rows={rows} columns={columns} rowKey="id" caption="Audit log" />
+            <SortableDataTable rows={rows} columns={columns} rowKey="id" caption="Change history" />
           </div>
           {(log.data?.meta?.totalPages ?? 0) > 1 && (
             <div className={styles.pager}>

@@ -21,7 +21,7 @@ Times are always Nigerian time (Lagos).
 1. The CEO creates your account and gives you a **temporary password**.
 2. Go to the CCP Time address you were given (or open the CCP Time desktop app) and sign in with your work email and that password.
 3. You'll be asked to **choose your own password** straight away. It must be at least 10 characters and include a letter and a number. The checklist under the field turns green as you meet each rule.
-4. After that you land on your home screen: **Punch clock** for employees, **Dashboard** for managers and the CEO.
+4. After that you land on your home screen: **Punch clock** for employees, **Overview** for managers and the CEO.
 
 ![The sign-in page](docs/guide/01-sign-in.png)
 
@@ -96,7 +96,7 @@ Open **Punch clock**.
 If you're still clocked in 16 hours after you started, the system marks that day as **missing a clock-out**. It does **not** guess when you stopped, so those hours count as zero until fixed. You'll get a notification. Ask for a correction (below) with the real time you finished.
 
 ### My time
-**My time** lists your working days, newest first.
+**My timesheets** lists your working days, newest first.
 - Use the **date range** picker to look at any period.
 - Each day shows hours worked (minus breaks), breaks, and a status:
   - **Open:** still in progress.
@@ -115,7 +115,7 @@ If you're still clocked in 16 hours after you started, the system marks that day
 
 ### My corrections: fixing a mistake
 You can't edit your own time directly; every change is approved by a manager and recorded. To fix something:
-1. Open **My corrections** and press **Request correction**. Or use the shortcut from a flagged day in My time.
+1. Open **Fix my hours** and press **Request correction**. Or use the shortcut from a flagged day in My time.
 2. Choose the **day**, then either:
    - pick an **existing entry** to fix its start or end time, or
    - add a **missing entry** for a project you forgot to clock in to.
@@ -186,7 +186,7 @@ Inside a project:
 - **Edit:** change the name, client, site, dates, estimate or **status** (Planned, Active, On hold, Completed, Cancelled). People can only clock in to **Active** projects. A project that has time recorded can't be deleted, so change its status instead.
 
 ### Corrections: reviewing requests
-1. Open **Corrections**. It shows **Pending** requests by default.
+1. Open **Approve hour fixes**. It shows **Pending** requests by default.
 2. Press **Review** on a request. A panel shows what was **recorded** that day (the entry being changed is marked) next to what is **requested**, with the employee's reason.
 3. Optionally add a note for the employee, then **Approve** or **Reject**.
 
@@ -223,10 +223,10 @@ You see **everything**: all staff, all projects, pay rates, labour costs, payrol
 ![The Add employee form](docs/guide/11-add-employee.png)
 
 
-Departments come from **Settings**, so add a new department there first.
+Departments come from **Company settings**, so add a new department there first.
 
 ### Managing an existing employee
-Open the person from **Employees**:
+Open the person from **Employee directory**:
 - **Edit:** name, email, number, position or department.
 - **Reset password:** signs them out everywhere and shows a new temporary password once.
 - **Deactivate:** they can no longer sign in, but all their history stays (for payroll and reports). People are never deleted.
@@ -311,7 +311,7 @@ There are two separate desktop programs:
 
 **Why can't I finalize payroll?** Someone in the period has an unfinished day, a missing clock-out or a pending correction. The page lists them.
 
-**A new employee can't be added to a department.** Add the department in **Settings** first.
+**A new employee can't be added to a department.** Add the department in **Company settings** first.
 
 **Someone left the company.** **Deactivate** them. Their hours stay in reports and payroll, but they can't sign in.
 

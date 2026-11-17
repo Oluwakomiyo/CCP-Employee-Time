@@ -74,7 +74,7 @@ export function TodayClock() {
       )}
       {(t.today.status === "MISSING_CLOCK_OUT" || t.today.status === "CORRECTION_PENDING") && (
         <Alert tone="warning" title={t.today.status === "MISSING_CLOCK_OUT" ? "A clock-out is missing" : "A correction is waiting for review"}>
-          Today&apos;s hours are not final yet. <Link href="/my-corrections">Open my corrections</Link>
+          Today&apos;s hours are not final yet. <Link href="/my-corrections">Open Fix my hours</Link>
         </Alert>
       )}
 

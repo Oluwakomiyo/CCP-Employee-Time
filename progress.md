@@ -163,6 +163,7 @@ Seed logins (dev only, all `Password123!`): `ceo@example.com` (CEO), `manager@ex
 ## Session log
 | Date | Work |
 |---|---|
+| 2026-11-17 | Fixes round: My Corrections lists only your own requests (`mine=true`; CEO withdraw bug); maroon brand buttons + deep maroon sidebar with identity card; Punch clock redesign (green working, amber on a break); icons on every button; positions list (Settings) + system employee numbers `EMP-001` (Postgres sequence); Hours vs activity (work evidence) redesign; plain-language page names; 96 tests |
 | 2026-11-14 | Phases 7 and 8 closed: one read-all request for "Mark all read", exact unread count; progress corrected (overtime rate, aliases, Electron); `USER_GUIDE.md` written |
 | 2026-11-14 | Review of phases 7–10: rates saved 100× too high fixed (MoneyInput kobo), duplicate stale job in compose fixed, Employees/Projects UI improved, `hoursWorked` on the project list; 89 tests |
 | 2026-11-14 | Phase 7: corrections review, employees, projects, payroll, audit log, settings (+ device list/revoke API, unknown departments rejected; 81 tests) |
