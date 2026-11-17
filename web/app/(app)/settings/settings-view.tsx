@@ -1,10 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowLeft, BadgeCheck, Ban, Building2, Check, KeyRound, MonitorSmartphone, Pencil, Plus } from "lucide-react";
+import { ArrowLeft, BadgeCheck, Ban, Building2, Check, KeyRound, MonitorSmartphone, Pencil, Plus, RotateCcw } from "lucide-react";
 import { Alert } from "@/components/arc/alert/alert";
 import { ActionButton } from "@/components/arc/action-button/action-button";
-import Badge from "@/components/arc/badge/badge";
 import { Button } from "@/components/arc/button/button";
 import { Combobox } from "@/components/arc/combobox/combobox";
 import { CopyButton } from "@/components/arc/copy-button/copy-button";
@@ -138,14 +137,14 @@ function NamedList({
   );
 }
 
-type DeviceRow = Record<string, unknown> & { id: string; device: string; owner: string; platform: string; seen: string; active: boolean };
+type DeviceRow = Record<string, unknown> & { id: string; device: string; owner: string; platform: string; added: string; seen: string; active: boolean };
 
 const seenLabel = (iso: string | null) =>
   iso ? new Intl.DateTimeFormat("en-NG", { dateStyle: "medium", timeStyle: "short", timeZone: "Africa/Lagos" }).format(new Date(iso)) : "Never";
 
 function Devices() {
   const devices = useDevices();
-  const { revokeDevice } = useSettingsMutations();
+  const { revokeDevice, reinstateDevice } = useSettingsMutations();
   const [registering, setRegistering] = useState(false);
   const [key, setKey] = useState<{ device: string; apiKey: string } | null>(null);
   const [revoking, setRevoking] = useState<{ id: string; name: string } | null>(null);
@@ -153,9 +152,11 @@ function Devices() {
 
   const rows: DeviceRow[] = (devices.data ?? []).map((d) => ({
     id: d.id,
-    device: `${d.deviceName} (${d.deviceIdentifier})`,
+    // Self-added computers are identified by a hash of their machine id: show just the name.
+    device: d.enrolledBy === "SELF" ? d.deviceName : `${d.deviceName} (${d.deviceIdentifier})`,
     owner: `${fullName(d.employee)} (${d.employee.employeeCode})`,
     platform: d.platform,
+    added: d.enrolledBy === "SELF" ? "By the desktop app" : "By an admin",
     seen: seenLabel(d.lastSeenAt),
     active: d.isActive,
   }));
@@ -163,6 +164,7 @@ function Devices() {
     { key: "device", label: "Device" },
     { key: "owner", label: "Assigned to" },
     { key: "platform", label: "Platform" },
+    { key: "added", label: "How added" },
     { key: "seen", label: "Last seen" },
     {
       key: "active",
@@ -175,7 +177,9 @@ function Devices() {
             <Ban size={14} aria-hidden="true" /> Revoke
           </Button>
         ) : (
-          <Badge tone="neutral">Revoked</Badge>
+          <Button variant="ghost" size="sm" loading={reinstateDevice.isPending && reinstateDevice.variables === row.id} onClick={() => reinstateDevice.mutate(String(row.id))}>
+            <RotateCcw size={14} aria-hidden="true" /> Reinstate
+          </Button>
         ),
     },
   ];
@@ -184,11 +188,14 @@ function Devices() {
     <section className={styles.card} aria-labelledby="devices">
       <div className={styles.toolbar}>
         <h2 id="devices">Desktop devices</h2>
-        <Button variant="secondary" onClick={() => setRegistering(true)}>
-          <MonitorSmartphone size={16} aria-hidden="true" /> Register device
+        <Button variant="ghost" onClick={() => setRegistering(true)}>
+          <MonitorSmartphone size={16} aria-hidden="true" /> Register manually
         </Button>
       </div>
-      <p className={styles.hint}>Each device has its own key for the desktop agent. Revoke a lost or replaced device; its key stops working at once.</p>
+      <p className={styles.hint}>
+        Computers add themselves when someone installs the CCP Time desktop app and signs in. Revoke a lost or replaced computer and it stops reporting at
+        once; Reinstate lets it register again.
+      </p>
       {devices.isPending ? (
         <Spinner label="Loading devices" showLabel center />
       ) : devices.isError ? (
@@ -196,7 +203,7 @@ function Devices() {
           {errorMessage(devices.error)}
         </Alert>
       ) : rows.length === 0 ? (
-        <EmptyState title="No devices yet" description="Register a device to let its desktop agent report activity." />
+        <EmptyState title="No devices yet" description="They appear here when people install the CCP Time desktop app and sign in." />
       ) : (
         <div className={styles.tableWrap}>
           <SortableDataTable rows={rows} columns={columns} rowKey="id" caption="Desktop devices" />
@@ -205,7 +212,7 @@ function Devices() {
 
       <Dialog open={!!revoking} onOpenChange={(o) => !o && setRevoking(null)}>
         {revoking && (
-          <DialogContent title="Revoke this device?" description={`${revoking.name}. Its agent key stops working at once. Register it again to restore it.`}>
+          <DialogContent title="Revoke this device?" description={`${revoking.name}. It stops reporting at once. Use Reinstate to let it register again.`}>
             <div className={styles.form}>
               {revokeError && (
                 <Alert tone="danger" title="Could not revoke" onDismiss={() => setRevokeError(null)}>

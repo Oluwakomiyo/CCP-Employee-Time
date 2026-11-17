@@ -9,6 +9,8 @@ export interface Device {
   deviceIdentifier: string;
   platform: string;
   isActive: boolean;
+  /** SELF: added by the desktop app when its owner signed in; ADMIN: registered by hand. */
+  enrolledBy: "ADMIN" | "SELF";
   lastSeenAt: string | null;
   createdAt: string;
   employee: { id: string; employeeCode: string; firstName: string; lastName: string };
@@ -26,6 +28,7 @@ export const useSettingsMutations = () => {
       onSuccess: devices,
     }),
     revokeDevice: useMutation({ mutationFn: (id: string) => api.post<unknown>(`/activity/devices/${id}/revoke`), onSuccess: devices }),
+    reinstateDevice: useMutation({ mutationFn: (id: string) => api.post<unknown>(`/activity/devices/${id}/reinstate`), onSuccess: devices }),
   };
 };
 
