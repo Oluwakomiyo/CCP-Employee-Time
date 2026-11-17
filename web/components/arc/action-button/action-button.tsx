@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import type { ButtonHTMLAttributes, RefObject } from "react";
+import type { ReactNode, ButtonHTMLAttributes, RefObject } from "react";
 import { AnimatePresence, animate, motion, useMotionValue, useReducedMotion } from "motion/react";
 import type { TargetAndTransition, Variants } from "motion/react";
 import { ArrowRight } from "lucide-react";
@@ -15,6 +15,8 @@ export interface ActionButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonE
   onAction: () => void | Promise<void>;
   resetAfterMs?: number;
   onActionError?: (error: unknown) => void;
+  /** Idle icon that says what the action does (a play, a coffee cup); defaults to the arrow. 17px, aria-hidden. */
+  icon?: ReactNode;
 }
 
 const pressVariants: Variants = {
@@ -80,7 +82,7 @@ function SwapText({ text, reduced }: { text: string; reduced: boolean }) {
   </motion.span>;
 }
 
-export function ActionButton({ label, successLabel = "Saved", pendingLabel = "Saving", onAction, resetAfterMs = 2400, onActionError, className, disabled, ...props }: ActionButtonProps) {
+export function ActionButton({ label, successLabel = "Saved", pendingLabel = "Saving", onAction, resetAfterMs = 2400, onActionError, icon, className, disabled, ...props }: ActionButtonProps) {
   const [state, setState] = useState<"idle" | "pending" | "success">("idle");
   const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -110,7 +112,7 @@ export function ActionButton({ label, successLabel = "Saved", pendingLabel = "Sa
   return <motion.button {...props} ref={buttonRef} tabIndex={props.tabIndex ?? 0} type={props.type ?? "button"} className={[styles.button, className].filter(Boolean).join(" ")} disabled={disabled} aria-disabled={pending ? true : props["aria-disabled"]} aria-busy={pending} data-state={state} onClick={run} custom={buttonRef} variants={pressVariants} whileTap={reduceMotion || disabled || pending ? undefined : "pressed"} transition={motionTokens.spring.snappy}>
     <span className={styles.content} aria-hidden="true">
       <SwapText text={text} reduced={reduceMotion} />
-      <span className={styles.iconSlot}><AnimatePresence initial={false}><motion.span key={state} className={styles.phase} initial={reduceMotion ? fadeIn : arrow ? arrowIn : iconIn} animate={iconRest} exit={reduceMotion ? fadeOut : arrow ? arrowOut : iconOut} transition={reduceMotion ? { duration: motionTokens.duration.instant } : iconEnter}>{pending ? <span className={styles.spinner} /> : state === "success" ? <DrawnCheck reduced={reduceMotion} /> : <ArrowRight className={styles.arrow} width={17} height={17} />}</motion.span></AnimatePresence></span>
+      <span className={styles.iconSlot}><AnimatePresence initial={false}><motion.span key={state} className={styles.phase} initial={reduceMotion ? fadeIn : arrow ? arrowIn : iconIn} animate={iconRest} exit={reduceMotion ? fadeOut : arrow ? arrowOut : iconOut} transition={reduceMotion ? { duration: motionTokens.duration.instant } : iconEnter}>{pending ? <span className={styles.spinner} /> : state === "success" ? <DrawnCheck reduced={reduceMotion} /> : (icon ?? <ArrowRight className={styles.arrow} width={17} height={17} />)}</motion.span></AnimatePresence></span>
     </span>
     <span className={styles.visuallyHidden}>{label}</span>
     <span className={styles.visuallyHidden} role="status">{state === "pending" ? pendingLabel : state === "success" ? successLabel : ""}</span>
