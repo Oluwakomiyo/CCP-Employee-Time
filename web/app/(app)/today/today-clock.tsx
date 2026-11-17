@@ -2,10 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Square } from "lucide-react";
+import { ArrowLeftRight, Briefcase, Check, Coffee, FolderKanban, LogOut, MapPin, Pause, Play, Square, StickyNote, Timer } from "lucide-react";
 import { Alert } from "@/components/arc/alert/alert";
 import { ActionButton } from "@/components/arc/action-button/action-button";
-import { Badge } from "@/components/arc/badge/badge";
 import { Button } from "@/components/arc/button/button";
 import { HoldToConfirm } from "@/components/arc/hold-to-confirm/hold-to-confirm";
 import { Select } from "@/components/arc/select/select";
@@ -63,6 +62,9 @@ export function TodayClock() {
   const breakSeconds = t.today.breakSeconds + (onBreak ? Math.max(0, drift) : 0);
   const breakElapsed = (seg?.activeBreak?.breakElapsedSeconds ?? 0) + Math.max(0, drift);
 
+  const tone = t.state === "WORKING" ? "working" : onBreak ? "paused" : "stopped";
+  const StateIcon = t.state === "WORKING" ? Play : onBreak ? Pause : Square;
+
   return (
     <div className={styles.layout}>
       {error && (
@@ -76,75 +78,111 @@ export function TodayClock() {
         </Alert>
       )}
 
-      <section className={styles.panel} aria-labelledby="clock-state">
+      {/* 1. The clock: state, the big number, and today's totals. Colour follows the state. */}
+      <section className={styles.clock} data-state={tone} aria-labelledby="clock-state">
         <div className={styles.stateRow}>
-          <h2 id="clock-state" className={styles.stateTitle}>
-            {t.state === "WORKING" ? "Working" : onBreak ? "On a break" : "Not clocked in"}
-          </h2>
-          <Badge tone={t.state === "WORKING" ? "success" : onBreak ? "warning" : "neutral"} dot>
-            {t.state === "WORKING" ? "Clock running" : onBreak ? `${labelOf(BREAKS, seg?.activeBreak?.breakType)} ${formatClock(breakElapsed)}` : "Clock stopped"}
-          </Badge>
+          <span className={styles.stateIcon} aria-hidden="true">
+            <StateIcon size={18} strokeWidth={2} />
+          </span>
+          <div className={styles.stateText}>
+            <h2 id="clock-state" className={styles.stateTitle}>
+              {t.state === "WORKING" ? "You're clocked in" : onBreak ? `On a break: ${labelOf(BREAKS, seg?.activeBreak?.breakType).toLowerCase()}` : "You're not clocked in"}
+            </h2>
+            <p className={styles.stateSub}>
+              {seg ? `Started at ${formatTime(seg.clockIn)}` : "Choose a project below to start your day."}
+            </p>
+          </div>
         </div>
 
         <p className={styles.timer} aria-live="off" aria-label={`Worked today ${formatHours(working)}`}>
           {formatClock(working)}
         </p>
+        {onBreak && (
+          <p className={styles.breakTimer}>
+            <Coffee size={16} aria-hidden="true" />
+            <span>
+              Break running for <strong>{formatClock(breakElapsed)}</strong>. Work time is paused.
+            </span>
+          </p>
+        )}
+
         <dl className={styles.stats}>
           <div>
-            <dt>Worked today</dt>
+            <dt>
+              <Timer size={15} aria-hidden="true" /> Worked today
+            </dt>
             <dd>{formatHours(working)}</dd>
           </div>
           <div>
-            <dt>Breaks</dt>
+            <dt>
+              <Coffee size={15} aria-hidden="true" /> Breaks
+            </dt>
             <dd>{formatHours(breakSeconds)}</dd>
           </div>
-          {seg && (
-            <div>
-              <dt>Since</dt>
-              <dd>{formatTime(seg.clockIn)}</dd>
-            </div>
-          )}
         </dl>
+      </section>
 
-        {seg && (
-          <dl className={styles.context}>
-            <div>
-              <dt>Project</dt>
-              <dd>
-                {seg.projectCode} {seg.projectName}
-              </dd>
-            </div>
-            <div>
-              <dt>Location</dt>
-              <dd>{labelOf(LOCATIONS, seg.location)}</dd>
-            </div>
-            <div>
-              <dt>Doing</dt>
-              <dd>
-                {labelOf(ACTIVITIES, seg.activity?.activityType) || "Not set"}
-                {seg.activity?.description ? <span className={styles.note}>{seg.activity.description}</span> : null}
-              </dd>
-            </div>
-          </dl>
-        )}
-
-        {t.state === "NOT_WORKING" ? (
+      {/* 2. What the clock is counting against, or the form to start it. */}
+      {t.state === "NOT_WORKING" ? (
+        <section className={styles.panel} aria-labelledby="start-title">
+          <h2 id="start-title" className={styles.panelTitle}>
+            Start your day
+          </h2>
           <StartForm projects={projects} onStart={(body) => run("start", body)} onError={onError} />
-        ) : (
+        </section>
+      ) : (
+        <section className={styles.panel} aria-labelledby="entry-title">
+          <div className={styles.panelHead}>
+            <h2 id="entry-title" className={styles.panelTitle}>
+              Current entry
+            </h2>
+            {!onBreak && <ChangeDrawer projects={projects} current={seg!} onChange={run} onError={onError} />}
+          </div>
+          {seg && (
+            <ul className={styles.entry}>
+              <li>
+                <FolderKanban size={18} aria-hidden="true" />
+                <span>
+                  <small>Project</small>
+                  {seg.projectCode} {seg.projectName}
+                </span>
+              </li>
+              <li>
+                <MapPin size={18} aria-hidden="true" />
+                <span>
+                  <small>Location</small>
+                  {labelOf(LOCATIONS, seg.location)}
+                </span>
+              </li>
+              <li>
+                <Briefcase size={18} aria-hidden="true" />
+                <span>
+                  <small>Doing</small>
+                  {labelOf(ACTIVITIES, seg.activity?.activityType) || "Not set"}
+                  {seg.activity?.description ? <em className={styles.note}>{seg.activity.description}</em> : null}
+                </span>
+              </li>
+            </ul>
+          )}
+
           <div className={styles.actions}>
             {onBreak ? (
-              <ActionButton label="End break" pendingLabel="Ending break" successLabel="Back to work" onAction={() => run("breaks/end").then(() => undefined)} onActionError={onError} />
+              <ActionButton
+                icon={<Play size={17} aria-hidden="true" />}
+                label="Resume work"
+                pendingLabel="Resuming"
+                successLabel="Back to work"
+                onAction={() => run("breaks/end").then(() => undefined)}
+                onActionError={onError}
+              />
             ) : (
-              <>
-                <BreakButton onStart={(breakType) => run("breaks/start", { breakType })} onError={onError} />
-                <ChangeDrawer projects={projects} current={seg!} onChange={run} onError={onError} />
-              </>
+              <BreakButton onStart={(breakType) => run("breaks/start", { breakType })} onError={onError} />
             )}
             <HoldToConfirm
-              label="Hold to end work"
-              confirmedLabel="Work ended"
+              label="Hold to clock out"
+              confirmedLabel="Clocked out"
               tone="danger"
-              icon={<Square size={16} aria-hidden="true" />}
+              icon={<LogOut size={16} aria-hidden="true" />}
               disabled={action.isPending || onBreak}
               confirmed={ending}
               onConfirm={() => {
@@ -155,9 +193,9 @@ export function TodayClock() {
               }}
             />
           </div>
-        )}
-        {onBreak && <p className={styles.hint}>End the break before changing project, location or activity, or ending work.</p>}
-      </section>
+          {onBreak && <p className={styles.hint}>Resume work before changing what you&apos;re doing or clocking out.</p>}
+        </section>
+      )}
     </div>
   );
 }
@@ -183,16 +221,31 @@ function StartForm({ projects, onStart, onError }: { projects: Projects; onStart
   const [location, setLocation] = useState<LocationType>("OFFICE");
   const [activity, setActivity] = useState<ActivityType>("DESIGN");
   const [description, setDescription] = useState("");
+  const [withNote, setWithNote] = useState(false);
 
   return (
     <form className={styles.form} onSubmit={(e) => e.preventDefault()}>
       <ProjectSelect projects={projects} value={projectId} onChange={setProjectId} />
-      <SegmentedControl label="Where are you working?" options={LOCATIONS} value={location} onValueChange={(v: string) => setLocation(v as LocationType)} fullWidth />
-      <Select label="What are you doing?" options={ACTIVITIES} value={activity} onValueChange={(v: string) => setActivity(v as ActivityType)} />
-      <Textarea label="Notes" description="Optional. For example: ground floor layout revisions." maxLength={500} value={description} onChange={(e) => setDescription(e.target.value)} rows={2} />
+      <div className={styles.twoUp}>
+        <div className={styles.field}>
+          <span className={styles.fieldLabel} aria-hidden="true">
+            Where are you working?
+          </span>
+          <SegmentedControl label="Where are you working?" options={LOCATIONS} value={location} onValueChange={(v: string) => setLocation(v as LocationType)} fullWidth />
+        </div>
+        <Select label="What are you doing?" options={ACTIVITIES} value={activity} onValueChange={(v: string) => setActivity(v as ActivityType)} />
+      </div>
+      {withNote ? (
+        <Textarea label="Note" description="Optional. For example: ground floor layout revisions." maxLength={500} value={description} onChange={(e) => setDescription(e.target.value)} rows={2} autoFocus />
+      ) : (
+        <Button type="button" variant="ghost" size="sm" className={styles.addNote} onClick={() => setWithNote(true)}>
+          <StickyNote size={16} aria-hidden="true" /> Add a note
+        </Button>
+      )}
       <ActionButton
-        label="Start work"
-        pendingLabel="Starting"
+        icon={<Play size={17} aria-hidden="true" />}
+        label="Clock in"
+        pendingLabel="Clocking in"
         successLabel="Clock running"
         disabled={!projectId}
         onAction={() => onStart({ projectId, locationType: location, activityType: activity, description: description.trim() || undefined }).then(() => undefined)}
@@ -207,7 +260,7 @@ function BreakButton({ onStart, onError }: { onStart: (t: BreakType) => Promise<
   return (
     <div className={styles.breakRow}>
       <Select label="Break type" options={BREAKS} value={type} onValueChange={(v: string) => setType(v as BreakType)} />
-      <ActionButton label="Start break" pendingLabel="Starting break" successLabel="On a break" onAction={() => onStart(type).then(() => undefined)} onActionError={onError} />
+      <ActionButton icon={<Coffee size={17} aria-hidden="true" />} label="Take a break" pendingLabel="Pausing" successLabel="On a break" onAction={() => onStart(type).then(() => undefined)} onActionError={onError} />
     </div>
   );
 }
@@ -242,8 +295,8 @@ function ChangeDrawer({
 
   return (
     <Drawer open={open} onOpenChange={setOpen}>
-      <Button variant="secondary" onClick={() => setOpen(true)}>
-        Change project, location or activity
+      <Button variant="secondary" size="sm" onClick={() => setOpen(true)}>
+        <ArrowLeftRight size={16} aria-hidden="true" /> Switch
       </Button>
       <DrawerContent title="Change what you're working on" description="The current entry closes now and a new one starts.">
         <div className={styles.form}>
@@ -268,7 +321,7 @@ function ChangeDrawer({
               <Textarea label="Notes" maxLength={500} value={description} onChange={(e) => setDescription(e.target.value)} rows={2} />
             </>
           )}
-          <ActionButton label="Save change" pendingLabel="Saving" successLabel="Saved" disabled={unchanged} onAction={submit} onActionError={onError} />
+          <ActionButton icon={<Check size={17} aria-hidden="true" />} label="Save change" pendingLabel="Saving" successLabel="Saved" disabled={unchanged} onAction={submit} onActionError={onError} />
         </div>
       </DrawerContent>
     </Drawer>
