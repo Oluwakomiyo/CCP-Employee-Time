@@ -6,7 +6,6 @@ import { autoCloseQuerySchema, timeHistoryQuerySchema } from './time.schema';
 const actorOf = (req: Request): TimeActor => ({
   employeeId: req.user!.employeeId,
   userId: req.user!.userId,
-  role: req.user!.role,
   grants: req.user!.grants,
   ip: req.ip,
 });

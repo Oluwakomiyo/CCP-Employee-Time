@@ -53,7 +53,7 @@ function planDay(date: Date, startHour: number, parts: Part[], projectIds: Recor
 const SAMPLE_CODES = ['PRJ-101', 'PRJ-102', 'PRJ-103', 'PRJ-104', 'PRJ-105'];
 
 async function main() {
-  const ceo = await prisma.employee.findFirst({ where: { user: { role: Role.CEO_ADMIN } }, orderBy: { createdAt: 'asc' } });
+  const ceo = await prisma.employee.findFirst({ where: { user: { appRole: { key: 'ceo_admin' } } }, orderBy: { createdAt: 'asc' } });
   if (!ceo) throw new Error('No CEO account yet. Run create-admin first.');
   if (await prisma.project.count({ where: { code: { in: SAMPLE_CODES } } })) {
     throw new Error('Sample data is already loaded (projects PRJ-101 to PRJ-105 exist). Nothing was changed.');
@@ -221,7 +221,7 @@ async function main() {
         status: CorrectionStatus.PENDING,
       },
     });
-    const reviewers = await prisma.user.findMany({ where: { OR: [{ role: Role.CEO_ADMIN }, { id: tunde.userId }] }, select: { id: true } });
+    const reviewers = await prisma.user.findMany({ where: { OR: [{ appRole: { key: 'ceo_admin' } }, { id: tunde.userId }] }, select: { id: true } });
     await prisma.notification.createMany({
       data: reviewers.map((u) => ({
         userId: u.id,

@@ -51,7 +51,6 @@ export class AuditService {
             select: {
               id: true,
               email: true,
-              role: true,
               employee: {
                 select: {
                   firstName: true,

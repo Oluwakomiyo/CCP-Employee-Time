@@ -17,7 +17,7 @@ import { TableSkeleton } from "@/components/loading/table-skeleton";
 import { InlineBusy } from "@/components/loading/spinner";
 import { errorMessage } from "@/lib/api";
 import { useMe } from "@/lib/auth";
-import { formatMoney, fullName, ROLES, useEmployees, type EmploymentStatus } from "@/lib/employees";
+import { formatMoney, fullName, useEmployees, type EmploymentStatus } from "@/lib/employees";
 import { sentenceCase } from "@/lib/time";
 import { can } from "@/lib/permissions";
 import { EmployeeForm } from "./employee-form";
@@ -52,7 +52,7 @@ export function EmployeeList() {
         email: e.user.email,
         code: e.employeeCode,
         department: `${e.department} · ${e.position}`,
-        role: e.user.appRole?.name ?? ROLES.find((r) => r.value === e.user.role)?.label ?? e.user.role,
+        role: e.user.appRole?.name ?? "",
         status: e.status,
         rate: e.compensation ? `${formatMoney(e.compensation.baseHourlyRate, e.compensation.currency)}/h` : "–",
       })),

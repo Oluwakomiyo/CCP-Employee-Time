@@ -1,4 +1,4 @@
-import { AuditAction, PermissionScope, Prisma, Role } from '@prisma/client';
+import { AuditAction, PermissionScope, Prisma } from '@prisma/client';
 import { prisma, DbClient } from '../../config/prisma';
 import { AppError } from '../../errors/AppError';
 import { AuthUser, can, toGrants } from '../../auth/can';
@@ -169,8 +169,7 @@ export const roleService = {
     if (!role) throw AppError.notFound('Role not found');
     assertCanAssign(actor, toGrants(role.permissions));
     return prisma.$transaction(async (tx) => {
-      // The legacy enum column follows the preset, so older reads stay sensible.
-      await tx.user.update({ where: { id: employee.userId }, data: { roleId, role: role.presetOf ?? Role.EMPLOYEE } });
+      await tx.user.update({ where: { id: employee.userId }, data: { roleId } });
       await assertSomeoneManagesRoles(tx);
       await tx.auditLog.create({
         data: {

@@ -3,7 +3,6 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { keepForSameSubject } from "./query";
 import { api } from "./api";
-import type { Role } from "./types";
 import type { ActivityType, LocationType } from "./time";
 
 export type EmploymentStatus = "ACTIVE" | "INACTIVE" | "ON_LEAVE" | "TERMINATED";
@@ -26,7 +25,7 @@ export interface Employee {
   position: string;
   status: EmploymentStatus;
   hireDate: string;
-  user: { id: string; email: string; role: Role; isActive: boolean; mustChangePassword?: boolean; appRole?: { id: string; name: string } };
+  user: { id: string; email: string; isActive: boolean; mustChangePassword?: boolean; appRole?: { id: string; name: string } };
   compensation?: Rate | null;
   projectMemberships?: { id: string; isProjectLead: boolean; project: { id: string; code: string; name: string; isActive: boolean } }[];
 }
@@ -52,12 +51,6 @@ export interface Department {
   name: string;
   _count?: { employees: number };
 }
-
-export const ROLES: { value: Role; label: string }[] = [
-  { value: "EMPLOYEE", label: "Employee" },
-  { value: "PROJECT_MANAGER", label: "Project manager" },
-  { value: "CEO_ADMIN", label: "CEO" },
-];
 
 export const fullName = (e: { firstName: string; lastName: string }) => `${e.firstName} ${e.lastName}`;
 

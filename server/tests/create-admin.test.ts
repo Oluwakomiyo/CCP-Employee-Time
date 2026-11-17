@@ -13,8 +13,8 @@ describe('create-admin (first CEO on an empty database)', () => {
     const r = await createFirstAdmin(prisma, { email: 'Boss@Company.ng', firstName: 'Ada', lastName: 'Okafor' });
     expect(r.email).toBe('boss@company.ng');
 
-    const user = await prisma.user.findUniqueOrThrow({ where: { email: 'boss@company.ng' }, include: { employee: true } });
-    expect(user.role).toBe('CEO_ADMIN');
+    const user = await prisma.user.findUniqueOrThrow({ where: { email: 'boss@company.ng' }, include: { employee: true, appRole: true } });
+    expect(user.appRole.key).toBe('ceo_admin');
     expect(user.mustChangePassword).toBe(true);
     expect(user.employee?.department).toBe('Executive');
 

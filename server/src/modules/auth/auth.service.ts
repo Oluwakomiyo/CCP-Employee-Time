@@ -45,7 +45,6 @@ export class AuthService {
 
     const payload = {
       userId: user.id,
-      role: user.role,
       employeeId: user.employee.id,
     };
 
@@ -77,7 +76,6 @@ export class AuthService {
       user: {
         id: user.id,
         email: user.email,
-        role: user.role,
         mustChangePassword: user.mustChangePassword,
         employee: user.employee,
       },
@@ -115,7 +113,6 @@ export class AuthService {
 
     const newPayload = {
       userId: user.id,
-      role: user.role,
       employeeId: user.employee.id,
     };
 
@@ -161,7 +158,6 @@ export class AuthService {
       select: {
         id: true,
         email: true,
-        role: true,
         isActive: true,
         mustChangePassword: true,
         createdAt: true,

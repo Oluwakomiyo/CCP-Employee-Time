@@ -73,7 +73,7 @@ The seed includes the following, so screens have data:
 - **Layout:** each module has `*.routes.ts`, `*.controller.ts`, `*.service.ts` and `*.schema.ts` (zod).
 - **Response envelope:** `{ success: true, data, meta? }` on success, `{ success: false, error: { code, message, details? } }` on failure. Throw `AppError` (`errors/AppError.ts`).
 - **Access rules:**
-  - Use `authenticate` and `authorize(Role...)` from `middleware/auth.middleware.ts`.
+  - Use `authenticate` (`middleware/auth.middleware.ts`) and `requirePermission('key')` (`auth/can.ts`). New keys go in `auth/permissions.ts` (catalog + presets) and `web/lib/permissions.ts`.
   - Object-level checks live in `utils/access.ts` (`assertCanViewEmployee`, `pmLeadsProject`, `pmLeadsEmployee`).
   - PM scoping is mandatory on every management read.
 - **Time mutations:**
@@ -116,7 +116,7 @@ The seed includes the following, so screens have data:
 - **`MoneyInput`:** pass `currencies={["NGN"]}` and `quickAdd={[]}`; its defaults are USD and "+$10" chips.
 - **HoldToConfirm / ConfirmMorph:** always pass `confirmed={state}`. Set it to true in `onConfirm` and back to false when the request settles. Left uncontrolled, the button sticks on its done label after a refused request: a real bug found on Today.
 - **Select:** Arc `Select` is a Radix Select. Keep it controlled with `value=""` (not `undefined`) for the empty state.
-- **Shell:** role-aware nav lives in `components/shell/nav.ts`. Every route already exists; replace the `<ComingSoon/>` in each `page.tsx` as you build it.
+- **Shell:** permission-aware nav lives in `components/shell/nav.ts` (each item names its permission). Every route already exists; replace the `<ComingSoon/>` in each `page.tsx` as you build it.
 - **Types:** shared types go in `lib/types.ts`, or a domain file like `lib/time.ts`. Mirror the server's enum values exactly.
 
 ---

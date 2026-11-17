@@ -1,7 +1,7 @@
 import { AuthUser, can, scopeOf } from '../../auth/can';
 import { Grants } from '../../auth/permissions';
 import { assertCanSee, visibleEmployeeIds } from '../../utils/access';
-import { SegmentStatus, DayStatus, AuditAction, Role, Prisma, LocationType, ActivityType, ProjectStatus, PermissionScope } from '@prisma/client';
+import { SegmentStatus, DayStatus, AuditAction, Prisma, LocationType, ActivityType, ProjectStatus, PermissionScope } from '@prisma/client';
 import { prisma, DbClient } from '../../config/prisma';
 import { AppError } from '../../errors/AppError';
 import { workDateFor } from '../../utils/time';
@@ -20,7 +20,6 @@ import {
 export interface TimeActor {
   employeeId: string;
   userId: string;
-  role: Role;
   grants: Grants;
   ip?: string;
 }

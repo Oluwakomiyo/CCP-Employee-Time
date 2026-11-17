@@ -550,7 +550,6 @@ export class CorrectionService {
             select: {
               id: true,
               email: true,
-              role: true,
             },
           },
         },

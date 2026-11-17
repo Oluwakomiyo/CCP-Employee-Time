@@ -1,11 +1,10 @@
 import jwt, { SignOptions } from 'jsonwebtoken';
 import crypto from 'crypto';
-import { Role } from '@prisma/client';
 import { requiredEnv } from '../config/env';
 
+/** Identity only: what a person may do comes from their role's permissions, read per request. */
 export interface TokenPayload {
   userId: string;
-  role: Role;
   employeeId: string;
 }
 
@@ -13,7 +12,7 @@ const accessExpiry = () => (process.env.JWT_EXPIRES_IN || '15m') as SignOptions[
 const refreshExpiry = () => (process.env.JWT_REFRESH_EXPIRES_IN || '7d') as SignOptions['expiresIn'];
 
 const sign = (payload: TokenPayload, secret: string, expiresIn: SignOptions['expiresIn']) =>
-  jwt.sign({ userId: payload.userId, role: payload.role, employeeId: payload.employeeId }, secret, {
+  jwt.sign({ userId: payload.userId, employeeId: payload.employeeId }, secret, {
     expiresIn,
     algorithm: 'HS256',
   });

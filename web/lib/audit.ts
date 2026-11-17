@@ -2,7 +2,6 @@
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { api } from "./api";
-import type { Role } from "./types";
 
 export type AuditAction =
   | "CREATE"
@@ -38,7 +37,7 @@ export interface AuditEntry {
   beforeState: unknown;
   afterState: unknown;
   timestamp: string;
-  actor: { id: string; email: string; role: Role; employee: { firstName: string; lastName: string; employeeCode: string } | null } | null;
+  actor: { id: string; email: string; employee: { firstName: string; lastName: string; employeeCode: string } | null } | null;
 }
 
 export const useAuditLog = (f: { action: string | null; from: string | null; to: string | null; page: number }) =>

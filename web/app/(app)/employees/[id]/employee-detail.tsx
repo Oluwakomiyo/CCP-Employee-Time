@@ -26,7 +26,7 @@ import { useMe } from "@/lib/auth";
 import { formatDate, sentenceCase } from "@/lib/time";
 import { rangeFor, type DashboardRange } from "@/lib/dashboard";
 import { lagosDay } from "@/lib/history";
-import { formatMoney, fullName, ROLES, koboToNaira, useCompensation, useEmployee, useEmployeeMutations, useEmployeeReport, type Employee } from "@/lib/employees";
+import { formatMoney, fullName, koboToNaira, useCompensation, useEmployee, useEmployeeMutations, useEmployeeReport, type Employee } from "@/lib/employees";
 import { can } from "@/lib/permissions";
 import { useRoleMutations, useRoles } from "@/lib/roles";
 import { EmployeeForm } from "../employee-form";
@@ -70,7 +70,7 @@ export function EmployeeDetail({ id }: { id: string }) {
             <Badge tone={STATUS_TONE[e.status]} dot>
               {sentenceCase(e.status)}
             </Badge>
-            <Badge tone="neutral">{e.user.appRole?.name ?? ROLES.find((r) => r.value === e.user.role)?.label}</Badge>
+            {e.user.appRole && <Badge tone="neutral">{e.user.appRole.name}</Badge>}
             {e.user.mustChangePassword && <Badge tone="info">Must set a new password</Badge>}
           </>
         }

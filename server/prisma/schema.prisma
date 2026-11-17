@@ -107,8 +107,6 @@ model User {
   id                 String   @id @default(uuid())
   email              String   @unique
   passwordHash       String
-  // Deprecated: mirrors appRole.presetOf for system roles while the code moves to permissions.
-  role               Role     @default(EMPLOYEE)
   // The role whose permissions this user has (system preset or custom).
   roleId             String
   appRole            AppRole  @relation(fields: [roleId], references: [id], onDelete: Restrict)

@@ -3,6 +3,7 @@
  * (sample-data.ts). Nothing here deletes anything.
  */
 import { ensureSystemRoles, systemRoleKey } from '../src/auth/permissions';
+import type { DbClient } from '../src/config/prisma';
 import { PrismaClient, Role, LocationType, ActivityType, BreakType, DayStatus, SegmentStatus, Prisma } from '@prisma/client';
 
 export const H = 3600;
@@ -34,12 +35,12 @@ export type Person = { first: string; last: string; email: string; code: string;
 
 export async function createPerson(prisma: PrismaClient, p: Person, passwordHash: string, rates: { base: number; from: string; to?: string }[]) {
   await prisma.position.upsert({ where: { name: p.position }, create: { name: p.position }, update: {} });
-  await ensureSystemRoles(prisma);
+  // The seeds use a plain PrismaClient; the app's client only adds a computed field on Project.
+  await ensureSystemRoles(prisma as unknown as DbClient);
   const user = await prisma.user.create({
     data: {
       email: p.email,
       passwordHash,
-      role: p.role,
       appRole: { connect: { key: systemRoleKey(p.role) } },
       mustChangePassword: false,
       employee: {

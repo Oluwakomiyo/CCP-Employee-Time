@@ -215,7 +215,7 @@ You see **everything**: all staff, all projects, pay rates, labour costs, payrol
 
 ### Adding a new employee
 1. **Employees → Add employee.**
-2. Fill in their name, work email, employee number (for example CCP-014), position, department, role (Employee, Project manager or CEO), hire date, **hourly rate** and **overtime rate** in naira.
+2. Fill in their name, work email, department, position, **role** (any role from **Roles & permissions**), hire date, **hourly rate** and **overtime rate** in naira. The employee number (EMP-001, EMP-002, ...) is issued automatically.
 3. Press **Add employee**. A **temporary password** appears **once**. Copy it with the copy button and give it to them privately. It's never shown again; if it's lost, reset it (below).
 4. They must choose their own password at first sign-in.
 5. Add them to their projects (**Projects → project → Team**) so they can clock in.
@@ -223,7 +223,7 @@ You see **everything**: all staff, all projects, pay rates, labour costs, payrol
 ![The Add employee form](docs/guide/11-add-employee.png)
 
 
-Departments come from **Company settings**, so add a new department there first.
+Departments and positions come from **Company settings**, so add a new one there first.
 
 ### Managing an existing employee
 Open the person from **Employee directory**:
@@ -269,7 +269,7 @@ As well as everything in part 3, you can:
 - See the **estimated labour cost** on the Estimate tab, priced at current rates.
 
 ### Settings
-- **Departments:** add new departments and rename existing ones. Renaming moves everyone in that department along with it.
+- **Departments** and **Positions:** add new ones and rename existing ones. Renaming moves everyone along with it.
 - **Desktop devices:** the computers allowed to report activity for Work evidence.
   - **Register device:** pick the employee, name the computer, and enter its serial number or MAC address and its operating system.
   - A **device key** is shown **once**. Put it in the activity agent's settings file on that computer (see below).
@@ -277,6 +277,15 @@ As well as everything in part 3, you can:
 
 ![Settings: departments and desktop devices](docs/guide/18-settings.png)
 
+
+### Roles & permissions
+Decide what each role can see and do (**Company → Roles & permissions**).
+- **Built-in roles:** CEO / Admin, Project manager and Employee come with sensible defaults. Change them as you like; **Reset to default** puts a role back.
+- **New role:** for example "SEO specialist". Start from an existing role, then switch permissions on or off.
+- **Whose data:** many permissions have three settings: **Just themselves**, **Their team** (people on projects they lead) or **Everyone**.
+- **Money** (pay rates, labour cost) and **Payroll** are separate switches, so you can give reports without pay.
+- **Change someone's role** on their page in the **Employee directory** (Account section). It takes effect on their next click.
+- Safety: the CEO / Admin role always keeps "Manage roles and permissions", at least one active person must keep it, and someone who adds people can't hand out more access than they have. Every change is in **Change history**.
 
 ### Audit log
 You see every action by everyone: sign-ins, clock-ins, edits, rate changes, approvals, payroll runs and device changes, each with before-and-after details.

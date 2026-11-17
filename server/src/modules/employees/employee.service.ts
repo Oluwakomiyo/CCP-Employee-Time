@@ -108,7 +108,6 @@ export class EmployeeService {
             select: {
               id: true,
               email: true,
-              role: true,
               isActive: true,
               mustChangePassword: true,
               appRole: { select: { id: true, name: true } },
@@ -153,7 +152,6 @@ export class EmployeeService {
           select: {
             id: true,
             email: true,
-            role: true,
             isActive: true,
             appRole: { select: { id: true, name: true } },
           },
@@ -197,8 +195,8 @@ export class EmployeeService {
 
     // The chosen role must exist, and must not give more access than the creator has (unless they manage roles).
     const target = input.roleId
-      ? await prisma.appRole.findUnique({ where: { id: input.roleId }, select: { presetOf: true, permissions: { select: { permission: true, scope: true } } } })
-      : await prisma.appRole.findUnique({ where: { key: systemRoleKey(input.role) }, select: { presetOf: true, permissions: { select: { permission: true, scope: true } } } });
+      ? await prisma.appRole.findUnique({ where: { id: input.roleId }, select: { permissions: { select: { permission: true, scope: true } } } })
+      : await prisma.appRole.findUnique({ where: { key: systemRoleKey(input.role) }, select: { permissions: { select: { permission: true, scope: true } } } });
     if (!target) throw AppError.badRequest('Unknown role');
     if (actor) assertCanAssign(actor, toGrants(target.permissions));
 
@@ -211,7 +209,6 @@ export class EmployeeService {
         data: {
           email: input.email,
           passwordHash,
-          role: target?.presetOf ?? (input.roleId ? Role.EMPLOYEE : input.role),
           appRole: input.roleId ? { connect: { id: input.roleId } } : { connect: { key: systemRoleKey(input.role) } },
           mustChangePassword: true,
         },
@@ -239,7 +236,7 @@ export class EmployeeService {
           },
         },
         include: {
-          user: { select: { id: true, email: true, role: true } },
+          user: { select: { id: true, email: true, appRole: { select: { name: true } } } },
           compensations: true,
         },
       });
@@ -253,7 +250,7 @@ export class EmployeeService {
           afterState: {
             employeeCode: employee.employeeCode,
             email: user.email,
-            role: user.role,
+            role: employee.user.appRole.name,
           },
         },
       });

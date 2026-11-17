@@ -22,7 +22,7 @@ export interface Correction {
   reviewNotes: string | null;
   createdAt: string;
   workDay: { id: string; date: string; status: string; totalWorkSeconds: number };
-  reviewer?: { id: string; email: string; role: string } | null;
+  reviewer?: { id: string; email: string } | null;
 }
 
 export const correctionsKey = (status: string | null, page: number) => ["corrections", "mine", status ?? "ALL", page] as const;

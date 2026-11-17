@@ -26,7 +26,6 @@ export const createUser = async (role: Role, opts: { mustChangePassword?: boolea
     data: {
       email: `user${seq}@test.local`,
       passwordHash: await bcrypt.hash(PASSWORD, 4),
-      role,
       appRole: { connect: { key: systemRoleKey(role) } },
       mustChangePassword: opts.mustChangePassword ?? false,
       employee: {

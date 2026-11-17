@@ -19,7 +19,7 @@ Single source of truth for where the rebuild stands. **Update this file in the s
 ## Assumptions in force (confirm with the owner if they change)
 - **Payable day:** a day is payable once it is CLOSED or APPROVED (corrected) with no PENDING correction. Formal timesheet approval is a future feature.
 - **Breaks:** unpaid in V1; the client can't mark a break as paid. **Overtime:** hours above 8/day are paid at the employee's overtime rate (fixed 8h threshold until a policy is set).
-- **Corrections:** a PM reviews only employees on projects they lead; the CEO reviews anything. Requesters edit or withdraw; reviewers approve or reject.
+- **Corrections:** reviewers need `corrections.review`; TEAM scope reviews only employees on projects they lead, ALL reviews anything. Requesters edit or withdraw; reviewers approve or reject.
 - **Missing clock-out:** the job flags the day and leaves the end time **blank**. It does **not** create a correction (that would require guessing a time); the employee submits one.
 - **Changes during a break:** project, location and activity changes are refused while on a break, so a break always belongs to one segment.
 
@@ -168,6 +168,7 @@ Seed logins (dev only, all `Password123!`): `ceo@example.com` (CEO), `manager@ex
 ## Session log
 | Date | Work |
 |---|---|
+| 2026-11-17 | Roles & permissions: roles are data with editable built-in presets and custom roles; routes use `requirePermission`; own / team / everyone scopes; lockout and escalation guards; Roles & permissions page; `User.role` column dropped; 102 tests |
 | 2026-11-17 | Loading pass: every skeleton matches its page; spinners for small waits; filters stay on screen during refetch; payroll empty-state flash and correction-form time seeding fixed |
 | 2026-11-17 | Fixes round: My Corrections lists only your own requests (`mine=true`; CEO withdraw bug); maroon brand buttons + deep maroon sidebar with identity card; Punch clock redesign (green working, amber on a break); icons on every button; positions list (Settings) + system employee numbers `EMP-001` (Postgres sequence); Hours vs activity (work evidence) redesign; plain-language page names; 94 tests |
 | 2026-11-14 | Phases 7 and 8 closed: one read-all request for "Mark all read", exact unread count; progress corrected (overtime rate, aliases, Electron); `USER_GUIDE.md` written |

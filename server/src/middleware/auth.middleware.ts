@@ -44,7 +44,6 @@ export const authenticate = async (req: Request, _res: Response, next: NextFunct
       where: { id: payload.userId },
       select: {
         id: true,
-        role: true,
         isActive: true,
         mustChangePassword: true,
         employee: { select: { id: true } },
@@ -61,10 +60,9 @@ export const authenticate = async (req: Request, _res: Response, next: NextFunct
       return next(new AppError('You must change your password before continuing', 403, undefined, 'PASSWORD_CHANGE_REQUIRED'));
     }
 
-    // Role and employee come from the database, not the token.
+    // Employee and permissions come from the database, not the token.
     req.user = {
       userId: user.id,
-      role: user.role,
       employeeId: user.employee.id,
       roleId: user.appRole.id,
       grants: toGrants(user.appRole.permissions),
