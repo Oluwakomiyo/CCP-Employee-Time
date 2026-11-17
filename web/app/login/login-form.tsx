@@ -30,7 +30,10 @@ export function LoginForm() {
     setError(null);
     setPending(true);
     try {
-      const { user } = await api.post<{ user: Me }>("/auth/login", { email, password });
+      await api.post("/auth/login", { email, password });
+      // Cache the full profile (role + permissions) from /auth/me, not the slimmer login response:
+      // without permissions the menu and the home redirect stay empty until a reload.
+      const { user } = await api.get<{ user: Me }>("/auth/me");
       qc.setQueryData(meKey, user);
       router.replace(user.mustChangePassword ? "/change-password" : (safeNext(params.get("next")) ?? homeFor(user)));
     } catch (err) {
