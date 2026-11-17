@@ -34,7 +34,7 @@ export const NAV: { section: string; items: NavItem[] }[] = [
   {
     section: "My work",
     items: [
-      { href: "/today", label: "Today", icon: Timer, roles: ALL },
+      { href: "/today", label: "Punch clock", icon: Timer, roles: ALL },
       { href: "/my-time", label: "My time", icon: History, roles: ALL },
       { href: "/my-projects", label: "My projects", icon: FolderKanban, roles: ALL },
       { href: "/my-corrections", label: "My corrections", icon: FileClock, roles: ALL },

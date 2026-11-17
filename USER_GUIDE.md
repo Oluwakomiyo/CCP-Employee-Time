@@ -21,7 +21,7 @@ Times are always Nigerian time (Lagos).
 1. The CEO creates your account and gives you a **temporary password**.
 2. Go to the CCP Time address you were given (or open the CCP Time desktop app) and sign in with your work email and that password.
 3. You'll be asked to **choose your own password** straight away. It must be at least 10 characters and include a letter and a number. The checklist under the field turns green as you meet each rule.
-4. After that you land on your home screen: **Today** for employees, **Dashboard** for managers and the CEO.
+4. After that you land on your home screen: **Punch clock** for employees, **Dashboard** for managers and the CEO.
 
 ![The sign-in page](docs/guide/01-sign-in.png)
 
@@ -55,8 +55,8 @@ Click a notification to mark it read and go straight to the right page.
 ### The golden rule
 **Start work when you begin, end work when you stop.** Everything else (hours, averages, pay) is worked out from those two moments and the breaks in between. The clock runs on the server, so it doesn't matter which device you use. You can start on your phone and end on your computer.
 
-### Today: the punch clock
-Open **Today**.
+### Punch clock
+Open **Punch clock**.
 
 **To start work:**
 1. Choose the **project** you are working on. You only see projects you have been added to; if one is missing, ask your project manager.
