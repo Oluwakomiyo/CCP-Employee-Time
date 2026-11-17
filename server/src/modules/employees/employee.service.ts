@@ -1,5 +1,5 @@
 import bcrypt from 'bcryptjs';
-import { Prisma, EmploymentStatus, AuditAction } from '@prisma/client';
+import { Prisma, Role, EmploymentStatus, AuditAction } from '@prisma/client';
 import { prisma, DbClient } from '../../config/prisma';
 import { AppError } from '../../errors/AppError';
 import {
@@ -9,7 +9,8 @@ import {
   QueryEmployeesInput,
 } from './employee.schema';
 import { systemRoleKey } from '../../auth/permissions';
-import { AuthUser, can } from '../../auth/can';
+import { AuthUser, can, toGrants } from '../../auth/can';
+import { assertCanAssign } from '../roles/role.service';
 import { visibleEmployeeIds } from '../../utils/access';
 import { generateTemporaryPassword } from '../../utils/password';
 import { CURRENT_RATE, dayBefore } from './compensation';
@@ -185,12 +186,19 @@ export class EmployeeService {
    * Creates a User + Employee + Compensation record in a single transaction.
    * Locked to CEO_ADMIN only.
    */
-  async createEmployee(input: CreateEmployeeInput, actorUserId: string) {
+  async createEmployee(input: CreateEmployeeInput, actorUserId: string, actor?: AuthUser) {
     // Check for an email collision upfront; the employee number is issued below
     const existingUser = await prisma.user.findUnique({ where: { email: input.email } });
     if (existingUser) {
       throw AppError.conflict('An account with this email address already exists');
     }
+
+    // The chosen role must exist, and must not give more access than the creator has (unless they manage roles).
+    const target = input.roleId
+      ? await prisma.appRole.findUnique({ where: { id: input.roleId }, select: { presetOf: true, permissions: { select: { permission: true, scope: true } } } })
+      : await prisma.appRole.findUnique({ where: { key: systemRoleKey(input.role) }, select: { presetOf: true, permissions: { select: { permission: true, scope: true } } } });
+    if (!target) throw AppError.badRequest('Unknown role');
+    if (actor) assertCanAssign(actor, toGrants(target.permissions));
 
     // The system generates the temporary password; only its hash is stored (spec §5).
     const temporaryPassword = generateTemporaryPassword();
@@ -201,8 +209,8 @@ export class EmployeeService {
         data: {
           email: input.email,
           passwordHash,
-          role: input.role,
-          appRole: { connect: { key: systemRoleKey(input.role) } },
+          role: target?.presetOf ?? (input.roleId ? Role.EMPLOYEE : input.role),
+          appRole: input.roleId ? { connect: { id: input.roleId } } : { connect: { key: systemRoleKey(input.role) } },
           mustChangePassword: true,
         },
       });

@@ -39,7 +39,7 @@ export class EmployeeController {
 
   createEmployee = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { employee, temporaryPassword } = await employeeService.createEmployee(req.body, req.user!.userId);
+      const { employee, temporaryPassword } = await employeeService.createEmployee(req.body, req.user!.userId, req.user!);
 
       res.status(201).json({
         success: true,

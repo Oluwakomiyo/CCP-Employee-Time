@@ -23,6 +23,7 @@ Base path `/api/v1`. Envelope: `{ success: true, data, meta? }`, errors `{ succe
 - `GET/POST /projects`, `GET/PATCH/DELETE /projects/:id`, `POST /projects/:id/members`, `DELETE /projects/:id/members/:employeeId`
 - `GET/POST/PATCH /departments`
 - `GET/POST/PATCH /positions` (same rules as departments; the employee form picks from this list)
+- `GET /roles` (roles.manage or employees.manage), `GET /roles/catalog`, `POST /roles`, `PATCH /roles/:id`, `POST /roles/:id/reset`, `DELETE /roles/:id` (roles.manage); `PUT /roles/assign/:employeeId` (employees.manage, never beyond your own access). `/auth/me` returns `roleInfo` and `permissions`.
 
 ## Management reports
 - `GET /management/dashboard?from&to` (cards + charts), `GET /management/status` (live board)

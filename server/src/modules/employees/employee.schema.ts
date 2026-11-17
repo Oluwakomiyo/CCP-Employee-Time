@@ -5,6 +5,8 @@ import { EmploymentStatus, Role } from '@prisma/client';
 export const createEmployeeSchema = z.object({
   email: z.string().email('Valid email is required').trim().toLowerCase(),
   role: z.nativeEnum(Role).default(Role.EMPLOYEE),
+  // A role from Roles & permissions (system or custom). Wins over `role` when given.
+  roleId: z.string().uuid().optional(),
   firstName: z.string().min(1, 'First name is required').trim(),
   lastName: z.string().min(1, 'Last name is required').trim(),
   department: z.string().min(1, 'Department is required').trim(),

@@ -1,3 +1,4 @@
+import { toGrants } from '../../auth/can';
 import bcrypt from 'bcryptjs';
 import { AuditAction } from '@prisma/client';
 import { prisma } from '../../config/prisma';
@@ -164,6 +165,7 @@ export class AuthService {
         isActive: true,
         mustChangePassword: true,
         createdAt: true,
+        appRole: { select: { id: true, key: true, name: true, permissions: { select: { permission: true, scope: true } } } },
         employee: {
           select: {
             id: true,
@@ -183,7 +185,9 @@ export class AuthService {
       throw AppError.notFound('User not found');
     }
 
-    return user;
+    // The web builds its menu and buttons from these; the API still checks every request.
+    const { appRole, ...rest } = user;
+    return { ...rest, roleInfo: { id: appRole.id, key: appRole.key, name: appRole.name }, permissions: toGrants(appRole.permissions) };
   }
 
   async changePassword(userId: string, currentPass: string, newPass: string, ipAddress?: string, userAgent?: string) {

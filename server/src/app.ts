@@ -14,6 +14,7 @@ import { auditRouter } from './modules/audit/audit.routes';
 import { payrollRouter } from './modules/payroll/payroll.routes';
 import { departmentRouter } from './modules/departments/department.routes';
 import { positionRouter } from './modules/positions/position.routes';
+import { roleRouter } from './modules/roles/role.routes';
 import { managementRouter, myReportHandler } from './modules/reports/report.routes';
 import notificationRouter from './modules/notifications/notification.routes';
 import { activityController } from './modules/activity-monitoring/activity.controller';
@@ -79,6 +80,7 @@ export const createApp = (): Express => {
   app.use('/api/v1/payroll', payrollRouter);
   app.use('/api/v1/departments', departmentRouter);
   app.use('/api/v1/positions', positionRouter);
+  app.use('/api/v1/roles', roleRouter);
   app.use('/api/v1/management', managementRouter);
   
   app.use(notFoundHandler);
