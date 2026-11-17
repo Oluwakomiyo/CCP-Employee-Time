@@ -122,7 +122,7 @@ export function LiveSkeleton() {
     <div className={styles.layout} role="status" aria-label="Loading live status" aria-busy="true">
       <Block width="16rem" height="1.3125rem" radius="0.375rem" index={0} />
       <div className={styles.tableWrap}>
-        <TableSkeleton tall rows={6} columns={[{ grow: 1.4, kind: "avatar" }, { grow: 0.8, pill: true }, { grow: 1.2 }, { grow: 1.4 }, { grow: 1 }]} />
+        <TableSkeleton rows={6} columns={[{ grow: 1.4, kind: "avatar" }, { grow: 0.8, pill: true }, { grow: 1.2 }, { grow: 1.4 }, { grow: 1 }]} />
       </div>
     </div>
   );

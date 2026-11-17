@@ -58,7 +58,7 @@ export interface TableSkeletonProps {
  * same padding, gaps and dividers. At the table's own 620px breakpoint the
  * header folds into a strip of sort pills and rows into two-line stacks.
  */
-export function TableSkeleton({ columns, rows = 6, label, tall }: TableSkeletonProps & { tall?: boolean }) {
+export function TableSkeleton({ columns, rows = 6, label }: TableSkeletonProps) {
   return (
     <div className={styles.table} {...(label ? { role: "status", "aria-label": label, "aria-busy": true } : { "aria-hidden": true })}>
       <div className={styles.head} aria-hidden="true">
@@ -69,7 +69,7 @@ export function TableSkeleton({ columns, rows = 6, label, tall }: TableSkeletonP
         ))}
       </div>
       {Array.from({ length: rows }, (_, r) => (
-        <div className={`${styles.row} ${tall ? styles.tall : ""}`} key={r} aria-hidden="true">
+        <div className={styles.row} key={r} aria-hidden="true">
           {columns.map((c, i) => (
             <span key={i} className={styles.cell} style={{ flexGrow: c.grow ?? 1, flexBasis: 0 }}>
               <Cell c={c} r={r} i={i} last={i === columns.length - 1} />

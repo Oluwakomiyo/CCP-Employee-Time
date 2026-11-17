@@ -152,6 +152,11 @@ Seed logins (dev only, all `Password123!`): `ceo@example.com` (CEO), `manager@ex
 
 ---
 
+## Loading rules (2026-11-17)
+- **Skeleton** only for the first load of a big, predictable page (tables, dashboards, timesheets, evidence, detail pages). It must mirror the loaded layout (same columns, cards, headings); table rows are 52px, 6 rows.
+- **Spinner** (`components/loading/spinner.tsx`, appears after 250 ms) inside a frame already on screen: dialogs, drawers, tabs, small lists (settings), pickers.
+- **Refetch** after a filter, page or date change keeps the old rows on screen (`placeholderData: keepPreviousData`), dimmed with `data-stale`, plus `<InlineBusy>` in the toolbar. A different person or project never shows the old one's numbers (`keepForSameSubject` in `lib/query.ts`).
+
 ## Known gaps / follow-ups
 - **Electron: no activity tracking (decided).** The desktop agent is the only telemetry source; install it beside Electron with a device key from Settings.
 - **Notification bell:** "Mark unread" and "Dismiss" come with the Arc panel but have no server counterpart, so they revert on the next poll. Add `POST /me/notifications/:id/unread` and a dismiss flag if the owner wants them.
@@ -163,6 +168,7 @@ Seed logins (dev only, all `Password123!`): `ceo@example.com` (CEO), `manager@ex
 ## Session log
 | Date | Work |
 |---|---|
+| 2026-11-17 | Loading pass: every skeleton matches its page; spinners for small waits; filters stay on screen during refetch; payroll empty-state flash and correction-form time seeding fixed |
 | 2026-11-17 | Fixes round: My Corrections lists only your own requests (`mine=true`; CEO withdraw bug); maroon brand buttons + deep maroon sidebar with identity card; Punch clock redesign (green working, amber on a break); icons on every button; positions list (Settings) + system employee numbers `EMP-001` (Postgres sequence); Hours vs activity (work evidence) redesign; plain-language page names; 96 tests |
 | 2026-11-14 | Phases 7 and 8 closed: one read-all request for "Mark all read", exact unread count; progress corrected (overtime rate, aliases, Electron); `USER_GUIDE.md` written |
 | 2026-11-14 | Review of phases 7–10: rates saved 100× too high fixed (MoneyInput kobo), duplicate stale job in compose fixed, Employees/Projects UI improved, `hoursWorked` on the project list; 89 tests |

@@ -116,7 +116,7 @@ export function EmployeeList() {
 
       {list.isPending ? (
         <div className={styles.tableWrap}>
-          <TableSkeleton tall rows={10} columns={[{ grow: 1.6, kind: "avatar" }, { grow: 0.6 }, { grow: 1.4 }, { grow: 0.8 }, { grow: 0.6, pill: true }, ...(ceo ? [{ grow: 0.8 }] : [])]} />
+          <TableSkeleton rows={6} columns={[{ grow: 1.6, kind: "avatar" }, { grow: 0.6 }, { grow: 1.4 }, { grow: 0.8 }, { grow: 0.6, pill: true }, ...(ceo ? [{ grow: 0.8 }] : [])]} />
         </div>
       ) : list.isError ? (
         <Alert tone="danger" title="Could not load employees">

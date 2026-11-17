@@ -118,7 +118,7 @@ export function ProjectList() {
 
       {list.isPending ? (
         <div className={styles.tableWrap}>
-          <TableSkeleton tall rows={10} columns={[{ grow: 1.6, kind: "twoLine" }, { grow: 0.7, pill: true }, { grow: 1.2, kind: "progress" }, { grow: 0.4 }, { grow: 0.7 }]} />
+          <TableSkeleton rows={6} columns={[{ grow: 1.6, kind: "twoLine" }, { grow: 0.7, pill: true }, { grow: 1.2, kind: "progress" }, { grow: 0.4 }, { grow: 0.7 }]} />
         </div>
       ) : list.isError ? (
         <Alert tone="danger" title="Could not load projects">
