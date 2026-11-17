@@ -287,24 +287,32 @@ Decide what each role can see and do (**Company → Roles & permissions**).
 - **Change someone's role** on their page in the **Employee directory** (Account section). It takes effect on their next click.
 - Safety: the CEO / Admin role always keeps "Manage roles and permissions", at least one active person must keep it, and someone who adds people can't hand out more access than they have. Every change is in **Change history**.
 
+### Rate calculator
+The **Rate calculator** button sits at the bottom right of every page (only for people who can see pay, the CEO / Admin by default).
+- **How far it goes:** type the amount allocated and the team (each role, how many people, their hourly rate). It shows how many working days and person-hours the money buys, the team's cost per day and hour, the end date if you give a start date, and the reserve held back.
+- **What it costs:** type the working days instead; it shows the cost, the budget that needs, and whether you are over or under your budget.
+- Hours above 8 a day count as overtime at the multiplier you set, the same rule as payroll.
+- The figures are references only; nothing is saved until you press **Use this plan**, which walks you through four steps (project, plan, team, review) to create a new project or update an existing one with the hours, dates and a budget note.
+
 ### Audit log
 You see every action by everyone: sign-ins, clock-ins, edits, rate changes, approvals, payroll runs and device changes, each with before-and-after details.
 
 ---
 
-## The desktop app and the activity agent
+## The CCP Time desktop app
 
-There are two separate desktop programs:
+Install the **CCP Time desktop app** on each work computer. It is the same app in its own window, with a tray icon (closing the window keeps it running; quit from the tray menu).
 
-| Program | What it does | Needed? |
-|---|---|---|
-| **CCP Time desktop app** | The same web app in its own window, with a tray icon. Closing the window keeps it in the tray; quit from the tray menu. | Optional: the browser works just as well. |
-| **Activity agent** (`desktop-agent`) | Runs quietly in the background and reports, once a minute, whether the computer is in use. It never records screens, keys or files. | Only if you want Work evidence for that computer. |
+**How a computer gets added (no setup needed):**
+1. Install the app and sign in as usual.
+2. Within a minute the app registers that computer to you. It appears in **Company settings → Desktop devices** as *Added by the desktop app*.
+3. From then on it reports, once a minute, only whether the computer is **active or idle**. It never records screens, keys, files or websites. The tray menu always shows whether reporting is on.
 
-**To set up the activity agent on a computer:**
-1. The CEO registers the device in **Settings → Desktop devices** and copies the key.
-2. On that computer, copy `config.example.json` to `config.json` in the agent folder and fill in the server address, the device identifier (exactly as registered) and the key.
-3. Start the agent. Activity appears in Work evidence for days that person works.
+**For admins:**
+- **Revoke** a lost, sold or replaced computer: it stops reporting at once.
+- **Reinstate** it if that was a mistake: the app registers again by itself.
+- A computer belongs to one person. If someone else signs in on it, it keeps reporting for its owner; revoke it first to hand it over.
+- **Register manually** is still there for a computer that can't run the app (it uses the separate `desktop-agent` program and a key you copy into its settings file).
 
 ---
 

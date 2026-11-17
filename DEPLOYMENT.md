@@ -95,3 +95,11 @@ It prints a temporary password once. **Never run `prisma db seed` in production*
 - **Check the rate limit sees real visitors.** Sign in from two different networks; neither should be blocked by the other's attempts. If logins start failing with "too many requests" for everyone at once, `TRUST_PROXY_HOPS` is too low.
 - **Back up the database nightly:** `server/scripts/backup.sh`, or your host's built-in backups.
 - **Desktop agents** point `apiUrl` at `https://<api-address>/api/v1`.
+
+## Desktop app installers
+
+The CCP Time desktop app (`electron/`) registers each computer by itself when someone signs in, so there is nothing to configure per machine.
+
+- Production address: set `"ccp": { "webUrl": ... }` in `electron/package.json` (defaults to `https://ccp-employee-time.vercel.app`).
+- Build on the matching OS: `cd electron && npm install && npm run dist:win` (Windows `.exe`), `npm run dist:mac` (`.dmg`) or `npm run dist:linux` (AppImage). Output goes to `electron/dist/`.
+- The installers are not code-signed yet, so Windows SmartScreen and macOS Gatekeeper warn on first run. Signing needs a code-signing certificate (Windows) and an Apple Developer account (macOS).

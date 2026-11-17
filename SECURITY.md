@@ -8,3 +8,9 @@
 - **Role safety**: the CEO / Admin role always keeps `roles.manage`; at least one active user must hold it (`LAST_ROLE_ADMIN`); without `roles.manage` nobody can assign a role with more access than their own.
 - **Audit**: every mutation writes an `AuditLog` row in the same transaction; snapshots are scrubbed of hashes; the table is append-only.
 - **Transport**: strict CORS allow-list, Helmet headers; the desktop agent refuses plain HTTP except to localhost.
+
+## Desktop app and device keys
+- The desktop app enrolls its computer for the signed-in person (`POST /activity/devices/enroll`, needs `time.track`). It sends a SHA-256 of the OS machine id, never the raw id.
+- Each device key is shown once and stored by the app encrypted with the OS keychain (`safeStorage`); the server keeps only its SHA-256 and compares in constant time.
+- A computer registered to someone else is refused (`DEVICE_OWNED`); a revoked one stays off until an admin reinstates it (`DEVICE_REVOKED`). Enroll, register, revoke and reinstate are all audited.
+- Reported data: active/idle state, idle seconds and timestamps. No screenshots, keystrokes, window titles or files.

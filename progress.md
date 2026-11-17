@@ -158,7 +158,7 @@ Seed logins (dev only, all `Password123!`): `ceo@example.com` (CEO), `manager@ex
 - **Refetch** after a filter, page or date change keeps the old rows on screen (`placeholderData: keepPreviousData`), dimmed with `data-stale`, plus `<InlineBusy>` in the toolbar. A different person or project never shows the old one's numbers (`keepForSameSubject` in `lib/query.ts`).
 
 ## Known gaps / follow-ups
-- **Electron: no activity tracking (decided).** The desktop agent is the only telemetry source; install it beside Electron with a device key from Settings.
+- **Desktop app reports activity (decided 2026-11-17, reversing the earlier choice).** It enrolls its computer on sign-in; `desktop-agent/` remains for manual setups. Installers are unsigned until the owner gets signing certificates.
 - **Notification bell:** "Mark unread" and "Dismiss" come with the Arc panel but have no server counterpart, so they revert on the next poll. Add `POST /me/notifications/:id/unread` and a dismiss flag if the owner wants them.
 - Payroll: 8h/day overtime threshold is hard-coded (no policy yet). Days with no rate are skipped and returned as `daysWithoutRate`.
 - Dashboard "hours today" counts the date's segments; employees with no visible projects show only themselves to a PM.
@@ -168,6 +168,7 @@ Seed logins (dev only, all `Password123!`): `ceo@example.com` (CEO), `manager@ex
 ## Session log
 | Date | Work |
 |---|---|
+| 2026-11-17 | Desktop app registers its computer on sign-in (enroll API, reinstate, keychain storage, tray status, electron-builder installers); admin rate calculator tile with "Use this plan"; sign-in now loads permissions at once (blank screen fixed); 105 tests |
 | 2026-11-17 | Roles & permissions: roles are data with editable built-in presets and custom roles; routes use `requirePermission`; own / team / everyone scopes; lockout and escalation guards; Roles & permissions page; `User.role` column dropped; 102 tests |
 | 2026-11-17 | Loading pass: every skeleton matches its page; spinners for small waits; filters stay on screen during refetch; payroll empty-state flash and correction-form time seeding fixed |
 | 2026-11-17 | Fixes round: My Corrections lists only your own requests (`mine=true`; CEO withdraw bug); maroon brand buttons + deep maroon sidebar with identity card; Punch clock redesign (green working, amber on a break); icons on every button; positions list (Settings) + system employee numbers `EMP-001` (Postgres sequence); Hours vs activity (work evidence) redesign; plain-language page names; 94 tests |
