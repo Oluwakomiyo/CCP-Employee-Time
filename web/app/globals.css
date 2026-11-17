@@ -12,6 +12,19 @@
   --control-on: #922d36;
   --control-thumb-on: #fff;
   --control-glyph: #fff;
+  /* Brand fill for primary buttons, and the deep maroon of the sidebar (from the CCP logo). */
+  --brand: #8c1d2a;
+  --brand-foreground: #fff;
+  --brand-ink: #2b0a10;
+  --brand-ink-raised: rgb(255 255 255 / 0.07);
+  --brand-ink-text: rgb(255 255 255 / 0.72);
+  --brand-ink-muted: rgb(255 255 255 / 0.45);
+  --brand-ink-active: #a8293a;
+  /* Time-tracking states: running, paused (break), stopped. */
+  --state-working: #15803d;
+  --state-working-subtle: rgb(21 128 61 / 0.1);
+  --state-paused: #b45309;
+  --state-paused-subtle: rgb(217 119 6 / 0.12);
 }
 :root[data-theme="dark"][data-accent="ccp"] {
   --accent: #f08c95;
@@ -22,6 +35,15 @@
   --control-thumb-on: #fff;
   --control-glyph: #fff;
   --control-fill: #c4505b;
+  --brand: #b3303f;
+  --brand-foreground: #fff;
+  --brand-ink: #1c060a;
+  --brand-ink-raised: rgb(255 255 255 / 0.06);
+  --brand-ink-active: #b3303f;
+  --state-working: #4ade80;
+  --state-working-subtle: rgb(74 222 128 / 0.12);
+  --state-paused: #fbbf24;
+  --state-paused-subtle: rgb(251 191 36 / 0.14);
 }
 
 * {
