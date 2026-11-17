@@ -15,7 +15,7 @@ import { rangeFor } from "@/lib/dashboard";
 import { fullName, useEmployees } from "@/lib/employees";
 import { lagosDay } from "@/lib/history";
 import { useProjectReport, useProjects } from "@/lib/projects";
-import { isCeo } from "@/lib/types";
+import { can } from "@/lib/permissions";
 import styles from "../manage.module.css";
 
 type Subject = "employee" | "project";
@@ -28,7 +28,8 @@ const defaultRange = (): DateRange => {
 
 export function ReportsView() {
   const me = useMe();
-  const ceo = isCeo(me.data?.role);
+  const ceo = can(me.data, "compensation.view"); // money in project reports
+  const allProjects = can(me.data, "reports.view", "ALL");
   const [subject, setSubject] = useState<Subject>("employee");
   const [employeeId, setEmployeeId] = useState("");
   const [projectId, setProjectId] = useState("");
@@ -37,7 +38,7 @@ export function ReportsView() {
   const to = lagosDay(range.end);
 
   const employees = useEmployees({ search: "", status: "ACTIVE", page: 1, limit: 100 });
-  const projects = useProjects({ search: "", status: null, page: 1, mine: !ceo, limit: 100 });
+  const projects = useProjects({ search: "", status: null, page: 1, mine: !allProjects, limit: 100 });
 
   const employee = (employees.data?.data ?? []).find((e) => e.id === employeeId);
   const project = (projects.data?.data ?? []).find((p) => p.id === projectId);

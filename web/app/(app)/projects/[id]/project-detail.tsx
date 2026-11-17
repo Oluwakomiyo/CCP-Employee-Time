@@ -25,13 +25,15 @@ import { useMe } from "@/lib/auth";
 import { fullName, useEmployees } from "@/lib/employees";
 import { PROJECT_STATUSES, STATUS_TONE, useEstimate, useProjectMutations, useProjectReport, type ProjectReport } from "@/lib/projects";
 import { formatDate, formatTime, labelOf, LOCATIONS } from "@/lib/time";
-import { isCeo } from "@/lib/types";
+import { can } from "@/lib/permissions";
 import { ProjectForm } from "../project-form";
 import styles from "../../manage.module.css";
 
 export function ProjectDetail({ id }: { id: string }) {
   const me = useMe();
-  const ceo = isCeo(me.data?.role);
+  // "ceo" here means: may see money (labour cost). Appointing leads is its own permission.
+  const ceo = can(me.data, "compensation.view");
+  const canLead = can(me.data, "projects.appointLead");
   const report = useProjectReport(id);
   const [editing, setEditing] = useState(false);
 
@@ -76,7 +78,7 @@ export function ProjectDetail({ id }: { id: string }) {
           <Overview r={r} ceo={ceo} />
         </TabsContent>
         <TabsContent value="team">
-          <Team r={r} ceo={ceo} />
+          <Team r={r} canLead={canLead} />
         </TabsContent>
         <TabsContent value="report">
           <ProjectBreakdown r={r} ceo={ceo} />
@@ -170,7 +172,7 @@ function Overview({ r, ceo }: { r: ProjectReport; ceo: boolean }) {
   );
 }
 
-function Team({ r, ceo }: { r: ProjectReport; ceo: boolean }) {
+function Team({ r, canLead }: { r: ProjectReport; canLead: boolean }) {
   const { addMember, removeMember } = useProjectMutations();
   const people = useEmployees({ search: "", status: "ACTIVE", page: 1, limit: 100 });
   const [employeeId, setEmployeeId] = useState("");
@@ -207,7 +209,7 @@ function Team({ r, ceo }: { r: ProjectReport; ceo: boolean }) {
                   <Link href={`/employees/${m.id}`}>{fullName(m)}</Link> <span className={styles.muted}>{m.department}</span>{" "}
                   {m.isProjectLead && <Badge tone="info">Lead</Badge>}
                 </span>
-                {(ceo || !m.isProjectLead) && (
+                {(canLead || !m.isProjectLead) && (
                   <ConfirmMorph
                     label="Remove"
                     prompt={`Remove ${m.firstName}?`}
@@ -232,7 +234,7 @@ function Team({ r, ceo }: { r: ProjectReport; ceo: boolean }) {
           </Alert>
         )}
         <Combobox label="Employee" placeholder={people.isPending ? "Loading people…" : "Search by name"} disabled={people.isPending} options={options} value={employeeId} onValueChange={setEmployeeId} emptyMessage="Nobody else to add" />
-        {ceo && <Switch label="Make them a project lead" checked={lead} onCheckedChange={setLead} />}
+        {canLead && <Switch label="Make them a project lead" checked={lead} onCheckedChange={setLead} />}
         <ActionButton icon={<UserPlus size={17} aria-hidden="true" />} label="Add to project" pendingLabel="Adding" successLabel="Added" disabled={!employeeId} onAction={add} onActionError={() => undefined} />
       </section>
     </div>

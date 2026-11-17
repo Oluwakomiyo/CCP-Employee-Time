@@ -1,5 +1,6 @@
 "use client";
 
+import { can } from "./permissions";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { api } from "./api";
@@ -26,5 +27,7 @@ export const useLogout = () => {
 };
 
 /** Where each role lands after signing in. */
-export const homeFor = (me: Pick<Me, "role" | "mustChangePassword">) =>
-  me.mustChangePassword ? "/change-password" : me.role === "EMPLOYEE" ? "/today" : "/dashboard";
+/** Where someone lands: the overview if they can see it, otherwise the punch clock. Without the
+ *  permission list (the login response), "/" decides once /auth/me has loaded. */
+export const homeFor = (me: Pick<Me, "mustChangePassword" | "permissions">) =>
+  me.mustChangePassword ? "/change-password" : !me.permissions ? "/" : can(me, "dashboard.view") ? "/dashboard" : "/today";

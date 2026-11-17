@@ -20,7 +20,7 @@ import { useMe } from "@/lib/auth";
 import { Progress } from "@/components/arc/progress/progress";
 import { PROJECT_STATUSES, STATUS_TONE, useProjects, type ProjectStatus } from "@/lib/projects";
 import { formatDate } from "@/lib/time";
-import { isCeo } from "@/lib/types";
+import { can } from "@/lib/permissions";
 import { ProjectForm } from "./project-form";
 import styles from "../manage.module.css";
 
@@ -46,7 +46,7 @@ export function ProjectList() {
   const [page, setPage] = useState(1);
   const [creating, setCreating] = useState(false);
   // PMs work with the projects they lead; the CEO sees all of them.
-  const list = useProjects({ search, status: status === "ALL" ? null : (status as ProjectStatus), page, mine: !!me.data && !isCeo(me.data.role) });
+  const list = useProjects({ search, status: status === "ALL" ? null : (status as ProjectStatus), page, mine: !!me.data && !can(me.data, "projects.view", "ALL") });
 
   const rows: Row[] = useMemo(
     () =>

@@ -19,7 +19,7 @@ import { errorMessage } from "@/lib/api";
 import { useMe } from "@/lib/auth";
 import { formatMoney, fullName, ROLES, useEmployees, type EmploymentStatus } from "@/lib/employees";
 import { sentenceCase } from "@/lib/time";
-import { isCeo } from "@/lib/types";
+import { can } from "@/lib/permissions";
 import { EmployeeForm } from "./employee-form";
 import { TempPasswordDialog } from "./temp-password-dialog";
 import styles from "../manage.module.css";
@@ -35,7 +35,8 @@ type Row = Record<string, unknown> & { id: string; name: string; email: string; 
 
 export function EmployeeList() {
   const me = useMe();
-  const ceo = isCeo(me.data?.role);
+  const ceo = can(me.data, "compensation.view"); // pay rate column
+  const canAdd = can(me.data, "employees.manage");
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("ACTIVE");
   const [page, setPage] = useState(1);
@@ -51,7 +52,7 @@ export function EmployeeList() {
         email: e.user.email,
         code: e.employeeCode,
         department: `${e.department} · ${e.position}`,
-        role: ROLES.find((r) => r.value === e.user.role)?.label ?? e.user.role,
+        role: e.user.appRole?.name ?? ROLES.find((r) => r.value === e.user.role)?.label ?? e.user.role,
         status: e.status,
         rate: e.compensation ? `${formatMoney(e.compensation.baseHourlyRate, e.compensation.currency)}/h` : "–",
       })),
@@ -107,7 +108,7 @@ export function EmployeeList() {
           />
           <InlineBusy active={list.isPlaceholderData} />
         </div>
-        {ceo && (
+        {canAdd && (
           <Button variant="primary" onClick={() => setAdding(true)}>
             <UserPlus size={16} aria-hidden="true" /> Add employee
           </Button>

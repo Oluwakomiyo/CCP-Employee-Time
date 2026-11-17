@@ -111,6 +111,7 @@ export class EmployeeService {
               role: true,
               isActive: true,
               mustChangePassword: true,
+              appRole: { select: { id: true, name: true } },
             },
           },
           // Compensation ONLY for CEO_ADMIN (spec §4)
@@ -154,6 +155,7 @@ export class EmployeeService {
             email: true,
             role: true,
             isActive: true,
+            appRole: { select: { id: true, name: true } },
           },
         },
         compensations: isCeo ? currentRateSelect : false,

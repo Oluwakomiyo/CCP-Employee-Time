@@ -18,7 +18,7 @@ import { errorMessage } from "@/lib/api";
 import { AUDIT_ACTIONS, useAuditLog, type AuditEntry } from "@/lib/audit";
 import { useMe } from "@/lib/auth";
 import { lagosDay } from "@/lib/history";
-import { isCeo } from "@/lib/types";
+import { can } from "@/lib/permissions";
 import styles from "../manage.module.css";
 
 const when = (iso: string) =>
@@ -75,7 +75,9 @@ export function AuditLog() {
 
   return (
     <div className={styles.layout}>
-      {me.data && !isCeo(me.data.role) && <p className={styles.hint}>You see the changes you made yourself.</p>}
+      {me.data && !can(me.data, "audit.view", "ALL") && (
+        <p className={styles.hint}>{can(me.data, "audit.view", "TEAM") ? "You see changes made by you and the people on projects you lead." : "You see the changes you made yourself."}</p>
+      )}
       <div className={styles.filters}>
         <Select
           label="Action"

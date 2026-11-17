@@ -14,13 +14,12 @@ import { NotificationInbox } from "./notification-inbox";
 import { navFor, routeFor } from "./nav";
 import styles from "./app-shell.module.css";
 
-const ROLE_LABEL = { CEO_ADMIN: "CEO / Admin", PROJECT_MANAGER: "Project manager", EMPLOYEE: "Employee" } as const;
 
 function NavLinks({ me, onNavigate }: { me: Me; onNavigate?: () => void }) {
   const pathname = usePathname();
   return (
     <>
-      {navFor(me.role).map((group) => (
+      {navFor(me).map((group) => (
         <div key={group.section} className={styles.section}>
           <span className={styles.sectionLabel}>{group.section}</span>
           {group.items.map(({ href, label, icon: Icon }) => {
@@ -61,7 +60,7 @@ export function AppShell({ me, children }: { me: Me; children: React.ReactNode }
           </span>
         </Link>
         <div className={styles.identity}>
-          <span className={styles.identityRole}>{ROLE_LABEL[me.role]}</span>
+          <span className={styles.identityRole}>{me.roleInfo?.name}</span>
           <span className={styles.identityName}>{name}</span>
           {me.employee && <span className={styles.identityCode}>{me.employee.employeeCode}</span>}
         </div>
@@ -93,9 +92,9 @@ export function AppShell({ me, children }: { me: Me; children: React.ReactNode }
             <span className={styles.topbarTitle}>{routeFor(pathname)?.label ?? "CCP Time"}</span>
           </div>
           <div className={styles.topbarRight}>
-            <NotificationInbox role={me.role} />
+            <NotificationInbox me={me} />
             <UserMenu
-              user={{ name, email: me.email, plan: ROLE_LABEL[me.role] }}
+              user={{ name, email: me.email, plan: me.roleInfo?.name ?? "" }}
               theme={preference}
               onThemeChange={setPreference}
               items={[

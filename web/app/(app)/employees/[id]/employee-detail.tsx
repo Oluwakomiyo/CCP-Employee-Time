@@ -26,7 +26,7 @@ import { formatDate, sentenceCase } from "@/lib/time";
 import { rangeFor, type DashboardRange } from "@/lib/dashboard";
 import { lagosDay } from "@/lib/history";
 import { formatMoney, fullName, ROLES, koboToNaira, useCompensation, useEmployee, useEmployeeMutations, useEmployeeReport, type Employee } from "@/lib/employees";
-import { isCeo } from "@/lib/types";
+import { can } from "@/lib/permissions";
 import { EmployeeForm } from "../employee-form";
 import { TempPasswordDialog } from "../temp-password-dialog";
 import styles from "../../manage.module.css";
@@ -40,7 +40,8 @@ const RANGES = [
 
 export function EmployeeDetail({ id }: { id: string }) {
   const me = useMe();
-  const ceo = isCeo(me.data?.role);
+  const ceo = can(me.data, "compensation.view"); // pay tab and rates
+  const manage = can(me.data, "employees.manage");
   const employee = useEmployee(id);
   const [editing, setEditing] = useState(false);
 
@@ -67,12 +68,12 @@ export function EmployeeDetail({ id }: { id: string }) {
             <Badge tone={STATUS_TONE[e.status]} dot>
               {sentenceCase(e.status)}
             </Badge>
-            <Badge tone="neutral">{ROLES.find((r) => r.value === e.user.role)?.label}</Badge>
+            <Badge tone="neutral">{e.user.appRole?.name ?? ROLES.find((r) => r.value === e.user.role)?.label}</Badge>
             {e.user.mustChangePassword && <Badge tone="info">Must set a new password</Badge>}
           </>
         }
         actions={
-          ceo && (
+          manage && (
             <Button variant="secondary" onClick={() => setEditing(true)}>
               <Pencil size={16} aria-hidden="true" /> Edit
             </Button>
@@ -87,7 +88,7 @@ export function EmployeeDetail({ id }: { id: string }) {
           {ceo && <TabsTrigger value="pay">Compensation</TabsTrigger>}
         </TabsList>
         <TabsContent value="overview">
-          <Overview employee={e} ceo={ceo} self={me.data?.employee?.id === e.id} />
+          <Overview employee={e} ceo={ceo} manage={manage} self={me.data?.employee?.id === e.id} />
         </TabsContent>
         <TabsContent value="report">
           <Report id={e.id} />
@@ -106,7 +107,7 @@ export function EmployeeDetail({ id }: { id: string }) {
   );
 }
 
-function Overview({ employee: e, ceo, self }: { employee: Employee; ceo: boolean; self: boolean }) {
+function Overview({ employee: e, ceo, manage, self }: { employee: Employee; ceo: boolean; manage: boolean; self: boolean }) {
   const { update, deactivate, resetPassword } = useEmployeeMutations();
   const [password, setPassword] = useState<string | null>(null);
   const active = e.status === "ACTIVE";
@@ -166,7 +167,7 @@ function Overview({ employee: e, ceo, self }: { employee: Employee; ceo: boolean
         )}
       </section>
 
-      {ceo && !self && (
+      {manage && !self && (
         <section className={styles.card} aria-labelledby="account">
           <h2 id="account">Account</h2>
           <p className={styles.hint}>

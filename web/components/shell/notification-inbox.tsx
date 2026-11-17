@@ -4,7 +4,8 @@ import { useRef } from "react";
 import { useRouter } from "next/navigation";
 import { NotificationCenter, type NotificationItem } from "@/components/arc/notification-center/notification-center";
 import { useNotificationMutations, useNotifications, type Notification, type NotificationType } from "@/lib/notifications";
-import type { Role } from "@/lib/types";
+import type { Me } from "@/lib/types";
+import { can } from "@/lib/permissions";
 
 const TONE: Record<NotificationType, "info" | "success" | "warning"> = {
   MISSING_CLOCK_OUT: "warning",
@@ -26,16 +27,17 @@ const whenOf = (iso: string) => {
 };
 
 /** Where one notification leads. Correction reviews go to reviewers, everyone else to their own corrections. */
-const targetFor = (n: Notification, role: Role): string | null => {
+const targetFor = (n: Notification, reviewer: boolean): string | null => {
   const data = n.data ?? {};
-  if (data.correctionId) return role === "EMPLOYEE" ? "/my-corrections" : "/corrections";
+  if (data.correctionId) return reviewer ? "/corrections" : "/my-corrections";
   if (data.workDayId) return `/my-corrections?workDayId=${data.workDayId}`;
   if (data.projectId) return "/my-projects";
   return null;
 };
 
 /** Bell in the top bar: polls the inbox, marks items read, deep-links from their payload. */
-export function NotificationInbox({ role }: { role: Role }) {
+export function NotificationInbox({ me }: { me: Me }) {
+  const reviewer = can(me, "corrections.review", "TEAM");
   const router = useRouter();
   const inbox = useNotifications();
   const { markRead, markAllRead } = useNotificationMutations();
@@ -55,7 +57,7 @@ export function NotificationInbox({ role }: { role: Role }) {
     const original = items.find((n) => n.id === item.id);
     if (!original) return;
     pendingIds.current.push(original.id);
-    const target = targetFor(original, role);
+    const target = targetFor(original, reviewer);
     if (target) pendingTargets.current.push(target);
     if (flushTimer.current) clearTimeout(flushTimer.current);
     flushTimer.current = setTimeout(() => {

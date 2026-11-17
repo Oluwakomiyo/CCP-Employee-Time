@@ -26,7 +26,7 @@ export interface Employee {
   position: string;
   status: EmploymentStatus;
   hireDate: string;
-  user: { id: string; email: string; role: Role; isActive: boolean; mustChangePassword?: boolean };
+  user: { id: string; email: string; role: Role; isActive: boolean; mustChangePassword?: boolean; appRole?: { id: string; name: string } };
   compensation?: Rate | null;
   projectMemberships?: { id: string; isProjectLead: boolean; project: { id: string; code: string; name: string; isActive: boolean } }[];
 }

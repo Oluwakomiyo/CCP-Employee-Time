@@ -6,7 +6,7 @@ import { ShieldOff } from "lucide-react";
 import { EmptyState } from "@/components/arc/empty-state/empty-state";
 import { AppShell } from "@/components/shell/app-shell";
 import { ShellSkeleton } from "@/components/shell/shell-skeleton";
-import { routeFor } from "@/components/shell/nav";
+import { canOpen, routeFor } from "@/components/shell/nav";
 import { useMe } from "@/lib/auth";
 
 /** Signed-in area: loads the user, enforces the first-login password change, renders the shell. */
@@ -25,7 +25,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   const route = routeFor(pathname);
-  const allowed = !route || route.roles.includes(me.role);
+  const allowed = !route || canOpen(me, route);
 
   return (
     <AppShell me={me}>

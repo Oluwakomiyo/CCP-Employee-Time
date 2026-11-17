@@ -12,7 +12,6 @@ import { useMe } from "@/lib/auth";
 import { RULES } from "@/app/change-password/change-password-form";
 import styles from "./profile.module.css";
 
-const ROLE_LABEL = { CEO_ADMIN: "CEO / Admin", PROJECT_MANAGER: "Project manager", EMPLOYEE: "Employee" } as const;
 
 export function ProfileDetails() {
   const { data: me, isPending, isError, error, refetch } = useMe();
@@ -63,7 +62,7 @@ export function ProfileDetails() {
 
   return (
     <div className={styles.layout}>
-      <Card title={name} description={me.email} meta={ROLE_LABEL[me.role]}>
+      <Card title={name} description={me.email} meta={me.roleInfo?.name}>
         {me.employee && (
           <dl className={styles.details}>
             <div>
