@@ -42,10 +42,10 @@
   background: var(--surface-muted);
 }
 
+/* Selected role: a light tint of the brand colour instead of a stripe. */
 .roleButton[aria-current="true"] {
-  border-color: var(--border);
-  background: var(--surface);
-  box-shadow: inset 3px 0 0 var(--brand, var(--accent));
+  border-color: color-mix(in oklab, var(--accent) 22%, transparent);
+  background: var(--accent-subtle);
 }
 
 .roleName {
