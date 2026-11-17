@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { api } from "./api";
 import { lagosDay } from "./history";
 
@@ -49,6 +49,7 @@ export const useMyReport = (from?: string, to?: string) =>
       const q = p.toString();
       return api.get<MyReport>(`/me/report${q ? `?${q}` : ""}`);
     },
+    placeholderData: keepPreviousData,
   });
 
 export { lagosDay };

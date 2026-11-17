@@ -7,6 +7,7 @@ import { Card } from "@/components/arc/card/card";
 import DateRangePicker, { type DateRange } from "@/components/arc/date-range-picker/date-range-picker";
 import EmptyState from "@/components/arc/empty-state/empty-state";
 import { MyProjectsSkeleton } from "./my-projects-skeleton";
+import { InlineBusy } from "@/components/loading/spinner";
 import Progress from "@/components/arc/progress/progress";
 import { errorMessage } from "@/lib/api";
 import { formatHours } from "@/lib/time";
@@ -68,8 +69,11 @@ export function MyProjectsList() {
 
   return (
     <div className={styles.layout}>
-      <DateRangePicker value={range} onChange={setRange} label="Hours range" />
-      <dl className={styles.summary}>
+      <div className={styles.rangeRow}>
+        <DateRangePicker value={range} onChange={setRange} label="Hours range" />
+        <InlineBusy active={report.isPlaceholderData} />
+      </div>
+      <dl className={styles.summary} data-stale={report.isPlaceholderData} aria-busy={report.isPlaceholderData}>
         <div className={styles.stat}>
           <dt>Projects</dt>
           <dd>{list.length}</dd>
@@ -91,7 +95,7 @@ export function MyProjectsList() {
       {list.length === 0 ? (
         <EmptyState title="No projects yet" description="You are not assigned to any project. Ask your manager to add you." />
       ) : (
-        <div className={styles.grid}>
+        <div className={styles.grid} data-stale={report.isPlaceholderData}>
           {list.map((p) => (
             <ProjectCard key={p.id} project={p} hours={byId.get(p.id) ?? 0} />
           ))}

@@ -35,11 +35,15 @@ export function MyProjectsSkeleton() {
                 <Block width="9rem" height="1.125rem" radius="0.25rem" index={12 + c * 5} />
                 <Block width="100%" height={7} radius="99px" index={13 + c * 5} />
               </span>
-              <span className={styles.cardFoot}>
-                <Block width="6rem" height="1.125rem" radius="0.25rem" index={14 + c * 5} />
-                <Block shape="pill" width="4rem" height={24} />
-              </span>
             </div>
+            {/* Card footer: byline (team size, then "Led by ...") and the status badge. */}
+            <span className={styles.cardFoot}>
+              <span className={styles.progressSkeleton}>
+                <Block width="6rem" height="1.125rem" radius="0.25rem" index={14 + c * 5} />
+                <Block width="9rem" height="1.125rem" radius="0.25rem" index={15 + c * 5} />
+              </span>
+              <Block shape="pill" width="4rem" height={24} />
+            </span>
           </div>
         ))}
       </div>
