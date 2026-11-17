@@ -13,6 +13,8 @@ import { HoldToConfirm } from "@/components/arc/hold-to-confirm/hold-to-confirm"
 import { MetricCard } from "@/components/arc/metric-card/metric-card";
 import SortableDataTable, { type DataColumn } from "@/components/arc/sortable-data-table/sortable-data-table";
 import { TableSkeleton } from "@/components/loading/table-skeleton";
+import { Block } from "@/components/loading/skeleton-block";
+import { InlineBusy } from "@/components/loading/spinner";
 import { ApiError, errorMessage } from "@/lib/api";
 import { formatMoney, fullName } from "@/lib/employees";
 import { lagosDay } from "@/lib/history";
@@ -48,10 +50,16 @@ export function PayrollView() {
   const [unresolved, setUnresolved] = useState<UnresolvedDay[] | null>(null);
   const [finalizing, setFinalizing] = useState(false);
 
+  // While a new period loads, the previous rows stay (dimmed), so filter them by the period they were fetched for;
+  // filtering them by the new period showed "No payroll for this period yet" for a moment.
+  const [shown, setShown] = useState(period);
+  if (!payroll.isPlaceholderData && payroll.data && (shown.periodStart !== period.periodStart || shown.periodEnd !== period.periodEnd)) {
+    setShown(period);
+  }
   // The list filter is "within the range"; only records for exactly this period belong to this run.
   const records = useMemo(
-    () => (payroll.data?.data ?? []).filter((r) => r.periodStart.slice(0, 10) === period.periodStart && r.periodEnd.slice(0, 10) === period.periodEnd),
-    [payroll.data, period.periodStart, period.periodEnd],
+    () => (payroll.data?.data ?? []).filter((r) => r.periodStart.slice(0, 10) === shown.periodStart && r.periodEnd.slice(0, 10) === shown.periodEnd),
+    [payroll.data, shown.periodStart, shown.periodEnd],
   );
   const drafts = records.filter((r) => r.status === "DRAFT").length;
   const total = records.reduce((a, r) => a + Number(r.grossPay), 0);
@@ -113,7 +121,10 @@ export function PayrollView() {
   return (
     <div className={styles.layout}>
       <div className={styles.toolbar}>
-        <DateRangePicker label="Pay period" value={range} onChange={setRange} presets={PRESETS} />
+        <div className={styles.rowActions}>
+          <DateRangePicker label="Pay period" value={range} onChange={setRange} presets={PRESETS} />
+          <InlineBusy active={payroll.isPlaceholderData} />
+        </div>
         <div className={styles.rowActions}>
           <ActionButton icon={<Calculator size={17} aria-hidden="true" />} label={records.length ? "Regenerate draft" : "Generate draft"} pendingLabel="Generating" successLabel="Generated" onAction={runGenerate} onActionError={() => undefined} />
           {records.length > 0 && (
@@ -152,8 +163,19 @@ export function PayrollView() {
       )}
 
       {payroll.isPending ? (
-        <div className={styles.tableWrap}>
-          <TableSkeleton rows={5} columns={[{ grow: 1.6 }, { grow: 0.5 }, { grow: 0.5 }, { grow: 0.8 }, { grow: 1.4 }, { grow: 0.6, pill: true }]} />
+        <div className={styles.layout} role="status" aria-label="Loading payroll" aria-busy="true">
+          <div className={styles.kpis} aria-hidden="true">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className={styles.card} style={{ minHeight: 147 }}>
+                <Block width="6rem" height="1.125rem" index={i * 3} />
+                <Block width="5rem" height="2.25rem" index={i * 3 + 1} />
+                <Block width="7rem" height="1.125rem" index={i * 3 + 2} />
+              </div>
+            ))}
+          </div>
+          <div className={styles.tableWrap}>
+            <TableSkeleton rows={6} columns={[{ grow: 1.6 }, { grow: 0.5 }, { grow: 0.5 }, { grow: 0.8 }, { grow: 1.4 }, { grow: 0.6, pill: true }]} />
+          </div>
         </div>
       ) : payroll.isError ? (
         <Alert tone="danger" title="Could not load payroll">
@@ -162,7 +184,7 @@ export function PayrollView() {
       ) : records.length === 0 ? (
         <EmptyState title="No payroll for this period yet" description="Generate a draft from the approved hours. You can regenerate it until it is finalized." />
       ) : (
-        <>
+        <div className={styles.layout} data-stale={payroll.isPlaceholderData} aria-busy={payroll.isPlaceholderData}>
           <div className={styles.kpis}>
             <MetricCard label="Gross pay (₦)" value={Math.round(total)} context={`${records.length} people`} />
             <MetricCard label="Hours paid" value={Math.round(hours * 100) / 100} suffix="h" context="regular and overtime" />
@@ -180,7 +202,7 @@ export function PayrollView() {
               <HoldToConfirm icon={<Lock size={16} aria-hidden="true" />} label="Hold to finalize" confirmedLabel="Finalized" tone="accent" confirmed={finalizing} disabled={finalize.isPending} onConfirm={runFinalize} />
             </section>
           )}
-        </>
+        </div>
       )}
     </div>
   );

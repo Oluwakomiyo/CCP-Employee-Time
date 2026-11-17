@@ -1,5 +1,6 @@
 "use client";
 
+import { InlineBusy } from '@/components/loading/spinner';
 import { useState } from "react";
 import { Alert } from "@/components/arc/alert/alert";
 import { BarChart } from "@/components/arc/bar-chart/bar-chart";
@@ -73,7 +74,7 @@ export function DashboardView() {
   const anyHours = overTime.some((d) => d.hours > 0);
 
   return (
-    <div className={styles.layout} aria-busy={dashboard.isFetching}>
+    <div className={styles.layout} aria-busy={dashboard.isFetching} data-stale={dashboard.isPlaceholderData}>
       <div className={styles.toolbar}>
         <SegmentedControl
           label='Range'
@@ -81,6 +82,7 @@ export function DashboardView() {
           value={range}
           onValueChange={(v: string) => setRange(v as DashboardRange)}
         />
+        <InlineBusy active={dashboard.isPlaceholderData} />
       </div>
 
       <div className={styles.kpis}>
@@ -279,41 +281,34 @@ function DashboardSkeleton() {
           index={0}
         />
       </div>
+      {/* Sizes measured from the loaded page at 1366px: KPI cards 147px, the line chart card 348px,
+          the bar + estimates row 373px, the two donut cards 560px. */}
       <div className={styles.kpis} aria-hidden='true'>
         {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
-          <div key={i} className={styles.card}>
-            <Block
-              width='6rem'
-              height='1.125rem'
-              radius='0.25rem'
-              index={1 + i * 2}
-            />
-            <Block
-              width='4rem'
-              height='1.75rem'
-              radius='0.375rem'
-              index={2 + i * 2}
-            />
+          <div key={i} className={styles.card} style={{ minHeight: 147 }}>
+            <Block width='6rem' height='1.125rem' radius='0.25rem' index={1 + i * 2} />
+            <Block width='4rem' height='2.25rem' radius='0.375rem' index={2 + i * 2} />
+            <Block width='7rem' height='1.125rem' radius='0.25rem' index={2 + i * 2} />
           </div>
         ))}
       </div>
-      <div className={styles.card} aria-hidden='true'>
+      <div className={styles.card} aria-hidden='true' style={{ minHeight: 348 }}>
         <Block width='10rem' height='1.4rem' radius='0.375rem' index={17} />
-        <Block width='100%' height={200} radius='0.5rem' index={18} />
+        <Block width='100%' height={240} radius='0.5rem' index={18} />
       </div>
-      <div className={styles.grid2} aria-hidden='true'>
-        {[0, 1].map((i) => (
-          <div key={i} className={styles.card}>
-            <Block
-              width='9rem'
-              height='1.4rem'
-              radius='0.375rem'
-              index={19 + i}
-            />
-            <Block width='100%' height={140} radius='0.5rem' index={21 + i} />
-          </div>
-        ))}
-      </div>
+      {[
+        [373, 260],
+        [560, 420],
+      ].map(([card, body], row) => (
+        <div key={row} className={styles.grid2} aria-hidden='true'>
+          {[0, 1].map((i) => (
+            <div key={i} className={styles.card} style={{ minHeight: card }}>
+              <Block width='9rem' height='1.4rem' radius='0.375rem' index={19 + row * 2 + i} />
+              <Block width='100%' height={body} radius='0.5rem' index={21 + row * 2 + i} />
+            </div>
+          ))}
+        </div>
+      ))}
     </div>
   );
 }
