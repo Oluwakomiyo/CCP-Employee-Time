@@ -79,7 +79,6 @@ describe('passwords (spec §5)', () => {
       .send({
         email: 'new.hire@test.local',
         role: 'EMPLOYEE',
-        employeeCode: 'NEW-001',
         firstName: 'New',
         lastName: 'Hire',
         department: 'Design',
@@ -278,5 +277,32 @@ describe('my corrections (mine=true)', () => {
     expect((await request(app).delete(`/api/v1/corrections/${own.id}`).set(auth(tCeo))).status).toBe(200);
     // Someone else's request is reviewed (rejected), not withdrawn
     expect((await request(app).delete(`/api/v1/corrections/${other.id}`).set(auth(tCeo))).status).toBe(403);
+  });
+});
+
+describe('employee numbers and positions', () => {
+  const hire = (email: string, position = 'Architect') => ({
+    email, role: 'EMPLOYEE', firstName: 'A', lastName: 'B', department: 'Design', position, hireDate: '2026-11-01',
+    compensation: { baseHourlyRate: 4000, overtimeHourlyRate: 6000, currency: 'NGN' },
+  });
+
+  it('issues EMP-### numbers in order and ignores a code sent by the client', async () => {
+    const a = await request(app).post('/api/v1/employees').set(auth(tCeo)).send({ ...hire('num.a@test.local'), employeeCode: 'HACK-1' });
+    const b = await request(app).post('/api/v1/employees').set(auth(tCeo)).send(hire('num.b@test.local'));
+    const codeA = a.body.data.employee.employeeCode as string;
+    const codeB = b.body.data.employee.employeeCode as string;
+    expect(codeA).toMatch(/^EMP-\d{3,}$/);
+    expect(Number(codeB.slice(4))).toBe(Number(codeA.slice(4)) + 1);
+  });
+
+  it('positions are a managed list: unknown is refused, CEO adds, PM cannot', async () => {
+    const bad = await request(app).post('/api/v1/employees').set(auth(tCeo)).send(hire('pos.x@test.local', 'Astronaut'));
+    expect(bad.status).toBe(400);
+    expect(bad.body.error.code).toBe('UNKNOWN_POSITION');
+    expect((await request(app).post('/api/v1/positions').set(auth(tPm)).send({ name: 'Astronaut' })).status).toBe(403);
+    expect((await request(app).post('/api/v1/positions').set(auth(tCeo)).send({ name: 'Astronaut' })).status).toBe(201);
+    expect((await request(app).post('/api/v1/employees').set(auth(tCeo)).send(hire('pos.x@test.local', 'Astronaut'))).status).toBe(201);
+    const list = await request(app).get('/api/v1/positions').set(auth(tPm));
+    expect(list.body.data.find((p: { name: string }) => p.name === 'Astronaut')._count.employees).toBe(1);
   });
 });

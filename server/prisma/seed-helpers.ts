@@ -32,6 +32,7 @@ export const lastWorkingDays = (n: number) => {
 export type Person = { first: string; last: string; email: string; code: string; dept: string; position: string; role: Role };
 
 export async function createPerson(prisma: PrismaClient, p: Person, passwordHash: string, rates: { base: number; from: string; to?: string }[]) {
+  await prisma.position.upsert({ where: { name: p.position }, create: { name: p.position }, update: {} });
   const user = await prisma.user.create({
     data: {
       email: p.email,

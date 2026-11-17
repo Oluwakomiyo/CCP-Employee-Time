@@ -18,7 +18,7 @@ export const adminInputSchema = z.object({
   email: z.string().email('A valid --email is required').trim().toLowerCase(),
   firstName: z.string().trim().min(1, '--first is required'),
   lastName: z.string().trim().min(1, '--last is required'),
-  employeeCode: z.string().trim().min(3).toUpperCase().default('CCP-001'),
+  employeeCode: z.string().trim().min(3).toUpperCase().default('EMP-001'),
   department: z.string().trim().min(2).default('Executive'),
   position: z.string().trim().min(2).default('Chief Executive Officer'),
 });
@@ -35,6 +35,7 @@ export async function createFirstAdmin(db: DbClient & { $transaction: <T>(fn: (t
 
   const employee = await db.$transaction(async (tx) => {
     await tx.department.upsert({ where: { name: input.department }, create: { name: input.department }, update: {} });
+    await tx.position.upsert({ where: { name: input.position }, create: { name: input.position }, update: {} });
     const user = await tx.user.create({
       data: { email: input.email, passwordHash, role: Role.CEO_ADMIN, mustChangePassword: true },
     });

@@ -43,6 +43,7 @@ async function wipe() {
   await prisma.employee.deleteMany();
   await prisma.user.deleteMany();
   await prisma.department.deleteMany();
+  await prisma.position.deleteMany();
 }
 
 async function main() {
@@ -59,17 +60,17 @@ async function main() {
 
   const hash = await bcrypt.hash(DEV_PASSWORD, 10);
   const ceo = await createPerson(
-    { first: 'Ada', last: 'Okafor', email: 'ceo@example.com', code: 'CCP-001', dept: 'Executive', position: 'Chief Executive Officer', role: Role.CEO_ADMIN },
+    { first: 'Ada', last: 'Okafor', email: 'ceo@example.com', code: 'EMP-001', dept: 'Executive', position: 'Chief Executive Officer', role: Role.CEO_ADMIN },
     hash,
     [{ base: 15000, from: '2020-01-15' }]
   );
   const pm = await createPerson(
-    { first: 'Tunde', last: 'Bello', email: 'manager@example.com', code: 'CCP-002', dept: 'Architecture', position: 'Project Manager', role: Role.PROJECT_MANAGER },
+    { first: 'Tunde', last: 'Bello', email: 'manager@example.com', code: 'EMP-002', dept: 'Architecture', position: 'Project Manager', role: Role.PROJECT_MANAGER },
     hash,
     [{ base: 8000, from: '2021-03-01' }]
   );
   const john = await createPerson(
-    { first: 'John', last: 'Doe', email: 'john@example.com', code: 'CCP-010', dept: 'Architecture', position: 'Architect', role: Role.EMPLOYEE },
+    { first: 'John', last: 'Doe', email: 'john@example.com', code: 'EMP-003', dept: 'Architecture', position: 'Architect', role: Role.EMPLOYEE },
     hash,
     [
       { base: 4000, from: '2024-01-01', to: '2026-06-30' },
@@ -77,12 +78,12 @@ async function main() {
     ]
   );
   const mary = await createPerson(
-    { first: 'Mary', last: 'Johnson', email: 'mary@example.com', code: 'CCP-011', dept: 'Engineering', position: 'Structural Engineer', role: Role.EMPLOYEE },
+    { first: 'Mary', last: 'Johnson', email: 'mary@example.com', code: 'EMP-004', dept: 'Engineering', position: 'Structural Engineer', role: Role.EMPLOYEE },
     hash,
     [{ base: 4000, from: '2023-05-02' }]
   );
   const peter = await createPerson(
-    { first: 'Peter', last: 'Adeyemi', email: 'peter@example.com', code: 'CCP-012', dept: 'Site Operations', position: 'Site Supervisor', role: Role.EMPLOYEE },
+    { first: 'Peter', last: 'Adeyemi', email: 'peter@example.com', code: 'EMP-005', dept: 'Site Operations', position: 'Site Supervisor', role: Role.EMPLOYEE },
     hash,
     [{ base: 3500, from: '2025-02-10' }]
   );

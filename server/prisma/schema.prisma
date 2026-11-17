@@ -117,8 +117,7 @@ model User {
   employee         Employee?
   auditLogs        AuditLog[]              @relation("AuditActor")
   reviewedRequests TimeCorrectionRequest[] @relation("CorrectionReviewer")
-  notifications      Notification[]
-
+  notifications    Notification[]
 }
 
 // -----------------------------------------------------------------------------
@@ -130,15 +129,17 @@ model Employee {
   userId String @unique
   user   User   @relation(fields: [userId], references: [id], onDelete: Restrict)
 
-  employeeCode String           @unique
-  firstName    String
-  lastName     String
+  employeeCode  String           @unique
+  firstName     String
+  lastName      String
   // References Department.name, so reads stay a plain string while the value must exist.
-  department   String
-  departmentRef Department @relation(fields: [department], references: [name], onDelete: Restrict, onUpdate: Cascade)
-  position     String
-  status       EmploymentStatus @default(ACTIVE)
-  hireDate     DateTime         @db.Date
+  department    String
+  departmentRef Department       @relation(fields: [department], references: [name], onDelete: Restrict, onUpdate: Cascade)
+  // References Position.name, same pattern as department.
+  position      String
+  positionRef   Position         @relation(fields: [position], references: [name], onDelete: Restrict, onUpdate: Cascade)
+  status        EmploymentStatus @default(ACTIVE)
+  hireDate      DateTime         @db.Date
 
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @db.Timestamptz(6)
@@ -153,6 +154,15 @@ model Employee {
 
   @@index([status])
   @@index([department])
+  @@index([position])
+}
+
+model Position {
+  id        String     @id @default(uuid())
+  name      String     @unique @db.VarChar(100)
+  createdAt DateTime   @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime   @updatedAt @db.Timestamptz(6)
+  employees Employee[]
 }
 
 model Department {
@@ -219,10 +229,10 @@ model Project {
 }
 
 model ProjectMember {
-  id            String   @id @default(uuid())
+  id            String    @id @default(uuid())
   projectId     String
   employeeId    String
-  isProjectLead Boolean  @default(false)
+  isProjectLead Boolean   @default(false)
   assignedAt    DateTime  @default(now()) @db.Timestamptz(6)
   // Soft removal keeps membership history (spec §22). One open membership per pair is enforced
   // by the partial unique index "ProjectMember_one_active" (see migration).
@@ -319,7 +329,7 @@ model Break {
 }
 
 model Activity {
-  id            String  @id @default(uuid())
+  id            String       @id @default(uuid())
   workSegmentId String
   projectId     String
   activityType  ActivityType @default(OTHER)

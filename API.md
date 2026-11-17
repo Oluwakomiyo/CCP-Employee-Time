@@ -22,6 +22,7 @@ Base path `/api/v1`. Envelope: `{ success: true, data, meta? }`, errors `{ succe
 - `GET/POST /employees`, `GET/PATCH/DELETE /employees/:id` (DELETE deactivates), `PATCH /employees/:id/password` (one-time temp password), `GET/PUT /employees/:id/compensation` (CEO)
 - `GET/POST /projects`, `GET/PATCH/DELETE /projects/:id`, `POST /projects/:id/members`, `DELETE /projects/:id/members/:employeeId`
 - `GET/POST/PATCH /departments`
+- `GET/POST/PATCH /positions` (same rules as departments; the employee form picks from this list)
 
 ## Management reports
 - `GET /management/dashboard?from&to` (cards + charts), `GET /management/status` (live board)

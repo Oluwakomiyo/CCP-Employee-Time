@@ -18,6 +18,23 @@ const ensureDepartment = async (tx: DbClient, name: string) => {
   }
 };
 
+/** Positions are managed in Settings, like departments. */
+const ensurePosition = async (tx: DbClient, name: string) => {
+  if (!(await tx.position.findUnique({ where: { name }, select: { id: true } }))) {
+    throw new AppError(`Unknown position '${name}'. Add it in Settings first.`, 400, undefined, 'UNKNOWN_POSITION');
+  }
+};
+
+/** Next free system number: EMP-001, EMP-002, ... (EMP-1000 after 999). The sequence makes it race-free;
+ *  the loop only skips a number someone already typed by hand. */
+const nextEmployeeCode = async (tx: DbClient) => {
+  for (;;) {
+    const [{ n }] = await tx.$queryRaw<{ n: bigint }[]>`SELECT nextval('employee_code_seq') AS n`;
+    const code = `EMP-${String(n).padStart(3, '0')}`;
+    if (!(await tx.employee.findUnique({ where: { employeeCode: code }, select: { id: true } }))) return code;
+  }
+};
+
 /** Current rate only, for CEO views. */
 const currentRateSelect = {
   where: CURRENT_RATE,
@@ -162,17 +179,10 @@ export class EmployeeService {
    * Locked to CEO_ADMIN only.
    */
   async createEmployee(input: CreateEmployeeInput, actorUserId: string) {
-    // Check for unique email and employeeCode collisions upfront
+    // Check for an email collision upfront; the employee number is issued below
     const existingUser = await prisma.user.findUnique({ where: { email: input.email } });
     if (existingUser) {
       throw AppError.conflict('An account with this email address already exists');
-    }
-
-    const existingCode = await prisma.employee.findUnique({
-      where: { employeeCode: input.employeeCode },
-    });
-    if (existingCode) {
-      throw AppError.conflict(`Employee code '${input.employeeCode}' is already in use`);
     }
 
     // The system generates the temporary password; only its hash is stored (spec §5).
@@ -190,10 +200,11 @@ export class EmployeeService {
       });
 
       await ensureDepartment(tx, input.department);
+      await ensurePosition(tx, input.position);
       const employee = await tx.employee.create({
         data: {
           userId: user.id,
-          employeeCode: input.employeeCode,
+          employeeCode: await nextEmployeeCode(tx),
           firstName: input.firstName,
           lastName: input.lastName,
           department: input.department,
@@ -271,6 +282,7 @@ export class EmployeeService {
 
       // 2. Update Employee record
       if (employeeData.department) await ensureDepartment(tx, employeeData.department);
+      if (employeeData.position) await ensurePosition(tx, employeeData.position);
       const result = await tx.employee.update({
         where: { id: employeeId },
         data: employeeData,
