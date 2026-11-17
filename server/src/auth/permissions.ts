@@ -7,7 +7,7 @@ import { DbClient } from '../config/prisma';
  * This file is the single source; the web reads it from GET /roles/catalog.
  */
 export const CATALOG = [
-  { key: 'time.track', module: 'Punch clock', label: 'Clock in and out, take breaks, switch project', scoped: false },
+  { key: 'time.track', module: 'My work', label: 'Track their own time (Punch clock, My timesheets, My projects, Fix my hours)', scoped: false },
   { key: 'timesheets.view', module: 'Timesheets', label: 'See recorded workdays and hours', scoped: true },
   { key: 'corrections.request', module: 'Hour fixes', label: 'Ask for a fix to their own hours', scoped: false },
   { key: 'corrections.review', module: 'Hour fixes', label: 'Approve or reject hour fixes', scoped: true },

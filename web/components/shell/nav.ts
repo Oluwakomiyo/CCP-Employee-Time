@@ -27,6 +27,8 @@ export interface NavItem {
   /** Shown when the person holds any of these (at `atLeast` scope for scoped keys). Omit for everyone. */
   permission?: PermissionKey | PermissionKey[];
   atLeast?: Scope;
+  /** Also needed, on top of `permission`. "My work" pages all require time.track, so switching it off hides the section. */
+  requires?: PermissionKey;
 }
 
 /** Each page appears for whoever holds its permission. Routing is not security: the API decides. */
@@ -35,9 +37,9 @@ export const NAV: { section: string; items: NavItem[] }[] = [
     section: "My work",
     items: [
       { href: "/today", label: "Punch clock", icon: Timer, permission: "time.track" },
-      { href: "/my-time", label: "My timesheets", icon: CalendarDays, permission: "timesheets.view" },
-      { href: "/my-projects", label: "My projects", icon: FolderKanban, permission: "projects.view" },
-      { href: "/my-corrections", label: "Fix my hours", icon: FilePen, permission: "corrections.request" },
+      { href: "/my-time", label: "My timesheets", icon: CalendarDays, permission: "timesheets.view", requires: "time.track" },
+      { href: "/my-projects", label: "My projects", icon: FolderKanban, permission: "projects.view", requires: "time.track" },
+      { href: "/my-corrections", label: "Fix my hours", icon: FilePen, permission: "corrections.request", requires: "time.track" },
     ],
   },
   {
@@ -68,7 +70,8 @@ export const EXTRA_ROUTES: NavItem[] = [{ href: "/profile", label: "Profile", ic
 
 /** True when the person may open this page. */
 export const canOpen = (me: Me, item: NavItem) =>
-  !item.permission || (Array.isArray(item.permission) ? item.permission : [item.permission]).some((k) => can(me, k, item.atLeast));
+  (!item.requires || can(me, item.requires)) &&
+  (!item.permission || (Array.isArray(item.permission) ? item.permission : [item.permission]).some((k) => can(me, k, item.atLeast)));
 
 export const navFor = (me: Me) =>
   NAV.map((g) => ({ ...g, items: g.items.filter((i) => canOpen(me, i)) })).filter((g) => g.items.length > 0);

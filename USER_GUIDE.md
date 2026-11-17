@@ -284,6 +284,7 @@ Decide what each role can see and do (**Company → Roles & permissions**).
 - **New role:** for example "SEO specialist". Start from an existing role, then switch permissions on or off.
 - **Whose data:** many permissions have three settings: **Just themselves**, **Their team** (people on projects they lead) or **Everyone**.
 - **Money** (pay rates, labour cost) and **Payroll** are separate switches, so you can give reports without pay.
+- **Track their own time** switches the whole **My work** section on or off (Punch clock, My timesheets, My projects, Fix my hours). Turn it off for someone who never clocks in, such as an admin who isn't paid by the hour.
 - **Change someone's role** on their page in the **Employee directory** (Account section). It takes effect on their next click.
 - Safety: the CEO / Admin role always keeps "Manage roles and permissions", at least one active person must keep it, and someone who adds people can't hand out more access than they have. Every change is in **Change history**.
 
