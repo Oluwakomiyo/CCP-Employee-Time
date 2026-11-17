@@ -11,6 +11,8 @@ import { useLogout } from "@/lib/auth";
 import { useTheme } from "@/lib/theme";
 import type { Me } from "@/lib/types";
 import { NotificationInbox } from "./notification-inbox";
+import { RateCalculator } from "@/components/rate-calculator/rate-calculator";
+import { can } from "@/lib/permissions";
 import { navFor, routeFor } from "./nav";
 import styles from "./app-shell.module.css";
 
@@ -109,6 +111,8 @@ export function AppShell({ me, children }: { me: Me; children: React.ReactNode }
         </header>
         <main className={styles.content}>{children}</main>
       </div>
+      {/* Money tool: only for people who may see pay (CEO / Admin by default). */}
+      {can(me, "compensation.view") && <RateCalculator />}
     </div>
   );
 }
