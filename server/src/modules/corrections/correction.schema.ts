@@ -35,6 +35,8 @@ export const queryCorrectionsSchema = z.object({
   ...sortQuery(['createdAt', 'status'] as const, 'createdAt'),
   status: z.nativeEnum(CorrectionStatus).optional(),
   employeeId: z.string().uuid().optional(),
+  // "My corrections": only the caller's own requests, whatever their role
+  mine: z.enum(['true', 'false']).transform((v) => v === 'true').optional(),
   // Filter by the workday's date
   from: date.optional(),
   to: date.optional(),

@@ -482,7 +482,7 @@ export class CorrectionService {
 
     const where: Prisma.TimeCorrectionRequestWhereInput = {};
 
-    if (userRole === Role.EMPLOYEE) {
+    if (userRole === Role.EMPLOYEE || query.mine) {
       where.employeeId = userEmployeeId;
     } else {
       if (query.employeeId) where.employeeId = query.employeeId;

@@ -31,7 +31,7 @@ export const useCorrections = (status: CorrectionStatus | null, page: number) =>
   useQuery({
     queryKey: correctionsKey(status, page),
     queryFn: () => {
-      const p = new URLSearchParams({ page: String(page), limit: "10" });
+      const p = new URLSearchParams({ page: String(page), limit: "10", mine: "true" });
       if (status) p.set("status", status);
       return api.page<Correction[]>(`/corrections?${p.toString()}`);
     },

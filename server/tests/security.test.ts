@@ -256,3 +256,27 @@ describe('PM correction review scope', () => {
     expect(list.body.data.some((c: { id: string }) => c.id === corr.id)).toBe(false);
   });
 });
+
+describe('my corrections (mine=true)', () => {
+  it('a CEO sees only their own requests and can withdraw them', async () => {
+    const mk = async (employeeId: string, date: string) => {
+      const day = await prisma.workDay.create({
+        data: { employeeId, date: new Date(`${date}T00:00:00Z`), status: DayStatus.CORRECTION_PENDING },
+      });
+      return prisma.timeCorrectionRequest.create({
+        data: { workDayId: day.id, employeeId, reason: 'Forgot to clock out', requestedChanges: { projectId: projA.id } },
+      });
+    };
+    const own = await mk(ceo.employeeId, '2026-11-12');
+    const other = await mk(emp1.employeeId, '2026-11-12');
+
+    const mine = await request(app).get('/api/v1/corrections?mine=true').set(auth(tCeo));
+    const ids = mine.body.data.map((c: { id: string }) => c.id);
+    expect(ids).toContain(own.id);
+    expect(ids).not.toContain(other.id);
+
+    expect((await request(app).delete(`/api/v1/corrections/${own.id}`).set(auth(tCeo))).status).toBe(200);
+    // Someone else's request is reviewed (rejected), not withdrawn
+    expect((await request(app).delete(`/api/v1/corrections/${other.id}`).set(auth(tCeo))).status).toBe(403);
+  });
+});
