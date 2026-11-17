@@ -10,6 +10,7 @@ import {
   Radio,
   ScrollText,
   Settings,
+  ShieldCheck,
   Timer,
   Users,
   Wallet,
@@ -57,6 +58,7 @@ export const NAV: { section: string; items: NavItem[] }[] = [
     items: [
       { href: "/payroll", label: "Payroll", icon: Wallet, permission: ["payroll.view", "payroll.manage"] },
       { href: "/settings", label: "Company settings", icon: Settings, permission: ["settings.departments", "settings.positions", "settings.devices"] },
+      { href: "/roles", label: "Roles & permissions", icon: ShieldCheck, permission: "roles.manage" },
     ],
   },
 ];

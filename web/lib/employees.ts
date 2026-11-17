@@ -99,7 +99,8 @@ export const usePositions = () => useQuery({ queryKey: ["positions"], queryFn: (
 
 export interface EmployeeInput {
   email: string;
-  role: Role;
+  /** A role from Roles & permissions; the API checks you may hand it out. */
+  roleId: string;
   firstName: string;
   lastName: string;
   department: string;

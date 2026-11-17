@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Pencil } from "lucide-react";
+import { Check, Pencil, UserCog } from "lucide-react";
 import { useState } from "react";
 import Link from "next/link";
 import { Alert } from "@/components/arc/alert/alert";
@@ -17,6 +17,7 @@ import MoneyInput from "@/components/arc/money-input/money-input";
 import SegmentedControl from "@/components/arc/segmented-control/segmented-control";
 import { DetailSkeleton, KpiRowSkeleton } from "@/components/loading/detail-skeleton";
 import { Spinner } from "@/components/loading/spinner";
+import { Select } from "@/components/arc/select/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/arc/tabs/tabs";
 import { PageHeading } from "@/components/shell/page-heading";
 import { EmployeeReport } from "@/components/reports/employee-report";
@@ -27,6 +28,7 @@ import { rangeFor, type DashboardRange } from "@/lib/dashboard";
 import { lagosDay } from "@/lib/history";
 import { formatMoney, fullName, ROLES, koboToNaira, useCompensation, useEmployee, useEmployeeMutations, useEmployeeReport, type Employee } from "@/lib/employees";
 import { can } from "@/lib/permissions";
+import { useRoleMutations, useRoles } from "@/lib/roles";
 import { EmployeeForm } from "../employee-form";
 import { TempPasswordDialog } from "../temp-password-dialog";
 import styles from "../../manage.module.css";
@@ -170,6 +172,7 @@ function Overview({ employee: e, ceo, manage, self }: { employee: Employee; ceo:
       {manage && !self && (
         <section className={styles.card} aria-labelledby="account">
           <h2 id="account">Account</h2>
+          <RoleChanger employee={e} />
           <p className={styles.hint}>
             A reset signs them out everywhere and shows a new temporary password once. Deactivating keeps all their history; they can no longer sign in.
           </p>
@@ -294,6 +297,51 @@ function Compensation({ employee: e }: { employee: Employee }) {
         </div>
         <ActionButton icon={<Check size={17} aria-hidden="true" />} label="Save new rate" pendingLabel="Saving" successLabel="Rate saved" disabled={!base || !overtime || !from} onAction={save} onActionError={() => undefined} />
       </section>
+    </div>
+  );
+}
+
+/** Moves this person to another role. The API refuses a role with more access than yours (unless you manage roles). */
+function RoleChanger({ employee: e }: { employee: Employee }) {
+  const roles = useRoles();
+  const { assign } = useRoleMutations();
+  const [roleId, setRoleId] = useState(e.user.appRole?.id ?? "");
+  const [error, setError] = useState<string | null>(null);
+  return (
+    <div className={styles.form}>
+      {error && (
+        <Alert tone="danger" title="Role not changed" onDismiss={() => setError(null)}>
+          {error}
+        </Alert>
+      )}
+      <div className={styles.toolbar}>
+        <Select
+          label="Role"
+          description="What they can see and do. Edit roles in Roles & permissions."
+          placeholder={roles.isPending ? "Loading roles" : "Choose a role"}
+          options={(roles.data ?? []).map((x) => ({ value: x.id, label: x.name }))}
+          value={roleId}
+          onValueChange={setRoleId}
+          disabled={!roles.data?.length}
+        />
+        <ActionButton
+          icon={<UserCog size={17} aria-hidden="true" />}
+          label="Change role"
+          pendingLabel="Changing"
+          successLabel="Role changed"
+          disabled={!roleId || roleId === e.user.appRole?.id}
+          onAction={() =>
+            assign
+              .mutateAsync({ employeeId: e.id, roleId })
+              .then(() => setError(null))
+              .catch((err: unknown) => {
+                setError(errorMessage(err));
+                throw err;
+              })
+          }
+          onActionError={() => undefined}
+        />
+      </div>
     </div>
   );
 }

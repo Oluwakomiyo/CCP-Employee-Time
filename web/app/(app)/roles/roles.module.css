@@ -1,0 +1,154 @@
+/* Roles & permissions: role list on the left, the editor on the right; stacks on phones. */
+.split {
+  display: grid;
+  grid-template-columns: minmax(14rem, 18rem) minmax(0, 1fr);
+  gap: var(--space-5);
+  align-items: start;
+}
+
+.list {
+  position: sticky;
+  top: calc(60px + var(--space-6));
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.list ul {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.roleButton {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-3);
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--foreground);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.roleButton:hover {
+  background: var(--surface-muted);
+}
+
+.roleButton[aria-current="true"] {
+  border-color: var(--border);
+  background: var(--surface);
+  box-shadow: inset 3px 0 0 var(--brand, var(--accent));
+}
+
+.roleName {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 500;
+}
+
+.roleMeta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+.editor {
+  gap: var(--space-5);
+}
+
+.editorHead {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.headIcon {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  flex: none;
+  place-items: center;
+  border-radius: var(--radius-control);
+  background: var(--accent-subtle);
+  color: var(--accent);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: 500;
+}
+
+.editorHead p {
+  margin: 2px 0 0;
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.group legend {
+  margin-bottom: var(--space-2);
+  padding: 0;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  font-weight: 500;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-4);
+  padding: var(--space-3) 0;
+  border-top: 1px solid var(--border-subtle, var(--border));
+}
+
+/* Keeps the save bar in reach on a long list. */
+.saveBar {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin: 0 calc(var(--space-6) * -1) calc(var(--space-6) * -1);
+  padding: var(--space-4) var(--space-6);
+  border-top: 1px solid var(--border);
+  border-radius: 0 0 var(--radius-surface) var(--radius-surface);
+  background: var(--surface);
+}
+
+@media (max-width: 900px) {
+  .split {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .list {
+    position: static;
+  }
+}
+
+@media (max-width: 600px) {
+  .saveBar {
+    margin: 0 calc(var(--space-4) * -1) calc(var(--space-4) * -1);
+    padding: var(--space-3) var(--space-4);
+  }
+}

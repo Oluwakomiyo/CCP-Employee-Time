@@ -11,8 +11,8 @@ import MoneyInput from "@/components/arc/money-input/money-input";
 import { Select } from "@/components/arc/select/select";
 import { errorMessage } from "@/lib/api";
 import { lagosDay } from "@/lib/history";
-import { koboToNaira, ROLES, useDepartments, useEmployeeMutations, usePositions, type Employee } from "@/lib/employees";
-import type { Role } from "@/lib/types";
+import { koboToNaira, useDepartments, useEmployeeMutations, usePositions, type Employee } from "@/lib/employees";
+import { useRoles } from "@/lib/roles";
 import styles from "../manage.module.css";
 
 /**
@@ -22,6 +22,9 @@ import styles from "../manage.module.css";
 export function EmployeeForm({ employee, onSaved }: { employee?: Employee; onSaved: (result: { name: string; temporaryPassword?: string }) => void }) {
   const departments = useDepartments();
   const positions = usePositions();
+  // Every role (built-in and custom); new people default to the built-in Employee role.
+  const roles = useRoles(!employee);
+  const defaultRoleId = roles.data?.find((x) => x.key === "employee")?.id ?? "";
   const { create, update } = useEmployeeMutations();
   const [error, setError] = useState<string | null>(null);
   const [f, setF] = useState({
@@ -30,7 +33,7 @@ export function EmployeeForm({ employee, onSaved }: { employee?: Employee; onSav
     email: employee?.user.email ?? "",
     department: employee?.department ?? "",
     position: employee?.position ?? "",
-    role: "EMPLOYEE" as Role,
+    roleId: "",
     hireDate: new Date(),
     // MoneyInput values are kobo.
     base: null as number | null,
@@ -39,7 +42,7 @@ export function EmployeeForm({ employee, onSaved }: { employee?: Employee; onSav
   const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => setF((prev) => ({ ...prev, [k]: v }));
 
   const missing =
-    !f.firstName.trim() || !f.lastName.trim() || !f.email.trim() || !f.department || !f.position.trim() || (!employee && (!f.base || !f.overtime));
+    !f.firstName.trim() || !f.lastName.trim() || !f.email.trim() || !f.department || !f.position.trim() || (!employee && (!f.base || !f.overtime || !(f.roleId || defaultRoleId)));
 
   const save = async () => {
     setError(null);
@@ -58,7 +61,7 @@ export function EmployeeForm({ employee, onSaved }: { employee?: Employee; onSav
       } else {
         const res = await create.mutateAsync({
           ...profile,
-          role: f.role,
+          roleId: f.roleId || defaultRoleId,
           hireDate: lagosDay(f.hireDate),
           compensation: { baseHourlyRate: koboToNaira(f.base!), overtimeHourlyRate: koboToNaira(f.overtime!), currency: "NGN" },
         });
@@ -108,7 +111,14 @@ export function EmployeeForm({ employee, onSaved }: { employee?: Employee; onSav
         {!employee && (
           <>
             <div className={styles.formRow}>
-              <Select label="Role" options={ROLES} value={f.role} onValueChange={(v: string) => set("role", v as Role)} />
+              <Select
+                label="Role"
+                placeholder={roles.isPending ? "Loading roles" : "Choose a role"}
+                options={(roles.data ?? []).map((x) => ({ value: x.id, label: x.name }))}
+                value={f.roleId || defaultRoleId}
+                onValueChange={(v: string) => set("roleId", v)}
+                disabled={!roles.data?.length}
+              />
               <DatePicker label="Hire date" value={f.hireDate} onChange={(d) => d && set("hireDate", d)} />
             </div>
             <div className={styles.formRow}>
