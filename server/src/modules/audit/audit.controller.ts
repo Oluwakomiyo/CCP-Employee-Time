@@ -8,8 +8,7 @@ export class AuditController {
       const query = queryAuditLogsSchema.parse(req.query);
       const result = await auditService.listLogs(
         query,
-        req.user!.role,
-        req.user!.userId
+        req.user!
       );
 
       res.status(200).json({

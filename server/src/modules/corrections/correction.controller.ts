@@ -33,7 +33,7 @@ export class CorrectionController {
         id,
         req.body,
         req.user!.employeeId,
-        req.user!.role,
+        req.user!,
         req.user!.userId
       );
       res.status(200).json({ success: true, data: { correction: result } });
@@ -49,7 +49,7 @@ export class CorrectionController {
         id,
         input,
         req.user!.userId,
-        req.user!.role
+        req.user!
       );
 
       res.status(200).json({
@@ -86,7 +86,7 @@ export class CorrectionController {
       const query = queryCorrectionsSchema.parse(req.query);
       const result = await correctionService.listCorrections(
         query,
-        req.user!.role,
+        req.user!,
         req.user!.employeeId
       );
 

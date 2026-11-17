@@ -1,5 +1,5 @@
 import bcrypt from 'bcryptjs';
-import { Prisma, Role, EmploymentStatus, AuditAction } from '@prisma/client';
+import { Prisma, EmploymentStatus, AuditAction } from '@prisma/client';
 import { prisma, DbClient } from '../../config/prisma';
 import { AppError } from '../../errors/AppError';
 import {
@@ -9,6 +9,8 @@ import {
   QueryEmployeesInput,
 } from './employee.schema';
 import { systemRoleKey } from '../../auth/permissions';
+import { AuthUser, can } from '../../auth/can';
+import { visibleEmployeeIds } from '../../utils/access';
 import { generateTemporaryPassword } from '../../utils/password';
 import { CURRENT_RATE, dayBefore } from './compensation';
 
@@ -55,7 +57,7 @@ export class EmployeeService {
    * If caller is CEO_ADMIN, includes compensation details.
    * If caller is PROJECT_MANAGER or EMPLOYEE, compensation is omitted.
    */
-  async listEmployees(query: QueryEmployeesInput, callerRole: Role) {
+  async listEmployees(query: QueryEmployeesInput, caller: AuthUser) {
     const { page, limit, search, department, status, sort, order } = query;
     const skip = (page - 1) * limit;
 
@@ -78,7 +80,11 @@ export class EmployeeService {
       ];
     }
 
-    const isCeo = callerRole === Role.CEO_ADMIN;
+    // Pay rates only with compensation.view (spec §4).
+    const isCeo = can(caller, 'compensation.view');
+    // TEAM scope: only people on projects the caller leads (plus themselves).
+    const ids = await visibleEmployeeIds(caller, 'employees.view');
+    if (ids) where.id = { in: ids };
 
     const [total, items] = await prisma.$transaction([
       prisma.employee.count({ where }),
@@ -126,8 +132,8 @@ export class EmployeeService {
   /**
    * Retrieves single employee by ID with strict role-based visibility.
    */
-  async getEmployeeById(employeeId: string, callerRole: Role) {
-    const isCeo = callerRole === Role.CEO_ADMIN;
+  async getEmployeeById(employeeId: string, caller: AuthUser) {
+    const isCeo = can(caller, 'compensation.view');
 
     const employee = await prisma.employee.findUnique({
       where: { id: employeeId },

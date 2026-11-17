@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { assertCanViewEmployee } from '../../utils/access';
+import { assertCanSee } from '../../utils/access';
 import { activityService } from './activity.service';
 import {
   browserHeartbeatSchema,
@@ -63,8 +63,8 @@ export class ActivityController {
       const { id } = req.params; // workDayId
       const summary = await activityService.getWorkEvidenceSummary(id);
 
-      // Employees: own only. PMs: employees on projects they lead (spec §111).
-      await assertCanViewEmployee(req.user!, summary.employee.id);
+      // Own day always; others need evidence.view covering them (TEAM: projects you lead, spec §111).
+      await assertCanSee(req.user!, 'evidence.view', summary.employee.id);
 
       res.status(200).json({
         success: true,

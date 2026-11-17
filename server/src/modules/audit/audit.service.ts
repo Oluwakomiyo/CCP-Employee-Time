@@ -1,4 +1,6 @@
-import { Prisma, Role } from '@prisma/client';
+import { AuthUser } from '../../auth/can';
+import { visibleEmployeeIds } from '../../utils/access';
+import { Prisma } from '@prisma/client';
 import { prisma } from '../../config/prisma';
 import { QueryAuditLogsInput } from './audit.schema';
 
@@ -8,14 +10,17 @@ export class AuditService {
    * - CEO_ADMIN: Views all logs system-wide.
    * - PROJECT_MANAGER: Views logs where they were the actor or related to projects.
    */
-  async listLogs(query: QueryAuditLogsInput, userRole: Role, userId: string) {
+  async listLogs(query: QueryAuditLogsInput, user: AuthUser) {
     const { page, limit, actorId, action, entityName, startDate, endDate } = query;
     const skip = (page - 1) * limit;
 
     const where: Prisma.AuditLogWhereInput = {};
 
-    if (userRole === Role.PROJECT_MANAGER) {
-      where.actorId = userId;
+    // audit.view scope: OWN = changes I made, TEAM = by me or my team, ALL = everyone (and may filter by actor).
+    const ids = await visibleEmployeeIds(user, 'audit.view');
+    if (ids) {
+      where.actor = { employee: { id: { in: ids } } };
+      if (actorId) where.actorId = actorId;
     } else if (actorId) {
       where.actorId = actorId;
     }

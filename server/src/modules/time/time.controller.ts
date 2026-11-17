@@ -7,6 +7,7 @@ const actorOf = (req: Request): TimeActor => ({
   employeeId: req.user!.employeeId,
   userId: req.user!.userId,
   role: req.user!.role,
+  grants: req.user!.grants,
   ip: req.ip,
 });
 
@@ -42,7 +43,7 @@ export class TimeController {
   getHistory = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const query = timeHistoryQuerySchema.parse(req.query);
-      const { history, meta } = await timeService.getTimesheetHistory(query, req.user!.role, req.user!.employeeId);
+      const { history, meta } = await timeService.getTimesheetHistory(query, req.user!, req.user!.employeeId);
       res.status(200).json({ success: true, data: { history }, meta });
     } catch (error) {
       next(error);
@@ -61,7 +62,7 @@ export class TimeController {
 
   getFlaggedDays = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const flagged = await staleSessionService.getFlaggedWorkDays(req.user!.role, req.user!.employeeId);
+      const flagged = await staleSessionService.getFlaggedWorkDays(req.user!);
       res.status(200).json({ success: true, data: { flaggedWorkDays: flagged } });
     } catch (error) {
       next(error);

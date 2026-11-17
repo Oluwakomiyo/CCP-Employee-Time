@@ -1,5 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import { AuditAction, Role } from '@prisma/client';
+import { AuditAction } from '@prisma/client';
 import { activityController } from './activity.controller';
 import { z } from 'zod';
 import { prisma } from '../../config/prisma';

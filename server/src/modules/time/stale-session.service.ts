@@ -1,4 +1,6 @@
-import { SegmentStatus, DayStatus, CorrectionStatus, AuditAction, Role, Prisma, NotificationType } from '@prisma/client';
+import { AuthUser } from '../../auth/can';
+import { visibleEmployeeIds } from '../../utils/access';
+import { SegmentStatus, DayStatus, CorrectionStatus, AuditAction, Prisma, NotificationType } from '@prisma/client';
 import { notify } from '../notifications/notification.service';
 import { prisma } from '../../config/prisma';
 import { withEmployeeLock } from './time.totals';
@@ -65,25 +67,13 @@ export class StaleSessionService {
   }
 
   /**
-   * Days flagged for a missing clock-out. Employees: own. PMs: own plus employees on projects
-   * they lead. CEO: all.
+   * Days flagged for a missing clock-out, within the caller's timesheets.view scope.
    */
-  async getFlaggedWorkDays(userRole: Role, employeeId: string) {
+  async getFlaggedWorkDays(user: AuthUser) {
     const where: Prisma.WorkDayWhereInput = { status: DayStatus.MISSING_CLOCK_OUT };
-    if (userRole === Role.EMPLOYEE) {
-      where.employeeId = employeeId;
-    } else if (userRole === Role.PROJECT_MANAGER) {
-      where.OR = [
-        { employeeId },
-        {
-          employee: {
-            projectMemberships: {
-              some: { removedAt: null, project: { members: { some: { employeeId, isProjectLead: true, removedAt: null } } } },
-            },
-          },
-        },
-      ];
-    }
+    // Scope of timesheets.view: own, people on projects you lead, or everyone.
+    const ids = await visibleEmployeeIds(user, 'timesheets.view');
+    if (ids) where.employeeId = { in: ids };
 
     return prisma.workDay.findMany({
       where,

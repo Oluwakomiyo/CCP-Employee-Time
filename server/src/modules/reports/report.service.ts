@@ -1,10 +1,10 @@
-import { DayStatus, Prisma, ProjectStatus, Role, SegmentStatus, CorrectionStatus } from '@prisma/client';
+import { DayStatus, Prisma, ProjectStatus, SegmentStatus, CorrectionStatus } from '@prisma/client';
 import { prisma } from '../../config/prisma';
 import { secondsBetween } from '../time/time.totals';
 import { AppError } from '../../errors/AppError';
-import { TokenPayload } from '../../utils/token';
 import { workDateFor } from '../../utils/time';
-import { pmLeadsProject, assertCanViewEmployee } from '../../utils/access';
+import { assertCanSee, assertProjectInScope, visibleEmployeeIds } from '../../utils/access';
+import { AuthUser, can } from '../../auth/can';
 import { rateOn } from '../employees/compensation';
 import { activitySeconds, breakSeconds, bump, hours, netSeconds, presenceSeconds, toHoursList } from './aggregate';
 
@@ -39,21 +39,6 @@ const loadSegments = (where: Prisma.WorkSegmentWhereInput) =>
 
 type LoadedSegment = Awaited<ReturnType<typeof loadSegments>>[number];
 
-/**
- * Employees whose data a manager may see: CEO all (null), PM those on projects they lead plus
- * themselves (spec §3, §111). Employees never reach management endpoints.
- */
-export const visibleEmployeeIds = async (user: TokenPayload): Promise<string[] | null> => {
-  if (user.role === Role.CEO_ADMIN) return null;
-  const members = await prisma.projectMember.findMany({
-    where: {
-      removedAt: null,
-      project: { members: { some: { employeeId: user.employeeId, isProjectLead: true, removedAt: null } } },
-    },
-    select: { employeeId: true },
-  });
-  return [...new Set([user.employeeId, ...members.map((m) => m.employeeId)])];
-};
 
 const employeeFilter = (ids: string[] | null): Prisma.EmployeeWhereInput => (ids ? { id: { in: ids } } : {});
 
@@ -100,8 +85,8 @@ export class ReportService {
    * GET /management/employees/:id/workdays?date=: one day with its segments,
    * so the evidence screen can resolve a workday id for an employee and date.
    */
-  async findWorkDay(user: TokenPayload, employeeId: string, date: string) {
-    await assertCanViewEmployee(user, employeeId);
+  async findWorkDay(user: AuthUser, employeeId: string, date: string) {
+    await assertCanSee(user, ['evidence.view', 'timesheets.view'], employeeId);
     const workDay = await prisma.workDay.findUnique({
       where: { employeeId_date: { employeeId, date: new Date(`${date}T00:00:00.000Z`) } },
       select: {
@@ -124,8 +109,8 @@ export class ReportService {
   }
 
   /** GET /management/employees/:id/report and GET /me/report. Never includes money. */
-  async employeeReport(user: TokenPayload, employeeId: string, range: DateRange) {
-    await assertCanViewEmployee(user, employeeId);
+  async employeeReport(user: AuthUser, employeeId: string, range: DateRange) {
+    await assertCanSee(user, 'reports.view', employeeId);
     const employee = await prisma.employee.findUnique({
       where: { id: employeeId },
       select: { id: true, employeeCode: true, firstName: true, lastName: true, department: true, position: true, status: true },
@@ -174,7 +159,7 @@ export class ReportService {
   }
 
   /** GET /management/projects/:id/report. Labour cost only for the CEO (spec §33, §34). */
-  async projectReport(user: TokenPayload, projectId: string, range: DateRange) {
+  async projectReport(user: AuthUser, projectId: string, range: DateRange) {
     const project = await prisma.project.findUnique({
       where: { id: projectId },
       include: {
@@ -185,10 +170,9 @@ export class ReportService {
       },
     });
     if (!project) throw AppError.notFound('Project not found');
-    if (user.role === Role.PROJECT_MANAGER && !(await pmLeadsProject(user.employeeId, projectId))) {
-      throw AppError.forbidden();
-    }
-    const isCeo = user.role === Role.CEO_ADMIN;
+    await assertProjectInScope(user, 'reports.view', projectId);
+    // Labour cost needs compensation.view (spec §4).
+    const isCeo = can(user, 'compensation.view');
 
     const date = dateFilter(range);
     const now = new Date();
@@ -285,8 +269,8 @@ export class ReportService {
   }
 
   /** GET /management/status: every visible active employee with a state (spec §47). */
-  async liveStatus(user: TokenPayload) {
-    const ids = await visibleEmployeeIds(user);
+  async liveStatus(user: AuthUser) {
+    const ids = await visibleEmployeeIds(user, 'live.view');
     const [employees, working, today] = await Promise.all([
       prisma.employee.findMany({
         where: { status: 'ACTIVE', ...employeeFilter(ids) },
@@ -320,8 +304,8 @@ export class ReportService {
   }
 
   /** GET /management/dashboard: summary cards plus chart series over a range (spec §46). */
-  async dashboard(user: TokenPayload, range: DateRange) {
-    const ids = await visibleEmployeeIds(user);
+  async dashboard(user: AuthUser, range: DateRange) {
+    const ids = await visibleEmployeeIds(user, 'dashboard.view');
     const r = { ...lastDays(30), ...range };
     const now = new Date();
     const todayDate = workDateFor(now);
@@ -416,13 +400,12 @@ export class ReportService {
    *   working days = hours to do / team per day
    * Cost (CEO only) splits the hours across the team by daily capacity, at current rates.
    */
-  async estimate(user: TokenPayload, projectId: string, employeeIds: string[]) {
+  async estimate(user: AuthUser, projectId: string, employeeIds: string[]) {
     const project = await prisma.project.findUnique({ where: { id: projectId } });
     if (!project) throw AppError.notFound('Project not found');
-    if (user.role === Role.PROJECT_MANAGER && !(await pmLeadsProject(user.employeeId, projectId))) {
-      throw AppError.forbidden();
-    }
-    const isCeo = user.role === Role.CEO_ADMIN;
+    await assertProjectInScope(user, 'reports.view', projectId);
+    // Labour cost needs compensation.view (spec §4).
+    const isCeo = can(user, 'compensation.view');
     const now = new Date();
 
     const actual = summarise(await loadSegments({ projectId }), now).total / 3600;

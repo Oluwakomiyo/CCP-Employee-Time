@@ -1,6 +1,5 @@
 import { AuthUser, toGrants } from '../auth/can';
 import { Request, Response, NextFunction } from 'express';
-import { Role } from '@prisma/client';
 import { verifyAccessToken, TokenPayload } from '../utils/token';
 import { AppError } from '../errors/AppError';
 import { prisma } from '../config/prisma';
@@ -74,17 +73,4 @@ export const authenticate = async (req: Request, _res: Response, next: NextFunct
   } catch (err) {
     next(err);
   }
-};
-
-/**
- * Deny-by-default role check: 403 unless the user's role is in allowedRoles.
- */
-export const authorize = (...allowedRoles: Role[]) => {
-  return (req: Request, _res: Response, next: NextFunction) => {
-    if (!req.user) return next(AppError.unauthorized());
-    if (!allowedRoles.includes(req.user.role)) {
-      return next(AppError.forbidden('You do not have permission to access this resource.'));
-    }
-    next();
-  };
 };

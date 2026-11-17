@@ -1,13 +1,7 @@
-import {
-  SegmentStatus,
-  DayStatus,
-  AuditAction,
-  Role,
-  Prisma,
-  LocationType,
-  ActivityType,
-  ProjectStatus,
-} from '@prisma/client';
+import { AuthUser, can, scopeOf } from '../../auth/can';
+import { Grants } from '../../auth/permissions';
+import { assertCanSee, visibleEmployeeIds } from '../../utils/access';
+import { SegmentStatus, DayStatus, AuditAction, Role, Prisma, LocationType, ActivityType, ProjectStatus, PermissionScope } from '@prisma/client';
 import { prisma, DbClient } from '../../config/prisma';
 import { AppError } from '../../errors/AppError';
 import { workDateFor } from '../../utils/time';
@@ -27,6 +21,7 @@ export interface TimeActor {
   employeeId: string;
   userId: string;
   role: Role;
+  grants: Grants;
   ip?: string;
 }
 
@@ -62,7 +57,8 @@ const assertCanWorkOn = async (tx: DbClient, actor: TimeActor, projectId: string
   });
   if (!project) throw AppError.badRequest('Project does not exist');
   if (project.status !== ProjectStatus.ACTIVE) throw AppError.badRequest('Project is not active');
-  if (actor.role !== Role.CEO_ADMIN && project.members.length === 0) {
+  // Assigned members only, unless the actor manages every project (CEO preset).
+  if (!can(actor, 'projects.manage', PermissionScope.ALL) && project.members.length === 0) {
     throw AppError.forbidden('You are not assigned to this project');
   }
   return project;
@@ -363,11 +359,18 @@ export class TimeService {
   }
 
   /** GET /me/time and /time/history: own records; management may pass all=true / employeeId. */
-  async getTimesheetHistory(query: TimeHistoryQueryInput, userRole: Role, userEmployeeId: string) {
+  async getTimesheetHistory(query: TimeHistoryQueryInput, user: AuthUser, userEmployeeId: string) {
     const where: Prisma.WorkDayWhereInput = {};
 
-    if (query.all === 'true' && userRole !== Role.EMPLOYEE) {
-      if (query.employeeId) where.employeeId = query.employeeId;
+    // all=true is for people whose timesheets.view reaches beyond themselves, and only within that scope.
+    if (query.all === 'true' && scopeOf(user, 'timesheets.view') !== PermissionScope.OWN) {
+      if (query.employeeId) {
+        await assertCanSee(user, 'timesheets.view', query.employeeId);
+        where.employeeId = query.employeeId;
+      } else {
+        const ids = await visibleEmployeeIds(user, 'timesheets.view');
+        if (ids) where.employeeId = { in: ids };
+      }
     } else {
       where.employeeId = userEmployeeId;
     }

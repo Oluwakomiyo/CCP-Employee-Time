@@ -8,7 +8,7 @@ export class ProjectController {
       const query = queryProjectsSchema.parse(req.query);
       const result = await projectService.listProjects(
         query,
-        req.user!.role,
+        req.user!,
         req.user!.employeeId
       );
 
@@ -26,7 +26,7 @@ export class ProjectController {
       const { id } = req.params;
       const project = await projectService.getProjectById(
         id,
-        req.user!.role,
+        req.user!,
         req.user!.employeeId
       );
 
@@ -44,7 +44,8 @@ export class ProjectController {
       const project = await projectService.createProject(
         req.body,
         req.user!.userId,
-        req.user!.employeeId
+        req.user!.employeeId,
+        req.user!
       );
 
       res.status(201).json({
@@ -64,7 +65,7 @@ export class ProjectController {
         id,
         req.body,
         req.user!.userId,
-        req.user!.role,
+        req.user!,
         req.user!.employeeId
       );
 
@@ -104,7 +105,7 @@ export class ProjectController {
         id,
         req.body,
         req.user!.userId,
-        req.user!.role,
+        req.user!,
         req.user!.employeeId
       );
 
@@ -125,7 +126,7 @@ export class ProjectController {
         id,
         employeeId,
         req.user!.userId,
-        req.user!.role,
+        req.user!,
         req.user!.employeeId
       );
 

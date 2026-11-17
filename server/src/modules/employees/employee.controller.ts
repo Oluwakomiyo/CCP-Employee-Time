@@ -1,14 +1,14 @@
+import { assertCanSee } from '../../utils/access';
 import { Request, Response, NextFunction } from 'express';
 import { employeeService } from './employee.service';
 import { queryEmployeesSchema } from './employee.schema';
 import { AppError } from '../../errors/AppError';
-import { Role } from '@prisma/client';
 
 export class EmployeeController {
   listEmployees = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const query = queryEmployeesSchema.parse(req.query);
-      const result = await employeeService.listEmployees(query, req.user!.role);
+      const result = await employeeService.listEmployees(query, req.user!);
 
       res.status(200).json({
         success: true,
@@ -23,12 +23,10 @@ export class EmployeeController {
     try {
       const { id } = req.params;
 
-      // Privacy rule: standard employee can only view their own profile directly
-      if (req.user!.role === Role.EMPLOYEE && req.user!.employeeId !== id) {
-        throw AppError.forbidden('You can only view your own employee profile');
-      }
+      // Yourself always; others need employees.view covering them (TEAM: people on projects you lead).
+      await assertCanSee(req.user!, 'employees.view', id);
 
-      const employee = await employeeService.getEmployeeById(id, req.user!.role);
+      const employee = await employeeService.getEmployeeById(id, req.user!);
 
       res.status(200).json({
         success: true,

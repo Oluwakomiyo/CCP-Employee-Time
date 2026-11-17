@@ -1,4 +1,4 @@
-import { NotificationType, Prisma, Role } from '@prisma/client';
+import { NotificationType, Prisma, PermissionScope } from '@prisma/client';
 import { prisma, DbClient } from '../../config/prisma';
 import { AppError } from '../../errors/AppError';
 
@@ -22,15 +22,17 @@ export const notify = async (tx: DbClient, userIds: (string | null | undefined)[
   });
 };
 
-/** Users who may review a correction for this employee: active CEOs and leads of the employee's projects. */
+/** Users who may review a correction for this employee (by corrections.review scope). */
 export const reviewerUserIds = async (tx: DbClient, employeeId: string) => {
   const users = await tx.user.findMany({
     where: {
       isActive: true,
+      // Whoever holds corrections.review: everyone-scope reviewers, and team-scope reviewers
+      // who lead one of the employee's projects.
       OR: [
-        { role: Role.CEO_ADMIN },
+        { appRole: { permissions: { some: { permission: 'corrections.review', scope: PermissionScope.ALL } } } },
         {
-          role: Role.PROJECT_MANAGER,
+          appRole: { permissions: { some: { permission: 'corrections.review', scope: PermissionScope.TEAM } } },
           employee: {
             id: { not: employeeId },
             projectMemberships: {

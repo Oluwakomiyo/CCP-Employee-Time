@@ -1,13 +1,6 @@
+import { AuthUser, scopeOf } from '../../auth/can';
 import { notify, reviewerUserIds } from '../notifications/notification.service';
-import {
-  CorrectionStatus,
-  DayStatus,
-  SegmentStatus,
-  AuditAction,
-  Role,
-  Prisma,
-  NotificationType,
-} from '@prisma/client';
+import { CorrectionStatus, DayStatus, SegmentStatus, AuditAction, Prisma, NotificationType, PermissionScope } from '@prisma/client';
 import { prisma, DbClient } from '../../config/prisma';
 import { AppError } from '../../errors/AppError';
 import { workDateFor } from '../../utils/time';
@@ -161,7 +154,7 @@ export class CorrectionService {
     correctionId: string,
     input: UpdateCorrectionInput,
     employeeId: string,
-    userRole: Role,
+    _user: AuthUser,
     userId: string
   ) {
     const correction = await prisma.timeCorrectionRequest.findUnique({
@@ -171,7 +164,6 @@ export class CorrectionService {
     if (!correction) throw AppError.notFound('Correction request not found');
 
     // Only the requester edits a request; reviewers approve or reject it.
-    void userRole;
     if (correction.employeeId !== employeeId) {
       throw AppError.forbidden('You can only edit your own correction requests');
     }
@@ -219,7 +211,7 @@ export class CorrectionService {
     correctionId: string,
     input: ReviewCorrectionInput,
     reviewerUserId: string,
-    reviewerRole: Role
+    reviewer: AuthUser
   ) {
     const correction = await prisma.timeCorrectionRequest.findUnique({
       where: { id: correctionId },
@@ -251,8 +243,8 @@ export class CorrectionService {
       throw AppError.forbidden('Separation of duties: You cannot review your own correction request');
     }
 
-    // PMs review only employees on projects they lead (spec §3).
-    if (reviewerRole === Role.PROJECT_MANAGER) {
+    // corrections.review TEAM: only employees on projects the reviewer leads (spec §3).
+    if (scopeOf(reviewer, 'corrections.review') !== PermissionScope.ALL) {
       if (!reviewerUser?.employee || !(await pmLeadsEmployee(reviewerUser.employee.id, correction.employeeId))) {
         throw AppError.forbidden('You can only review corrections for employees on projects you lead');
       }
@@ -474,7 +466,7 @@ export class CorrectionService {
    */
   async listCorrections(
     query: QueryCorrectionsInput,
-    userRole: Role,
+    user: AuthUser,
     userEmployeeId: string
   ) {
     const { page, limit, status } = query;
@@ -482,11 +474,12 @@ export class CorrectionService {
 
     const where: Prisma.TimeCorrectionRequestWhereInput = {};
 
-    if (userRole === Role.EMPLOYEE || query.mine) {
+    const reviewScope = scopeOf(user, 'corrections.review');
+    if (!reviewScope || reviewScope === PermissionScope.OWN || query.mine) {
       where.employeeId = userEmployeeId;
     } else {
       if (query.employeeId) where.employeeId = query.employeeId;
-      if (userRole === Role.PROJECT_MANAGER) {
+      if (reviewScope === PermissionScope.TEAM) {
         // Own requests, plus employees on projects this PM leads.
         where.OR = [
           { employeeId: userEmployeeId },

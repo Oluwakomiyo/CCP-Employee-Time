@@ -1,9 +1,9 @@
 import { notify } from '../notifications/notification.service';
-import { Prisma, Role, AuditAction, ProjectStatus, NotificationType } from '@prisma/client';
+import { Prisma, PermissionScope, AuditAction, ProjectStatus, NotificationType } from '@prisma/client';
 import { prisma } from '../../config/prisma';
 import { AppError } from '../../errors/AppError';
 import { reportService } from '../reports/report.service';
-import { TokenPayload } from '../../utils/token';
+import { AuthUser, can, scopeOf } from '../../auth/can';
 import {
   CreateProjectInput,
   UpdateProjectInput,
@@ -19,7 +19,7 @@ export class ProjectService {
    */
   async listProjects(
     query: QueryProjectsInput,
-    userRole: Role,
+    user: AuthUser,
     userEmployeeId?: string
   ) {
     const { page, limit, search, isActive, status, sort, order, mine } = query;
@@ -42,8 +42,8 @@ export class ProjectService {
       ];
     }
 
-    // Restrict standard employees to only their assigned projects
-    if (userRole === Role.EMPLOYEE || mine) {
+    // Without projects.view ALL, only projects the user is on (OWN and TEAM both mean "mine").
+    if (scopeOf(user, 'projects.view') !== PermissionScope.ALL || mine) {
       if (!userEmployeeId) {
         return { data: [], meta: { page, limit, total: 0, totalPages: 0 } };
       }
@@ -90,8 +90,8 @@ export class ProjectService {
       }),
     ]);
 
-    // Management sees hours against each estimate; employees only ever see their own hours.
-    const worked = userRole === Role.EMPLOYEE ? null : await reportService.hoursForProjects(items.map((p) => p.id));
+    // Hours against each estimate need reports.view; otherwise only your own hours are shown elsewhere.
+    const worked = can(user, 'reports.view') ? await reportService.hoursForProjects(items.map((p) => p.id)) : null;
 
     return {
       data: worked ? items.map((p) => ({ ...p, hoursWorked: worked.get(p.id) ?? 0 })) : items,
@@ -107,7 +107,7 @@ export class ProjectService {
   /**
    * Get single project details with all assigned team members.
    */
-  async getProjectById(projectId: string, userRole: Role, userEmployeeId?: string) {
+  async getProjectById(projectId: string, user: AuthUser, userEmployeeId?: string) {
     const project = await prisma.project.findUnique({
       where: { id: projectId },
       include: {
@@ -141,8 +141,8 @@ export class ProjectService {
       throw AppError.notFound(`Project with ID '${projectId}' not found`);
     }
 
-    // Invariant: Employee cannot view projects they are not assigned to
-    if (userRole === Role.EMPLOYEE) {
+    // Without projects.view ALL you only see projects you are assigned to.
+    if (scopeOf(user, 'projects.view') !== PermissionScope.ALL) {
       const isMember = project.members.some((m) => m.employeeId === userEmployeeId);
       if (!isMember) {
         throw AppError.forbidden('You are not assigned to this project');
@@ -155,7 +155,7 @@ export class ProjectService {
   /**
    * Create a project.
    */
-  async createProject(input: CreateProjectInput, actorUserId: string, actorEmployeeId?: string) {
+  async createProject(input: CreateProjectInput, actorUserId: string, actorEmployeeId: string | undefined, actor: AuthUser) {
     const existing = await prisma.project.findUnique({ where: { code: input.code } });
     if (existing) {
       throw AppError.conflict(`Project code '${input.code}' is already in use`);
@@ -177,10 +177,10 @@ export class ProjectService {
         },
       });
 
-      // If created by a Project Manager, assign them automatically as Lead
+      // Someone who manages only projects they lead becomes the lead of a project they create,
+      // or they could not edit it afterwards.
       if (actorEmployeeId) {
-        const actorUser = await tx.user.findUnique({ where: { id: actorUserId } });
-        if (actorUser?.role === Role.PROJECT_MANAGER) {
+        if (scopeOf(actor, 'projects.manage') === PermissionScope.TEAM) {
           await tx.projectMember.create({
             data: {
               projectId: project.id,
@@ -214,7 +214,7 @@ export class ProjectService {
     projectId: string,
     input: UpdateProjectInput,
     actorUserId: string,
-    actorRole: Role,
+    actor: AuthUser,
     actorEmployeeId?: string
   ) {
     const project = await prisma.project.findUnique({
@@ -226,8 +226,8 @@ export class ProjectService {
       throw AppError.notFound(`Project with ID '${projectId}' not found`);
     }
 
-    // PM can only update if they are the designated Project Lead
-    if (actorRole === Role.PROJECT_MANAGER) {
+    // projects.manage TEAM: only projects they lead.
+    if (scopeOf(actor, 'projects.manage') !== PermissionScope.ALL) {
       const isLead = project.members.some(
         (m) => m.employeeId === actorEmployeeId && m.isProjectLead
       );
@@ -310,9 +310,9 @@ export class ProjectService {
    * shortcut: legacy shape for the old client's "Cost & Time" modal, now derived from the
    * project report (net of breaks, rate in force per day). Remove with client/ in Phase 7.
    */
-  async getProjectCostBreakdown(projectId: string, user: TokenPayload) {
+  async getProjectCostBreakdown(projectId: string, user: AuthUser) {
     const r = await reportService.projectReport(user, projectId, {});
-    const isCeo = user.role === Role.CEO_ADMIN;
+    const isCeo = can(user, 'compensation.view');
     return {
       projectId: r.project.id,
       projectName: r.project.name,
@@ -336,7 +336,7 @@ export class ProjectService {
     projectId: string,
     input: AssignMemberInput,
     actorUserId: string,
-    actorRole: Role,
+    actor: AuthUser,
     actorEmployeeId?: string
   ) {
     const project = await prisma.project.findUnique({
@@ -348,8 +348,8 @@ export class ProjectService {
       throw AppError.notFound(`Project not found`);
     }
 
-    // PM must be a lead of the project to add team members
-    if (actorRole === Role.PROJECT_MANAGER) {
+    // projects.manage TEAM: only projects they lead.
+    if (scopeOf(actor, 'projects.manage') !== PermissionScope.ALL) {
       const isLead = project.members.some(
         (m) => m.employeeId === actorEmployeeId && m.isProjectLead
       );
@@ -367,8 +367,8 @@ export class ProjectService {
       throw AppError.badRequest('Target employee does not exist or is not active');
     }
 
-    // Only CEO can appoint project leads; a PM lead manages ordinary members.
-    if (input.isProjectLead && actorRole !== Role.CEO_ADMIN) {
+    // Appointing a lead needs projects.appointLead; a lead manages ordinary members.
+    if (input.isProjectLead && !can(actor, 'projects.appointLead')) {
       throw AppError.forbidden('Only the CEO can appoint a project lead');
     }
 
@@ -433,7 +433,7 @@ export class ProjectService {
     projectId: string,
     targetEmployeeId: string,
     actorUserId: string,
-    actorRole: Role,
+    actor: AuthUser,
     actorEmployeeId?: string
   ) {
     const project = await prisma.project.findUnique({
@@ -445,7 +445,7 @@ export class ProjectService {
       throw AppError.notFound(`Project not found`);
     }
 
-    if (actorRole === Role.PROJECT_MANAGER) {
+    if (scopeOf(actor, 'projects.manage') !== PermissionScope.ALL) {
       const isLead = project.members.some(
         (m) => m.employeeId === actorEmployeeId && m.isProjectLead
       );
@@ -461,7 +461,7 @@ export class ProjectService {
     if (!member) {
       throw AppError.notFound('Employee is not assigned to this project');
     }
-    if (member.isProjectLead && actorRole !== Role.CEO_ADMIN) {
+    if (member.isProjectLead && !can(actor, 'projects.appointLead')) {
       throw AppError.forbidden('Only the CEO can remove a project lead');
     }
 
