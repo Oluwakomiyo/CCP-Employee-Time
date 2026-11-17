@@ -77,3 +77,7 @@
 @keyframes item-in { from { opacity: 0; transform: translateY(4px); } }
 @media (max-width: 380px) { .header { padding: 20px 16px 16px; } .heading h2 { font-size: var(--text-lg); } .toolbar { align-items: flex-start; padding: 0 12px 12px; } .list { padding: 8px 5px; } .item { padding-inline: 7px; } .itemMain { gap: 7px; } .details { padding-left: 43px; } .itemActions { gap: 5px; } .itemActions button { padding-inline: 7px; } .markAll span { display: none; } .footer { padding-inline: 16px; } }
 @media (prefers-reduced-motion: reduce) { .panel[data-state], .trigger, .close, .viewSwitch button, .markAll, .item, .itemActions button, .footer button { animation: none; transition-duration: 0ms; } .close:active, .markAll:active, .itemActions button:active, .footer button:active { transform: none; } }
+
+.loadingRing { display: inline-block; width: 22px; height: 22px; border: 1.5px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: inbox-spin .7s linear infinite; } /* motion: continuous spinner loop */
+@keyframes inbox-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .loadingRing { animation-duration: 2.4s; } }

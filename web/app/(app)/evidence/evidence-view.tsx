@@ -115,7 +115,7 @@ function EvidenceContent({ d, segments, now }: { d: WorkEvidence; segments: Evid
   const breakShare = o.grossClockedSeconds > 0 ? (o.recordedBreakSeconds / o.grossClockedSeconds) * 100 : 0;
 
   return (
-    <div className={styles.layout} role="status" aria-label={`Evidence for ${d.employee.name} on ${d.date}`}>
+    <div className={styles.layout} aria-label={`Evidence for ${d.employee.name} on ${d.date}`}>
       {/* Who, when, and the verdict first: the question a reviewer is answering. */}
       <section className={`${styles.card} ${ev.verdict}`} data-tone={STATUS_TONE[d.verification.status]} aria-label="Assessment">
         <div className={ev.verdictHead}>
@@ -290,23 +290,57 @@ function Row({
   );
 }
 
+/** Mirrors the loaded page: verdict card, the two side-by-side panels, coverage, then recorded entries. */
 function EvidenceSkeleton() {
+  const head = (index: number) => (
+    <div className={ev.panelHead}>
+      <Block width={36} height={36} radius="var(--radius-control)" index={index} />
+      <span style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1 }}>
+        <Block width="11rem" height="1.25rem" index={index + 1} />
+        <Block width="16rem" height="1.125rem" index={index + 1} />
+      </span>
+    </div>
+  );
+  const row = (index: number, key: number) => (
+    <span key={key} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "var(--space-3)", padding: "var(--space-3) 0" }}>
+      <span style={{ display: "flex", gap: "var(--space-3)", alignItems: "center" }}>
+        <Block width={16} height={16} index={index} />
+        <Block width="8rem" height="1.125rem" index={index} />
+      </span>
+      <Block width="3.5rem" height="1.25rem" index={index} />
+    </span>
+  );
   return (
     <div className={styles.layout} role="status" aria-label="Loading evidence" aria-busy="true">
       <div className={styles.card} aria-hidden="true">
         <div className={ev.verdictHead}>
-          <Block shape="pill" width={44} height={44} index={0} />
-          <Block width="18rem" height="2.5rem" radius="0.375rem" index={1} />
+          <Block shape="circle" width={44} height={44} index={0} />
+          <span style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <Block width="20rem" height="1.25rem" index={1} />
+            <Block width="14rem" height="1.125rem" index={1} />
+          </span>
         </div>
       </div>
       <div className={ev.split} aria-hidden="true">
-        {[0, 1].map((c) => (
-          <div key={c} className={styles.card}>
-            <Block width="14rem" height="2.25rem" radius="0.375rem" index={2 + c * 5} />
-            {[0, 1, 2, 3].map((i) => (
-              <Block key={i} width="100%" height="2.5rem" radius="0.375rem" index={3 + c * 5 + i} />
-            ))}
-          </div>
+        <div className={styles.card}>
+          {head(2)}
+          <Block width="100%" height="1.5rem" index={4} />
+          <div>{[0, 1, 2].map((k) => row(5 + k, k))}</div>
+          <Block width="100%" height={10} shape="pill" index={8} />
+        </div>
+        <div className={styles.card}>
+          {head(9)}
+          <div>{[0, 1, 2, 3].map((k) => row(11 + k, k))}</div>
+        </div>
+      </div>
+      <div className={styles.card} aria-hidden="true">
+        {head(15)}
+        <Block width="100%" height={10} shape="pill" index={17} />
+      </div>
+      <div className={styles.card} aria-hidden="true">
+        {head(18)}
+        {[0, 1].map((k) => (
+          <Block key={k} width="70%" height="2.5rem" index={20 + k} />
         ))}
       </div>
     </div>

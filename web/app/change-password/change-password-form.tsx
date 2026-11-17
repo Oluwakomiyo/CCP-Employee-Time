@@ -1,5 +1,6 @@
 "use client";
 
+import { Spinner } from "@/components/loading/spinner";
 import { KeyRound, LogOut } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -23,7 +24,7 @@ export const RULES: PasswordRule[] = [
 export function ChangePasswordForm() {
   const router = useRouter();
   const qc = useQueryClient();
-  const { data: me } = useMe();
+  const { data: me, isPending: meLoading } = useMe();
   const logout = useLogout();
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
@@ -50,6 +51,9 @@ export function ChangePasswordForm() {
       setPending(false);
     }
   }
+
+  // Until we know whether this change is forced, the copy and the "Sign out" button would flip.
+  if (meLoading) return <Spinner label="Loading" center />;
 
   return (
     <AuthLayout

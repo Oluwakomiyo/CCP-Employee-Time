@@ -27,6 +27,8 @@ export interface NotificationCenterProps {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   avoidCollisions?: boolean;
+  /** First fetch still running: the empty frame says so instead of "All clear". */
+  loading?: boolean;
 }
 
 type View = "all" | "unread";
@@ -106,7 +108,7 @@ function NotificationVisual({ item }: { item: NotificationItem }) {
   </span>;
 }
 
-export function NotificationCenter({ notifications: initial, label = "Notifications", onReadChange, onDismiss, open, onOpenChange, avoidCollisions = true }: NotificationCenterProps) {
+export function NotificationCenter({ notifications: initial, label = "Notifications", onReadChange, onDismiss, open, onOpenChange, avoidCollisions = true, loading = false }: NotificationCenterProps) {
   const reduce = useReducedMotion();
   const layoutId = useId();
   const [internalOpen, setInternalOpen] = useState(false);
@@ -225,7 +227,7 @@ export function NotificationCenter({ notifications: initial, label = "Notificati
             </motion.div>)}
             {/* The empty state opens its height on the same spring the rows close on, so the panel morphs between them instead of stacking both. After a bulk action it waits for the cascade to get going, so the panel never grows before it shrinks. */}
             {visible.length === 0 && <motion.div key="empty" className={styles.emptyFrame} initial={reduce ? { opacity: 0 } : { height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={reduce ? fadeOut : { height: 0, opacity: 0, transition: { height: motionTokens.spring.smooth, opacity: exitFast } }} transition={reduce ? instant : { height: { ...motionTokens.spring.smooth, delay: bulk ? cascade(3) : 0 }, opacity: { ...enter, delay: motionTokens.duration.fast } }}>
-              <motion.div className={styles.empty} initial={reduce ? false : { y: 6 }} animate={{ y: 0 }} transition={reduce ? instant : { ...enter, delay: motionTokens.duration.fast }}><CircleCheck size={24} strokeWidth={1.5} aria-hidden="true" /><strong><SwapText reduce={reduce}>{view === "unread" ? "Nothing unread" : "All clear"}</SwapText></strong><p><SwapText reduce={reduce}>{view === "unread" ? "You’ve seen every update." : "New updates will appear here."}</SwapText></p>{view === "unread" && items.length > 0 && <button type="button" onClick={() => { setBulk(false); setView("all"); }}>View all updates</button>}</motion.div>
+              <motion.div className={styles.empty} initial={reduce ? false : { y: 6 }} animate={{ y: 0 }} transition={reduce ? instant : { ...enter, delay: motionTokens.duration.fast }}>{loading ? <><span className={styles.loadingRing} aria-hidden="true" /><strong role="status">Loading updates</strong></> : <><CircleCheck size={24} strokeWidth={1.5} aria-hidden="true" /><strong><SwapText reduce={reduce}>{view === "unread" ? "Nothing unread" : "All clear"}</SwapText></strong></>}{!loading && <p><SwapText reduce={reduce}>{view === "unread" ? "You’ve seen every update." : "New updates will appear here."}</SwapText></p>}{view === "unread" && items.length > 0 && <button type="button" onClick={() => { setBulk(false); setView("all"); }}>View all updates</button>}</motion.div>
             </motion.div>}
           </AnimatePresence>
         </div>

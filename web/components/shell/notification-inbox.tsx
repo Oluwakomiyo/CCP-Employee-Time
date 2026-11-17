@@ -74,6 +74,7 @@ export function NotificationInbox({ role }: { role: Role }) {
 
   return (
     <NotificationCenter
+      loading={inbox.isPending}
       key={items.map((n) => `${n.id}:${n.readAt ?? "unread"}`).join("|")}
       notifications={items.map((n) => ({
         id: n.id,
