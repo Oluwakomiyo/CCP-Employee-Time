@@ -41,7 +41,9 @@
    (the digits, or the draft mirror while typing), so the value keeps one weight and position whether it is rolling or being edited. */
 .number { position: relative; display: inline-grid; align-items: center; }
 .display { display: inline-flex; grid-area: 1 / 1; }
-.display[data-hidden] { position: absolute; top: 0; left: 0; visibility: hidden; }
+/* Hidden while typing. Opacity as well as visibility: each rolling glyph sets its own inline visibility, which would
+   override an inherited "hidden" and paint the old number under the draft (digits looked doubled). */
+.display[data-hidden] { position: absolute; top: 0; left: 0; visibility: hidden; opacity: 0; pointer-events: none; }
 .mirror { grid-area: 1 / 1; white-space: pre; }
 .input { position: absolute; z-index: 1; top: 0; left: 0; width: calc(100% + 1em); height: 100%; margin: 0; border: 0; padding: 0; background: transparent; color: transparent; caret-color: var(--foreground); font: inherit; font-variant-numeric: inherit; letter-spacing: inherit; line-height: inherit; text-align: left; outline: none; }
 .input:focus-visible { outline: none; }
