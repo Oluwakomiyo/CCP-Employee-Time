@@ -22,6 +22,19 @@
   border-bottom: 1px solid var(--border-subtle);
 }
 
+/* Rows with an avatar or two-line cell are taller in the real table. */
+.tall {
+  height: 64px;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  min-width: 0;
+}
+
 .row:last-child {
   border-bottom: 0;
 }

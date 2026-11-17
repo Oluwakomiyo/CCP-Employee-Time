@@ -1,0 +1,58 @@
+/* Same ring as the Arc button spinner (button.module.css .spinner), as a standalone status. */
+.wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+.center {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-6) 0;
+}
+
+.ring {
+  display: inline-block;
+  flex: none;
+  border: 1.5px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite; /* motion: continuous spinner loop */
+}
+
+/* Fast loads never show it: the spinner fades in only after the delay. */
+.delayed {
+  animation: appear 0.15s var(--ease-enter, ease) var(--delay, 250ms) both;
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes appear {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ring {
+    animation-duration: 2.4s;
+  }
+}
