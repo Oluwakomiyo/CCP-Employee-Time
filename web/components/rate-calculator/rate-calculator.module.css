@@ -40,118 +40,405 @@
   }
 }
 
-.popover {
-  width: min(440px, calc(100vw - 32px));
-  max-height: min(78vh, 760px);
-  overflow-y: auto;
-  padding: var(--space-5);
-}
-
-.popoverHead {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--space-3);
-  margin-bottom: var(--space-4);
-}
-
-.popoverHead h2 {
-  margin: 0;
-  font-size: var(--text-lg);
-  font-weight: 500;
-}
-
-.popoverHead p {
-  margin: 2px 0 0;
-  color: var(--text-secondary);
-  font-size: var(--text-sm);
+/* Right-hand drawer: wide enough for the team table. */
+.drawer {
+  --drawer-size: min(36rem, calc(100vw - var(--space-4)));
 }
 
 .panel {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: var(--space-5);
 }
 
-.team {
+/* ---------- The answer ---------- */
+.answer {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
-  margin: 0;
-  padding: var(--space-3);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-control);
+  gap: var(--space-4);
+  padding: var(--space-5);
+  border: 1px solid color-mix(in oklab, var(--accent) 20%, transparent);
+  border-radius: var(--radius-surface);
+  background: var(--accent-subtle);
 }
 
-.team legend {
-  padding: 0 var(--space-1);
+.answer[data-state="over"] {
+  border-color: color-mix(in oklab, var(--state-paused, var(--warning)) 35%, transparent);
+  background: var(--state-paused-subtle, var(--surface-muted));
+}
+
+.answer[data-state="empty"] {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-3);
+  border-style: dashed;
+  border-color: var(--border);
+  background: var(--surface-muted);
   color: var(--text-secondary);
+}
+
+.answer[data-state="empty"] p {
+  margin: 0;
+  font-size: var(--text-sm);
+}
+
+.hero {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.heroIcon {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  place-items: center;
+  border-radius: var(--radius-control);
+  background: var(--brand, var(--accent));
+  color: var(--brand-foreground, #fff);
+}
+
+.answer[data-state="over"] .heroIcon {
+  background: var(--state-paused, var(--warning));
+}
+
+.heroLabel {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+.heroValue {
+  margin: 2px 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.75rem, 5vw, 2.25rem);
+  font-weight: 500;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.heroValue small {
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  color: var(--text-secondary);
+  font-weight: 400;
+}
+
+.heroSub {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+/* Where the money goes */
+.barBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.bar {
+  display: flex;
+  height: 12px;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+}
+
+.bar {
+  position: relative;
+}
+
+.budgetMark {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 2px;
+  border-radius: 1px;
+  background: var(--foreground);
+}
+
+.bar span {
+  transition: width 240ms var(--ease-standard, ease);
+}
+
+.bar [data-seg="work"],
+.legend [data-seg="work"] {
+  background: var(--brand, var(--accent));
+}
+
+.bar [data-seg="reserve"],
+.legend [data-seg="reserve"] {
+  background: color-mix(in oklab, var(--brand, var(--accent)) 40%, var(--surface));
+}
+
+.bar [data-seg="left"],
+.legend [data-seg="left"] {
+  background: var(--state-working, var(--success));
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+}
+
+.legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.legend i {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+.legendBudget {
+  margin-left: auto;
+  font-weight: 500;
+}
+
+.verdict {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  color: var(--state-working, var(--success));
   font-size: var(--text-sm);
   font-weight: 500;
 }
 
-.team > button {
-  align-self: flex-start;
+.verdict[data-over] {
+  color: var(--state-paused, var(--warning));
 }
 
-/* Each role: its name on one row, then people, rate and remove. */
-.line {
+.stats {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) auto;
-  align-items: end;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-2);
-  padding-bottom: var(--space-3);
-  border-bottom: 1px solid var(--border);
+  margin: 0;
 }
 
-.line > :first-child {
-  grid-column: 1 / -1;
+.stats > div {
+  padding: var(--space-3);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+}
+
+.stats dt {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+}
+
+.stats dt svg {
+  color: var(--accent);
+}
+
+.stats dd {
+  margin: 4px 0 0;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.sentence {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+}
+
+/* ---------- Input sections ---------- */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border);
+}
+
+.sectionHead {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.sectionIcon {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  place-items: center;
+  border-radius: var(--radius-control);
+  background: var(--accent-subtle);
+  color: var(--accent);
+}
+
+.sectionHead h3 {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--text-base);
+  font-weight: 500;
+}
+
+.sectionHead p {
+  margin: 2px 0 0;
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+}
+
+.stepNo {
+  display: grid;
+  width: 18px;
+  height: 18px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--brand, var(--accent));
+  color: var(--brand-foreground, #fff);
+  font-size: 11px;
+}
+
+/* A field with a leading icon that says what it is. */
+.fieldWithIcon {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  align-items: end;
+  gap: var(--space-3);
+  --number-field-width: 100%;
+}
+
+.fieldWithIcon > svg {
+  margin-bottom: 11px;
+  color: var(--text-secondary);
 }
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
-  align-items: end;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-3);
+}
+
+.note {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+}
+
+/* Team table */
+.table {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  overflow: hidden;
+  --number-field-width: 100%;
+}
+
+.tableHead,
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1.05fr) minmax(0, 1.3fr) minmax(4.5rem, 0.8fr) 32px;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+}
+
+.tableHead {
+  background: var(--surface-muted);
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+  font-weight: 500;
+}
+
+.tableHead span:nth-child(4) {
+  text-align: right;
+}
+
+.row {
+  border-top: 1px solid var(--border);
+}
+
+/* The header names the columns; each row's own labels stay for screen readers only. */
+.row label,
+.row [class*="__head"] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.subtotal {
+  font-weight: 500;
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.subtotal small {
+  color: var(--text-secondary);
+  font-weight: 400;
+}
+
+.totalRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-top: 1px solid var(--border);
+  background: var(--surface-muted);
+  font-size: var(--text-sm);
+}
+
+.totalRow span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--text-secondary);
+}
+
+.totalRow strong {
+  color: var(--foreground);
+  font-weight: 500;
+}
+
+/* Footer stays in reach while the panel scrolls. */
+.footer {
+  position: sticky;
+  bottom: calc(var(--space-6) * -1);
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin: 0 calc(var(--space-6) * -1) calc(var(--space-6) * -1);
+  padding: var(--space-4) var(--space-6);
+  border-top: 1px solid var(--border);
+  background: var(--surface);
 }
 
 .hint {
   margin: 0;
   color: var(--text-secondary);
   font-size: var(--text-sm);
-}
-
-.result {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  padding: var(--space-4);
-  border-radius: var(--radius-control);
-  background: var(--accent-subtle);
-}
-
-.sentence {
-  margin: 0;
-  font-weight: 500;
-  line-height: 1.45;
-}
-
-.figures {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-3);
-  margin: 0;
-}
-
-.figures dt {
-  color: var(--text-secondary);
-  font-size: var(--text-xs);
-}
-
-.figures dd {
-  margin: 2px 0 0;
-  font-weight: 500;
-  font-variant-numeric: tabular-nums;
 }
 
 /* Use-this-plan steps */
@@ -252,6 +539,33 @@
 @media (max-width: 600px) {
   .fabLabel {
     display: none;
+  }
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  /* Phone: each role becomes a small card (name, then people / rate / subtotal). */
+  .tableHead {
+    display: none;
+  }
+  .row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) auto 32px;
+  }
+  .row > :first-child {
+    grid-column: 1 / -1;
+  }
+  /* No column header on phones, so each field shows its own label again. */
+  .row label,
+  .row [class*="__head"] {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip: auto;
+  }
+  .footer {
+    margin: 0;
+    padding: var(--space-3) 0;
+    bottom: 0;
   }
   .fab {
     width: 52px;
