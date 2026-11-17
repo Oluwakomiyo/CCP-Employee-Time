@@ -1,7 +1,7 @@
 import { Router } from 'express';
-import { Role } from '@prisma/client';
 import { timeController } from './time.controller';
-import { authenticate, authorize } from '../../middleware/auth.middleware';
+import { authenticate } from '../../middleware/auth.middleware';
+import { requirePermission } from '../../auth/can';
 import { validate } from '../../middleware/validate.middleware';
 import {
   startWorkSchema,
@@ -17,19 +17,19 @@ router.use(authenticate);
 
 // Status & history
 router.get('/today', timeController.getToday);
-router.get('/history', timeController.getHistory);
+router.get('/history', requirePermission('timesheets.view'), timeController.getHistory);
 
 // Time engine (spec §38). Every action returns the employee's fresh status.
-router.post('/start', validate(startWorkSchema), timeController.startWork);
-router.post('/project', validate(changeProjectSchema), timeController.changeProject);
-router.post('/location', validate(changeLocationSchema), timeController.changeLocation);
-router.post('/activity', validate(changeActivitySchema), timeController.changeActivity);
-router.post('/breaks/start', validate(startBreakSchema), timeController.startBreak);
-router.post('/breaks/end', timeController.endBreak);
-router.post('/end', timeController.endWork);
+router.post('/start', requirePermission('time.track'), validate(startWorkSchema), timeController.startWork);
+router.post('/project', requirePermission('time.track'), validate(changeProjectSchema), timeController.changeProject);
+router.post('/location', requirePermission('time.track'), validate(changeLocationSchema), timeController.changeLocation);
+router.post('/activity', requirePermission('time.track'), validate(changeActivitySchema), timeController.changeActivity);
+router.post('/breaks/start', requirePermission('time.track'), validate(startBreakSchema), timeController.startBreak);
+router.post('/breaks/end', requirePermission('time.track'), timeController.endBreak);
+router.post('/end', requirePermission('time.track'), timeController.endWork);
 
 // Missing clock-outs
-router.get('/flagged', timeController.getFlaggedDays);
-router.post('/auto-close-stale', authorize(Role.CEO_ADMIN, Role.PROJECT_MANAGER), timeController.triggerAutoClose);
+router.get('/flagged', requirePermission('timesheets.view'), timeController.getFlaggedDays);
+router.post('/auto-close-stale', requirePermission('corrections.review'), timeController.triggerAutoClose);
 
 export const timeRouter = router;

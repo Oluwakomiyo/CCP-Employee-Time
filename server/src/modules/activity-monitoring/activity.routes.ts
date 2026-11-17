@@ -4,7 +4,8 @@ import { activityController } from './activity.controller';
 import { z } from 'zod';
 import { prisma } from '../../config/prisma';
 import { AppError } from '../../errors/AppError';
-import { authenticate, authorize } from '../../middleware/auth.middleware';
+import { authenticate } from '../../middleware/auth.middleware';
+import { requirePermission } from '../../auth/can';
 
 const router = Router();
 
@@ -20,12 +21,12 @@ router.post('/browser-heartbeat', activityController.recordBrowserHeartbeat);
 // Device Registration (CEO_ADMIN only: devices carry credentials)
 router.post(
   '/devices',
-  authorize(Role.CEO_ADMIN),
+  requirePermission('settings.devices'),
   activityController.registerDevice
 );
 
 // Device list and revoke (CEO only). The key hash never leaves the server.
-router.get('/devices', authorize(Role.CEO_ADMIN), async (_req: Request, res: Response, next: NextFunction) => {
+router.get('/devices', requirePermission('settings.devices'), async (_req: Request, res: Response, next: NextFunction) => {
   try {
     const devices = await prisma.employeeDevice.findMany({
       orderBy: [{ isActive: 'desc' }, { lastSeenAt: 'desc' }],
@@ -46,7 +47,7 @@ router.get('/devices', authorize(Role.CEO_ADMIN), async (_req: Request, res: Res
   }
 });
 
-router.post('/devices/:id/revoke', authorize(Role.CEO_ADMIN), async (req: Request, res: Response, next: NextFunction) => {
+router.post('/devices/:id/revoke', requirePermission('settings.devices'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = z.string().uuid().parse(req.params.id);
     const device = await prisma.$transaction(async (tx) => {

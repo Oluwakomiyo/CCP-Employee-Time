@@ -1,8 +1,8 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import { Role } from '@prisma/client';
 import { z } from 'zod';
 import { prisma } from '../../config/prisma';
-import { authenticate, authorize } from '../../middleware/auth.middleware';
+import { authenticate } from '../../middleware/auth.middleware';
+import { requirePermission } from '../../auth/can';
 import { validate } from '../../middleware/validate.middleware';
 import { AppError } from '../../errors/AppError';
 
@@ -12,7 +12,8 @@ const router = Router();
 router.use(authenticate);
 
 // Management can list (filters, reports); only the CEO can add or rename.
-router.get('/', authorize(Role.CEO_ADMIN, Role.PROJECT_MANAGER), async (_req: Request, res: Response, next: NextFunction) => {
+// Read by anyone who sees people (filters, the employee form) or manages the list.
+router.get('/', requirePermission('employees.view', 'settings.departments'), async (_req: Request, res: Response, next: NextFunction) => {
   try {
     const departments = await prisma.department.findMany({
       orderBy: { name: 'asc' },
@@ -24,7 +25,7 @@ router.get('/', authorize(Role.CEO_ADMIN, Role.PROJECT_MANAGER), async (_req: Re
   }
 });
 
-router.post('/', authorize(Role.CEO_ADMIN), validate(nameSchema), async (req: Request, res: Response, next: NextFunction) => {
+router.post('/', requirePermission('settings.departments'), validate(nameSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const department = await prisma.department.create({ data: { name: req.body.name } });
     res.status(201).json({ success: true, data: department });
@@ -34,7 +35,7 @@ router.post('/', authorize(Role.CEO_ADMIN), validate(nameSchema), async (req: Re
 });
 
 // Renaming cascades to employees through the foreign key on Employee.department.
-router.patch('/:id', authorize(Role.CEO_ADMIN), validate(nameSchema), async (req: Request, res: Response, next: NextFunction) => {
+router.patch('/:id', requirePermission('settings.departments'), validate(nameSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const existing = await prisma.department.findUnique({ where: { id: req.params.id } });
     if (!existing) throw AppError.notFound('Department not found');

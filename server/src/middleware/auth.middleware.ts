@@ -1,3 +1,4 @@
+import { AuthUser, toGrants } from '../auth/can';
 import { Request, Response, NextFunction } from 'express';
 import { Role } from '@prisma/client';
 import { verifyAccessToken, TokenPayload } from '../utils/token';
@@ -7,7 +8,7 @@ import { prisma } from '../config/prisma';
 declare global {
   namespace Express {
     interface Request {
-      user?: TokenPayload;
+      user?: AuthUser;
     }
   }
 }
@@ -42,7 +43,15 @@ export const authenticate = async (req: Request, _res: Response, next: NextFunct
   try {
     const user = await prisma.user.findUnique({
       where: { id: payload.userId },
-      select: { id: true, role: true, isActive: true, mustChangePassword: true, employee: { select: { id: true } } },
+      select: {
+        id: true,
+        role: true,
+        isActive: true,
+        mustChangePassword: true,
+        employee: { select: { id: true } },
+        // Permissions are read on every request, so a role edit takes effect on the next call.
+        appRole: { select: { id: true, permissions: { select: { permission: true, scope: true } } } },
+      },
     });
     if (!user || !user.isActive || !user.employee) {
       return next(AppError.unauthorized('Account is not active'));
@@ -54,7 +63,13 @@ export const authenticate = async (req: Request, _res: Response, next: NextFunct
     }
 
     // Role and employee come from the database, not the token.
-    req.user = { userId: user.id, role: user.role, employeeId: user.employee.id };
+    req.user = {
+      userId: user.id,
+      role: user.role,
+      employeeId: user.employee.id,
+      roleId: user.appRole.id,
+      grants: toGrants(user.appRole.permissions),
+    };
     next();
   } catch (err) {
     next(err);

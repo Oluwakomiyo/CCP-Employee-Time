@@ -1,6 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import { Role } from '@prisma/client';
-import { authenticate, authorize } from '../../middleware/auth.middleware';
+import { authenticate } from '../../middleware/auth.middleware';
+import { requirePermission } from '../../auth/can';
 import { reportService } from './report.service';
 import { estimateQuerySchema, idParamSchema, rangeQuerySchema, workdayQuerySchema } from './report.schema';
 
@@ -13,26 +13,30 @@ const send = (fn: Handler) => async (req: Request, res: Response, next: NextFunc
   }
 };
 
-/** /api/v1/management/*: CEO and project managers only (deny by default, spec §4). */
+/** /api/v1/management/*: each view needs its own permission (deny by default, spec §4). */
 export const managementRouter = Router();
-managementRouter.use(authenticate, authorize(Role.CEO_ADMIN, Role.PROJECT_MANAGER));
+managementRouter.use(authenticate);
 
-managementRouter.get('/dashboard', send((req) => reportService.dashboard(req.user!, rangeQuerySchema.parse(req.query))));
-managementRouter.get('/status', send((req) => reportService.liveStatus(req.user!)));
+managementRouter.get('/dashboard', requirePermission('dashboard.view'), send((req) => reportService.dashboard(req.user!, rangeQuerySchema.parse(req.query))));
+managementRouter.get('/status', requirePermission('live.view'), send((req) => reportService.liveStatus(req.user!)));
 managementRouter.get(
   '/projects/:id/report',
+  requirePermission('reports.view'),
   send((req) => reportService.projectReport(req.user!, idParamSchema.parse(req.params).id, rangeQuerySchema.parse(req.query)))
 );
 managementRouter.get(
   '/employees/:id/report',
+  requirePermission('reports.view'),
   send((req) => reportService.employeeReport(req.user!, idParamSchema.parse(req.params).id, rangeQuerySchema.parse(req.query)))
 );
 managementRouter.get(
   '/employees/:id/workdays',
+  requirePermission('evidence.view', 'timesheets.view'),
   send((req) => reportService.findWorkDay(req.user!, idParamSchema.parse(req.params).id, workdayQuerySchema.parse(req.query).date))
 );
 managementRouter.get(
   '/estimate',
+  requirePermission('reports.view'),
   send((req) => {
     const q = estimateQuerySchema.parse(req.query);
     return reportService.estimate(req.user!, q.projectId, q.employeeIds);
