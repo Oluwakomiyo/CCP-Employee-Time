@@ -13,7 +13,7 @@ Single source of truth for where the rebuild stands. **Update this file in the s
 | Order | Backend correctness and security first, then the UI is built once. |
 | Timezone | `COMPANY_TZ=Africa/Lagos`. Timestamps are stored in UTC; a workday is the Lagos date at clock-in (`server/src/utils/time.ts`). |
 | UI kit | **Arc** (uiarc.dev, via the Arc MCP and the shadcn CLI) for **every** primitive: dialogs, drawers, inputs, selects, pickers, buttons, tables, badges, toasts, charts. Hand-build only what Arc lacks (the sidebar shell), and compose that from Arc parts. Font: **Plus Jakarta Sans** (mapped onto Arc's font tokens). |
-| Desktop | Electron is a thin wrapper that loads the hosted web URL and does **no** activity tracking (owner decision, 2026-11-14). `desktop-agent/` alone reports device activity, using a device key issued in Settings. |
+| Desktop | The Electron app loads the hosted web URL **and** reports active/idle for its computer, registering it to whoever signs in (owner decision 2026-11-17, replacing the 2026-11-14 "no tracking" choice). `desktop-agent/` stays for manual setups. |
 | Commits | Small, logical commits (one real change each, every commit typechecks). Never add Claude or AI attribution. Don't push unless asked. |
 
 ## Assumptions in force (confirm with the owner if they change)
