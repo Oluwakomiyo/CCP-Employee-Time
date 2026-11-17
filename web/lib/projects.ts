@@ -1,6 +1,7 @@
 "use client";
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepForSameSubject } from "./query";
 import { api } from "./api";
 import type { ActivityType, LocationType } from "./time";
 
@@ -105,7 +106,7 @@ export const useProjectReport = (id: string, from?: string, to?: string) =>
       const q = p.toString();
       return api.get<ProjectReport>(`/management/projects/${id}/report${q ? `?${q}` : ""}`);
     },
-    placeholderData: keepPreviousData,
+    placeholderData: keepForSameSubject(id),
   });
 
 export const useEstimate = (projectId: string, employeeIds: string[]) =>
@@ -113,7 +114,7 @@ export const useEstimate = (projectId: string, employeeIds: string[]) =>
     queryKey: ["management", "estimate", projectId, [...employeeIds].sort()],
     queryFn: () => api.get<Estimate>(`/management/estimate?projectId=${projectId}&employeeIds=${employeeIds.join(",")}`),
     enabled: employeeIds.length > 0,
-    placeholderData: keepPreviousData,
+    placeholderData: keepForSameSubject(projectId),
   });
 
 export const useProjectMutations = () => {

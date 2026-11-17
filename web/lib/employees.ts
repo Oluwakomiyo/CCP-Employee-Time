@@ -1,6 +1,7 @@
 "use client";
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepForSameSubject } from "./query";
 import { api } from "./api";
 import type { Role } from "./types";
 import type { ActivityType, LocationType } from "./time";
@@ -82,7 +83,7 @@ export const useEmployeeReport = (id: string, from: string, to: string) =>
   useQuery({
     queryKey: ["management", "employee-report", id, from, to],
     queryFn: () => api.get<EmployeeReport>(`/management/employees/${id}/report?from=${from}&to=${to}`),
-    placeholderData: keepPreviousData,
+    placeholderData: keepForSameSubject(id),
   });
 
 export const useCompensation = (id: string, enabled: boolean) =>

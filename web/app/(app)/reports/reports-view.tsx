@@ -1,12 +1,12 @@
 "use client";
 
+import { ReportSkeleton } from "@/components/reports/report-skeleton";
 import { useState } from "react";
 import { Alert } from "@/components/arc/alert/alert";
 import { Combobox } from "@/components/arc/combobox/combobox";
 import DateRangePicker, { type DateRange } from "@/components/arc/date-range-picker/date-range-picker";
 import EmptyState from "@/components/arc/empty-state/empty-state";
 import SegmentedControl from "@/components/arc/segmented-control/segmented-control";
-import { Block } from "@/components/loading/skeleton-block";
 import { EmployeeReport } from "@/components/reports/employee-report";
 import { ProjectBreakdown } from "@/components/reports/project-report";
 import { errorMessage } from "@/lib/api";
@@ -101,16 +101,10 @@ function ProjectSection({ id, title, from, to, ceo }: { id: string; title: strin
 
   if (report.isPending) {
     return (
-      <div className={styles.grid2} role="status" aria-label="Loading project report" aria-busy="true">
-        {[0, 1, 2].map((i) => (
-          <div key={i} className={styles.card} aria-hidden="true">
-            <Block width="6rem" height="1.4rem" radius="0.375rem" index={i * 5} />
-            {[0, 1, 2, 3].map((r) => (
-              <Block key={r} width={r % 2 ? "70%" : "100%"} height="1.3125rem" radius="0.25rem" index={i * 5 + r + 1} />
-            ))}
-          </div>
-        ))}
-      </div>
+      <section aria-label={`Report for ${title}`}>
+        <h2 className={styles.sectionTitle}>{title}</h2>
+        <ReportSkeleton kpis={false} label="Loading project report" />
+      </section>
     );
   }
   if (report.isError)
@@ -123,7 +117,9 @@ function ProjectSection({ id, title, from, to, ceo }: { id: string; title: strin
   return (
     <section aria-label={`Report for ${title}`}>
       <h2 className={styles.sectionTitle}>{title}</h2>
-      <ProjectBreakdown r={report.data} ceo={ceo} />
+      <div data-stale={report.isPlaceholderData} aria-busy={report.isPlaceholderData}>
+        <ProjectBreakdown r={report.data} ceo={ceo} />
+      </div>
     </section>
   );
 }

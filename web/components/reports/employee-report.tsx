@@ -2,7 +2,7 @@
 
 import { Alert } from "@/components/arc/alert/alert";
 import { MetricCard } from "@/components/arc/metric-card/metric-card";
-import { Skeleton } from "@/components/arc/skeleton/skeleton";
+import { ReportSkeleton } from "./report-skeleton";
 import { errorMessage } from "@/lib/api";
 import { useEmployeeReport } from "@/lib/employees";
 import { ACTIVITIES, labelOf, LOCATIONS } from "@/lib/time";
@@ -13,7 +13,7 @@ import styles from "@/app/(app)/manage.module.css";
 export function EmployeeReport({ id, from, to, rangeLabel }: { id: string; from: string; to: string; rangeLabel: string }) {
   const report = useEmployeeReport(id, from, to);
 
-  if (report.isPending) return <Skeleton lines={6} label="Loading report" />;
+  if (report.isPending) return <ReportSkeleton kpis label="Loading report" />;
   if (report.isError)
     return (
       <Alert tone="danger" title="Could not load the report">
@@ -22,7 +22,7 @@ export function EmployeeReport({ id, from, to, rangeLabel }: { id: string; from:
     );
 
   return (
-    <div className={styles.layout}>
+    <div className={styles.layout} data-stale={report.isPlaceholderData} aria-busy={report.isPlaceholderData}>
       <div className={styles.kpis}>
         <MetricCard label="Hours worked" value={report.data.totalWorkingHours} suffix="h" context={rangeLabel} />
         <MetricCard label="Average day" value={report.data.averageDailyHours} suffix="h" context={`over ${report.data.validWorkingDays} full days`} />
