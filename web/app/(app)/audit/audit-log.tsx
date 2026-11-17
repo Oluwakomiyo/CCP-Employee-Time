@@ -1,5 +1,6 @@
 "use client";
 
+import { CalendarX, Eye } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Alert } from "@/components/arc/alert/alert";
 import Badge from "@/components/arc/badge/badge";
@@ -65,7 +66,7 @@ export function AuditLog() {
       sortable: false,
       render: (_v, row) => (
         <Button variant="ghost" size="sm" onClick={() => setOpenId(String(row.id))}>
-          View
+          <Eye size={14} aria-hidden="true" /> View
         </Button>
       ),
     },
@@ -94,7 +95,7 @@ export function AuditLog() {
         />
         {range && (
           <Button variant="ghost" onClick={() => setRange(null)}>
-            Clear dates
+            <CalendarX size={16} aria-hidden="true" /> Clear dates
           </Button>
         )}
       </div>

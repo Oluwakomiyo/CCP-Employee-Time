@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Lock } from "lucide-react";
+import { Calculator, Download, Lock } from "lucide-react";
 import { Alert } from "@/components/arc/alert/alert";
 import { ActionButton } from "@/components/arc/action-button/action-button";
 import Badge from "@/components/arc/badge/badge";
@@ -115,10 +115,10 @@ export function PayrollView() {
       <div className={styles.toolbar}>
         <DateRangePicker label="Pay period" value={range} onChange={setRange} presets={PRESETS} />
         <div className={styles.rowActions}>
-          <ActionButton label={records.length ? "Regenerate draft" : "Generate draft"} pendingLabel="Generating" successLabel="Generated" onAction={runGenerate} onActionError={() => undefined} />
+          <ActionButton icon={<Calculator size={17} aria-hidden="true" />} label={records.length ? "Regenerate draft" : "Generate draft"} pendingLabel="Generating" successLabel="Generated" onAction={runGenerate} onActionError={() => undefined} />
           {records.length > 0 && (
             <Button variant="secondary" onClick={() => (window.location.href = exportUrl(period))}>
-              Export CSV
+              <Download size={16} aria-hidden="true" /> Export CSV
             </Button>
           )}
         </div>

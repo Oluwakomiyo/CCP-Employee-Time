@@ -1,5 +1,6 @@
 "use client";
 
+import { LogIn } from "lucide-react";
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
@@ -45,7 +46,7 @@ export function LoginForm() {
         <Input label="Email" type="email" autoComplete="username" required value={email} onChange={(e) => setEmail(e.target.value)} />
         <PasswordField label="Password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
         <Button type="submit" variant="primary" size="lg" loading={pending} disabled={!email || !password}>
-          Sign in
+          <LogIn size={16} aria-hidden="true" /> Sign in
         </Button>
       </form>
     </AuthLayout>

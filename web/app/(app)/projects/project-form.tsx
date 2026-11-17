@@ -1,5 +1,6 @@
 "use client";
 
+import { FolderPlus } from "lucide-react";
 import { useState } from "react";
 import { Alert } from "@/components/arc/alert/alert";
 import { ActionButton } from "@/components/arc/action-button/action-button";
@@ -85,7 +86,7 @@ export function ProjectForm({ project, onSaved }: { project?: ProjectReport["pro
           <DatePicker label="End date" description="Optional." value={f.endDate} onChange={(d) => set("endDate", d)} minDate={f.startDate} />
         </div>
         <Textarea label="Description" rows={3} maxLength={2000} value={f.description} onChange={(e) => set("description", e.target.value)} />
-        <ActionButton label={project ? "Save changes" : "Create project"} pendingLabel="Saving" successLabel="Saved" disabled={invalid} onAction={save} onActionError={() => undefined} />
+        <ActionButton icon={<FolderPlus size={17} aria-hidden="true" />} label={project ? "Save changes" : "Create project"} pendingLabel="Saving" successLabel="Saved" disabled={invalid} onAction={save} onActionError={() => undefined} />
       </form>
     </DrawerContent>
   );

@@ -1,5 +1,6 @@
 "use client";
 
+import { UserPlus } from "lucide-react";
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Alert } from "@/components/arc/alert/alert";
@@ -106,7 +107,7 @@ export function EmployeeList() {
         </div>
         {ceo && (
           <Button variant="primary" onClick={() => setAdding(true)}>
-            Add employee
+            <UserPlus size={16} aria-hidden="true" /> Add employee
           </Button>
         )}
       </div>

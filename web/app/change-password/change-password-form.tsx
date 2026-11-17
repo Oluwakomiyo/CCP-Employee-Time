@@ -1,5 +1,6 @@
 "use client";
 
+import { KeyRound, LogOut } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
@@ -75,11 +76,11 @@ export function ChangePasswordForm() {
           aria-invalid={mismatch || undefined}
         />
         <Button type="submit" variant="primary" size="lg" loading={pending} disabled={!current || !meetsRules || confirm !== next}>
-          Save password
+          <KeyRound size={16} aria-hidden="true" /> Save password
         </Button>
         {forced && (
           <Button type="button" variant="ghost" onClick={logout}>
-            Sign out
+            <LogOut size={16} aria-hidden="true" /> Sign out
           </Button>
         )}
       </form>

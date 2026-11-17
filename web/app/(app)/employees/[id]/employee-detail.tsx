@@ -1,5 +1,6 @@
 "use client";
 
+import { Check, Pencil } from "lucide-react";
 import { useState } from "react";
 import Link from "next/link";
 import { Alert } from "@/components/arc/alert/alert";
@@ -72,7 +73,7 @@ export function EmployeeDetail({ id }: { id: string }) {
         actions={
           ceo && (
             <Button variant="secondary" onClick={() => setEditing(true)}>
-              Edit
+              <Pencil size={16} aria-hidden="true" /> Edit
             </Button>
           )
         }
@@ -288,7 +289,7 @@ function Compensation({ employee: e }: { employee: Employee }) {
           <MoneyInput label="New overtime rate" currency="NGN" currencies={["NGN"]} quickAdd={[]} min={0} value={overtime} onValueChange={(v) => setOvertime(v)} />
           <DatePicker label="Starts on" value={from} onChange={setFrom} />
         </div>
-        <ActionButton label="Save new rate" pendingLabel="Saving" successLabel="Rate saved" disabled={!base || !overtime || !from} onAction={save} onActionError={() => undefined} />
+        <ActionButton icon={<Check size={17} aria-hidden="true" />} label="Save new rate" pendingLabel="Saving" successLabel="Rate saved" disabled={!base || !overtime || !from} onAction={save} onActionError={() => undefined} />
       </section>
     </div>
   );

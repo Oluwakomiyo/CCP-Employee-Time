@@ -1,5 +1,6 @@
 "use client";
 
+import { KeyRound, RotateCw } from "lucide-react";
 import { useState } from "react";
 import { Alert } from "@/components/arc/alert/alert";
 import { Button } from "@/components/arc/button/button";
@@ -32,7 +33,7 @@ export function ProfileDetails() {
         </Alert>
         <div>
           <Button variant="secondary" onClick={() => refetch()}>
-            Retry
+            <RotateCw size={16} aria-hidden="true" /> Retry
           </Button>
         </div>
       </div>
@@ -102,7 +103,7 @@ export function ProfileDetails() {
           />
           <div>
             <Button type="submit" variant="primary" loading={pending} disabled={!current || !meetsRules || confirm !== next}>
-              Save password
+              <KeyRound size={16} aria-hidden="true" /> Save password
             </Button>
           </div>
         </form>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { BadgeCheck, Building2, Check, Pencil, Plus } from "lucide-react";
+import { ArrowLeft, BadgeCheck, Ban, Building2, Check, KeyRound, MonitorSmartphone, Pencil, Plus } from "lucide-react";
 import { Alert } from "@/components/arc/alert/alert";
 import { ActionButton } from "@/components/arc/action-button/action-button";
 import Badge from "@/components/arc/badge/badge";
@@ -172,7 +172,7 @@ function Devices() {
       render: (_v, row) =>
         row.active ? (
           <Button variant="ghost" size="sm" onClick={() => setRevoking({ id: String(row.id), name: String(row.device) })}>
-            Revoke
+            <Ban size={14} aria-hidden="true" /> Revoke
           </Button>
         ) : (
           <Badge tone="neutral">Revoked</Badge>
@@ -185,7 +185,7 @@ function Devices() {
       <div className={styles.toolbar}>
         <h2 id="devices">Desktop devices</h2>
         <Button variant="secondary" onClick={() => setRegistering(true)}>
-          Register device
+          <MonitorSmartphone size={16} aria-hidden="true" /> Register device
         </Button>
       </div>
       <p className={styles.hint}>Each device has its own key for the desktop agent. Revoke a lost or replaced device; its key stops working at once.</p>
@@ -214,7 +214,7 @@ function Devices() {
               )}
               <div className={styles.rowActions}>
                 <Button variant="secondary" onClick={() => setRevoking(null)}>
-                  Keep it
+                  <ArrowLeft size={16} aria-hidden="true" /> Keep it
                 </Button>
                 <Button
                   variant="danger"
@@ -226,7 +226,7 @@ function Devices() {
                       .catch((e: unknown) => setRevokeError(errorMessage(e)))
                   }
                 >
-                  Revoke
+                  <Ban size={16} aria-hidden="true" /> Revoke
                 </Button>
               </div>
             </div>
@@ -255,7 +255,7 @@ function Devices() {
                 Only a hash is stored. If it is lost, revoke the device and register it again.
               </Alert>
               <Button variant="primary" onClick={() => setKey(null)}>
-                Done
+                <Check size={16} aria-hidden="true" /> Done
               </Button>
             </div>
           </DialogContent>
@@ -292,6 +292,7 @@ function RegisterDevice({ onDone }: { onDone: (device: string, apiKey: string) =
         <Input label="Hardware identifier" description="Serial number or MAC address." value={f.deviceIdentifier} onChange={(e) => set("deviceIdentifier", e.target.value)} />
         <Input label="Platform" placeholder="Windows 11" value={f.platform} onChange={(e) => set("platform", e.target.value)} />
         <ActionButton
+          icon={<KeyRound size={17} aria-hidden="true" />}
           label="Register"
           pendingLabel="Registering"
           successLabel="Registered"

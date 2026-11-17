@@ -1,5 +1,6 @@
 "use client";
 
+import { FolderPlus } from "lucide-react";
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -109,7 +110,7 @@ export function ProjectList() {
           />
         </div>
         <Button variant="primary" onClick={() => setCreating(true)}>
-          New project
+          <FolderPlus size={16} aria-hidden="true" /> New project
         </Button>
       </div>
 

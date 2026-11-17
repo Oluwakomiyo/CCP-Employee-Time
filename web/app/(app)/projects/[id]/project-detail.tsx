@@ -1,5 +1,6 @@
 "use client";
 
+import { Pencil, UserPlus } from "lucide-react";
 import { useState } from "react";
 import Link from "next/link";
 import { Alert } from "@/components/arc/alert/alert";
@@ -57,7 +58,7 @@ export function ProjectDetail({ id }: { id: string }) {
               {PROJECT_STATUSES.find((s) => s.value === p.status)?.label}
             </Badge>
             <Button variant="secondary" onClick={() => setEditing(true)}>
-              Edit
+              <Pencil size={16} aria-hidden="true" /> Edit
             </Button>
           </>
         }
@@ -231,7 +232,7 @@ function Team({ r, ceo }: { r: ProjectReport; ceo: boolean }) {
         )}
         <Combobox label="Employee" placeholder="Search by name" options={options} value={employeeId} onValueChange={setEmployeeId} emptyMessage="Nobody else to add" />
         {ceo && <Switch label="Make them a project lead" checked={lead} onCheckedChange={setLead} />}
-        <ActionButton label="Add to project" pendingLabel="Adding" successLabel="Added" disabled={!employeeId} onAction={add} onActionError={() => undefined} />
+        <ActionButton icon={<UserPlus size={17} aria-hidden="true" />} label="Add to project" pendingLabel="Adding" successLabel="Added" disabled={!employeeId} onAction={add} onActionError={() => undefined} />
       </section>
     </div>
   );

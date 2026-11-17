@@ -1,5 +1,6 @@
 "use client";
 
+import { Check } from "lucide-react";
 import { Alert } from "@/components/arc/alert/alert";
 import { Button } from "@/components/arc/button/button";
 import { CopyButton } from "@/components/arc/copy-button/copy-button";
@@ -21,7 +22,7 @@ export function TempPasswordDialog({ who, password, onClose }: { who: string; pa
               It is not stored anywhere readable. If it is lost, reset the password again.
             </Alert>
             <Button variant="primary" onClick={onClose}>
-              Done
+              <Check size={16} aria-hidden="true" /> Done
             </Button>
           </div>
         </DialogContent>

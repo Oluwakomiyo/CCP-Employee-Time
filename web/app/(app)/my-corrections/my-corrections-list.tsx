@@ -1,5 +1,6 @@
 "use client";
 
+import { ArrowLeft, FilePen, Pencil, Send, Undo2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Alert } from "@/components/arc/alert/alert";
@@ -90,10 +91,10 @@ export function MyCorrectionsList() {
           return (
             <span className={styles.rowActions}>
               <Button variant="ghost" size="sm" onClick={() => setDialog({ correction, dayId: correction.workDayId })}>
-                Edit
+                <Pencil size={14} aria-hidden="true" /> Edit
               </Button>
               <Button variant="ghost" size="sm" onClick={() => setWithdrawing(correction)}>
-                Withdraw
+                <Undo2 size={14} aria-hidden="true" /> Withdraw
               </Button>
             </span>
           );
@@ -115,7 +116,7 @@ export function MyCorrectionsList() {
           onValueChange={(v: string) => { setFilter(v); setPage(1); }}
         />
         <Button variant="primary" onClick={() => setDialog({})}>
-          Request correction
+          <FilePen size={16} aria-hidden="true" /> Request correction
         </Button>
       </div>
 
@@ -127,7 +128,7 @@ export function MyCorrectionsList() {
         <EmptyState
           title="No corrections here"
           description={filter === "ALL" ? "You have not requested any corrections yet." : `No ${filter.toLowerCase()} requests.`}
-          action={<Button variant="secondary" onClick={() => setDialog({})}>Request correction</Button>}
+          action={<Button variant="secondary" onClick={() => setDialog({})}><FilePen size={16} aria-hidden="true" /> Request correction</Button>}
         />
       ) : (
         <>
@@ -159,7 +160,7 @@ export function MyCorrectionsList() {
               )}
               <div className={styles.rowActions}>
                 <Button variant="secondary" onClick={() => { setWithdrawing(null); setWithdrawError(null); }}>
-                  Keep it
+                  <ArrowLeft size={16} aria-hidden="true" /> Keep it
                 </Button>
                 <Button
                   variant="danger"
@@ -171,7 +172,7 @@ export function MyCorrectionsList() {
                       .catch((e: unknown) => setWithdrawError(errorMessage(e)))
                   }
                 >
-                  Withdraw
+                  <Undo2 size={16} aria-hidden="true" /> Withdraw
                 </Button>
               </div>
             </div>
@@ -265,7 +266,7 @@ function CorrectionForm({ correction, dayId, onDone }: { correction?: Correction
           <TimePicker label="Proposed clock-in" format="24h" minuteStep={5} value={clockIn} onChange={setClockIn} />
           <TimePicker label="Proposed clock-out" format="24h" minuteStep={5} value={clockOut} onChange={setClockOut} />
           <Textarea label="Reason" description="At least 5 characters. For example: forgot to clock out after the site visit." rows={3} maxLength={500} value={reason} onChange={(e) => setReason(e.target.value)} />
-          <ActionButton label={correction ? "Save changes" : "Submit request"} pendingLabel="Saving" successLabel="Saved" disabled={!valid} onAction={submit} onActionError={(e) => setError(errorMessage(e))} />
+          <ActionButton icon={<Send size={17} aria-hidden="true" />} label={correction ? "Save changes" : "Submit request"} pendingLabel="Saving" successLabel="Saved" disabled={!valid} onAction={submit} onActionError={(e) => setError(errorMessage(e))} />
         </>
       )}
     </div>

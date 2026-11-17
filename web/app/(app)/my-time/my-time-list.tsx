@@ -1,5 +1,6 @@
 "use client";
 
+import { Eye, FilterX } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Alert } from "@/components/arc/alert/alert";
@@ -138,7 +139,7 @@ export function MyTimeList() {
         sortable: false,
         render: (_v, row) => (
           <Button variant="ghost" size="sm" onClick={() => setSelectedId(String(row.id))}>
-            View
+            <Eye size={14} aria-hidden="true" /> View
           </Button>
         ),
       },
@@ -223,7 +224,7 @@ export function MyTimeList() {
         <EmptyState
           title="No workdays found"
           description="Try a wider date range or clear the filters."
-          action={<Button variant="secondary" onClick={() => { setRange(null); setProjectId(""); setLocation(""); setPage(1); }}>Clear filters</Button>}
+          action={<Button variant="secondary" onClick={() => { setRange(null); setProjectId(""); setLocation(""); setPage(1); }}><FilterX size={16} aria-hidden="true" /> Clear filters</Button>}
         />
       ) : (
         <>

@@ -1,5 +1,6 @@
 "use client";
 
+import { Check, ClipboardCheck, Eye, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Alert } from "@/components/arc/alert/alert";
 import { ActionButton } from "@/components/arc/action-button/action-button";
@@ -72,7 +73,8 @@ export function ReviewQueue() {
         sortable: false,
         render: (_v, row) => (
           <Button variant={row.status === "PENDING" ? "secondary" : "ghost"} size="sm" onClick={() => setOpenId(String(row.id))}>
-            {row.status === "PENDING" ? "Review" : "View"}
+            {row.status === "PENDING" ? <ClipboardCheck size={14} aria-hidden="true" /> : <Eye size={14} aria-hidden="true" />}
+          {row.status === "PENDING" ? "Review" : "View"}
           </Button>
         ),
       },
@@ -206,9 +208,9 @@ function ReviewPanel({ correction: c, onDone }: { correction: ReviewCorrection; 
           <>
             <Textarea label="Notes for the employee" description="Optional. Shown with the decision." maxLength={500} rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} />
             <div className={styles.rowActions}>
-              <ActionButton label="Approve" pendingLabel="Approving" successLabel="Approved" onAction={() => decide("APPROVED")} onActionError={() => undefined} />
+              <ActionButton icon={<Check size={17} aria-hidden="true" />} label="Approve" pendingLabel="Approving" successLabel="Approved" onAction={() => decide("APPROVED")} onActionError={() => undefined} />
               <Button variant="danger" loading={review.isPending && review.variables?.status === "REJECTED"} disabled={review.isPending} onClick={() => void decide("REJECTED").catch(() => undefined)}>
-                Reject
+                <X size={16} aria-hidden="true" /> Reject
               </Button>
             </div>
           </>
