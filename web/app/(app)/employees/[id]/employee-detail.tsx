@@ -15,7 +15,8 @@ import { Drawer } from "@/components/arc/drawer/drawer";
 import EmptyState from "@/components/arc/empty-state/empty-state";
 import MoneyInput from "@/components/arc/money-input/money-input";
 import SegmentedControl from "@/components/arc/segmented-control/segmented-control";
-import { Skeleton } from "@/components/arc/skeleton/skeleton";
+import { DetailSkeleton, KpiRowSkeleton } from "@/components/loading/detail-skeleton";
+import { Spinner } from "@/components/loading/spinner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/arc/tabs/tabs";
 import { PageHeading } from "@/components/shell/page-heading";
 import { EmployeeReport } from "@/components/reports/employee-report";
@@ -43,7 +44,7 @@ export function EmployeeDetail({ id }: { id: string }) {
   const employee = useEmployee(id);
   const [editing, setEditing] = useState(false);
 
-  if (employee.isPending) return <Skeleton lines={8} label="Loading employee" />;
+  if (employee.isPending) return <DetailSkeleton label="Loading employee" avatar tabs={3} kpis={4} />;
   if (employee.isError)
     return (
       <Alert tone="danger" title="Could not load this employee">
@@ -114,6 +115,7 @@ function Overview({ employee: e, ceo, self }: { employee: Employee; ceo: boolean
 
   return (
     <div className={styles.layout}>
+      {recent.isPending && <KpiRowSkeleton count={4} />}
       {recent.data && (
         <div className={styles.kpis} aria-label="Last 30 days">
           <MetricCard label="Hours, last 30 days" value={Math.round(recent.data.totalWorkingHours * 10) / 10} suffix="h" context="net of breaks" />
@@ -224,7 +226,7 @@ function Compensation({ employee: e }: { employee: Employee }) {
   const [from, setFrom] = useState<Date | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
 
-  if (comp.isPending) return <Skeleton lines={4} label="Loading compensation" />;
+  if (comp.isPending) return <Spinner label="Loading compensation" showLabel center />;
   if (comp.isError)
     return (
       <Alert tone="danger" title="Could not load compensation">

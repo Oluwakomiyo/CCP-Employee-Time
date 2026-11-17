@@ -14,7 +14,8 @@ import EmptyState from "@/components/arc/empty-state/empty-state";
 import { MetricCard } from "@/components/arc/metric-card/metric-card";
 import { MultiSelect } from "@/components/arc/multi-select/multi-select";
 import { Progress } from "@/components/arc/progress/progress";
-import { Skeleton } from "@/components/arc/skeleton/skeleton";
+import { DetailSkeleton } from "@/components/loading/detail-skeleton";
+import { Spinner } from "@/components/loading/spinner";
 import { Switch } from "@/components/arc/switch/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/arc/tabs/tabs";
 import { PageHeading } from "@/components/shell/page-heading";
@@ -34,7 +35,7 @@ export function ProjectDetail({ id }: { id: string }) {
   const report = useProjectReport(id);
   const [editing, setEditing] = useState(false);
 
-  if (report.isPending) return <Skeleton lines={8} label="Loading project" />;
+  if (report.isPending) return <DetailSkeleton label="Loading project" tabs={4} kpis={3} />;
   if (report.isError)
     return (
       <Alert tone="danger" title="Could not load this project">
@@ -257,7 +258,7 @@ function EstimatePanel({ r, ceo }: { r: ProjectReport; ceo: boolean }) {
         {team.length === 0 ? (
           <p className={styles.hint}>Choose at least one person.</p>
         ) : estimate.isPending ? (
-          <Skeleton lines={3} label="Estimating" />
+          <Spinner label="Estimating" showLabel center />
         ) : estimate.isError ? (
           <Alert tone="danger" title="Could not estimate">
             {errorMessage(estimate.error)}
