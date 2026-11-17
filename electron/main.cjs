@@ -2,22 +2,24 @@ const { app, BrowserWindow, Tray, Menu, nativeImage, shell } = require('electron
 const path = require('path');
 const fs = require('fs');
 
+const { startDeviceReporting } = require('./device.cjs');
+
 /**
- * Thin desktop wrapper: a window onto the hosted CCP Time web app, kept in the tray.
- * It does no activity tracking. Device activity comes from desktop-agent/, which
- * authenticates with a device key issued by the CEO in Settings.
+ * The CCP Time desktop app: a window onto the hosted web app, kept in the tray.
+ * Once someone signs in, it registers this computer to them and reports only whether
+ * the computer is active or idle (device.cjs). The tray menu always shows that status.
  */
 
-// The hosted web app. Point CCP_WEB_URL at the deployment in production;
-// it defaults to the local Next.js dev server.
-const WEB_URL = process.env.CCP_WEB_URL || 'http://localhost:3000';
+// The hosted web app. Installers bake in the production address (package.json "ccp.webUrl");
+// CCP_WEB_URL overrides it, and development falls back to the local Next.js dev server.
+const WEB_URL = process.env.CCP_WEB_URL || (app.isPackaged && require('./package.json').ccp.webUrl) || 'http://localhost:3000';
 const WEB_ORIGIN = new URL(WEB_URL).origin;
 
 let mainWindow = null;
 let tray = null;
 let quitting = false;
 
-const iconPath = path.join(__dirname, '../web/public/ccp-logo.png');
+const iconPath = path.join(__dirname, 'build/icon.png');
 const appIcon = fs.existsSync(iconPath) ? nativeImage.createFromPath(iconPath) : nativeImage.createEmpty();
 
 function createWindow() {
@@ -58,12 +60,24 @@ function createWindow() {
   });
 }
 
+let reportingStatus = 'Activity reporting: starting';
+
 function createTray() {
   if (tray) return;
   tray = new Tray(appIcon);
   tray.setToolTip('CCP Time');
+  tray.on('double-click', () => mainWindow && mainWindow.show());
+  updateTrayMenu();
+}
+
+/** Rebuilt whenever the reporting status changes, so the person always sees it. */
+function updateTrayMenu() {
+  if (!tray) return;
+  tray.setToolTip(`CCP Time\n${reportingStatus}`);
   const contextMenu = Menu.buildFromTemplate([
     { label: 'Open CCP Time', click: () => mainWindow && mainWindow.show() },
+    { type: 'separator' },
+    { label: reportingStatus, enabled: false },
     { type: 'separator' },
     {
       label: 'Quit',
@@ -74,7 +88,6 @@ function createTray() {
     },
   ]);
   tray.setContextMenu(contextMenu);
-  tray.on('double-click', () => mainWindow && mainWindow.show());
 }
 
 app.whenReady().then(() => {
@@ -84,6 +97,14 @@ app.whenReady().then(() => {
 
   createWindow();
   createTray();
+  startDeviceReporting({
+    webUrl: WEB_URL,
+    onStatus: (text) => {
+      if (text === reportingStatus) return;
+      reportingStatus = text;
+      updateTrayMenu();
+    },
+  });
 });
 
 app.on('before-quit', () => {

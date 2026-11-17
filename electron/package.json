@@ -1,13 +1,54 @@
 {
-  "name": "ccp-electron-wrapper",
+  "name": "ccp-time-desktop",
   "version": "1.0.0",
   "private": true,
-  "description": "Thin Electron wrapper that loads the hosted CCP Time web app. Activity tracking is done by desktop-agent/.",
+  "description": "CCP Time desktop app: the web app in a window, plus active/idle reporting for the computer it is installed on.",
   "main": "main.cjs",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "dist": "electron-builder",
+    "dist:win": "electron-builder --win",
+    "dist:mac": "electron-builder --mac",
+    "dist:linux": "electron-builder --linux"
   },
-  "dependencies": {
+  "ccp": {
+    "webUrl": "https://ccp-employee-time.vercel.app"
+  },
+  "build": {
+    "appId": "com.ccp.timesystems",
+    "productName": "CCP Time",
+    "files": [
+      "main.cjs",
+      "device.cjs",
+      "package.json",
+      "build/icon.png"
+    ],
+    "extraResources": [],
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "build/icon.png",
+      "category": "public.app-category.productivity"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "build/icon.png",
+      "category": "Office"
+    }
+  },
+  "devDependencies": {
+    "electron-builder": "^25.1.8",
     "electron": "^45.2.3"
-  }
+  },
+  "author": "CCP Time Systems"
 }
