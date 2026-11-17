@@ -44,6 +44,8 @@ async function wipe() {
   await prisma.user.deleteMany();
   await prisma.department.deleteMany();
   await prisma.position.deleteMany();
+  await prisma.appRole.deleteMany({ where: { isSystem: false } });
+  await prisma.rolePermission.deleteMany();
 }
 
 async function main() {

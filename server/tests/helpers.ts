@@ -1,3 +1,4 @@
+import { ensureSystemRoles, systemRoleKey } from '../src/auth/permissions';
 import bcrypt from 'bcryptjs';
 import request from 'supertest';
 import { Role } from '@prisma/client';
@@ -20,11 +21,13 @@ export const createUser = async (role: Role, opts: { mustChangePassword?: boolea
   seq += 1;
   await prisma.department.upsert({ where: { name: 'Design' }, create: { name: 'Design' }, update: {} });
   await prisma.position.upsert({ where: { name: 'Architect' }, create: { name: 'Architect' }, update: {} });
+  await ensureSystemRoles(prisma);
   const user = await prisma.user.create({
     data: {
       email: `user${seq}@test.local`,
       passwordHash: await bcrypt.hash(PASSWORD, 4),
       role,
+      appRole: { connect: { key: systemRoleKey(role) } },
       mustChangePassword: opts.mustChangePassword ?? false,
       employee: {
         create: {

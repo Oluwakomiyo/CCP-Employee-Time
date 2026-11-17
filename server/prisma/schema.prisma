@@ -107,7 +107,11 @@ model User {
   id                 String   @id @default(uuid())
   email              String   @unique
   passwordHash       String
+  // Deprecated: mirrors appRole.presetOf for system roles while the code moves to permissions.
   role               Role     @default(EMPLOYEE)
+  // The role whose permissions this user has (system preset or custom).
+  roleId             String
+  appRole            AppRole  @relation(fields: [roleId], references: [id], onDelete: Restrict)
   isActive           Boolean  @default(true)
   mustChangePassword Boolean  @default(false)
   refreshTokenHash   String?
@@ -118,6 +122,37 @@ model User {
   auditLogs        AuditLog[]              @relation("AuditActor")
   reviewedRequests TimeCorrectionRequest[] @relation("CorrectionReviewer")
   notifications    Notification[]
+}
+
+/// Whose data a scoped permission covers.
+enum PermissionScope {
+  OWN
+  TEAM
+  ALL
+}
+
+/// A role: one of the three system presets, or one the admin created. Permissions are rows in RolePermission.
+model AppRole {
+  id          String           @id @default(uuid())
+  key         String           @unique @db.VarChar(64)
+  name        String           @unique @db.VarChar(100)
+  description String?          @db.VarChar(300)
+  isSystem    Boolean          @default(false)
+  presetOf    Role?
+  createdAt   DateTime         @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime         @updatedAt @db.Timestamptz(6)
+  permissions RolePermission[]
+  users       User[]
+}
+
+/// One granted permission. Keys come from src/auth/permissions.ts; scope is null for unscoped keys.
+model RolePermission {
+  roleId     String
+  role       AppRole          @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission String           @db.VarChar(64)
+  scope      PermissionScope?
+
+  @@id([roleId, permission])
 }
 
 // -----------------------------------------------------------------------------

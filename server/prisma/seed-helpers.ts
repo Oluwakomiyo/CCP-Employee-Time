@@ -2,6 +2,7 @@
  * Helpers shared by the demo seed (seed.ts, wipes the database) and the additive sample data
  * (sample-data.ts). Nothing here deletes anything.
  */
+import { ensureSystemRoles, systemRoleKey } from '../src/auth/permissions';
 import { PrismaClient, Role, LocationType, ActivityType, BreakType, DayStatus, SegmentStatus, Prisma } from '@prisma/client';
 
 export const H = 3600;
@@ -33,11 +34,13 @@ export type Person = { first: string; last: string; email: string; code: string;
 
 export async function createPerson(prisma: PrismaClient, p: Person, passwordHash: string, rates: { base: number; from: string; to?: string }[]) {
   await prisma.position.upsert({ where: { name: p.position }, create: { name: p.position }, update: {} });
+  await ensureSystemRoles(prisma);
   const user = await prisma.user.create({
     data: {
       email: p.email,
       passwordHash,
       role: p.role,
+      appRole: { connect: { key: systemRoleKey(p.role) } },
       mustChangePassword: false,
       employee: {
         create: {

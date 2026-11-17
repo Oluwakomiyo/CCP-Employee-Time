@@ -7,6 +7,7 @@
  * Prints a temporary password once; the CEO must change it at first sign-in. Refuses to run when a
  * CEO already exists: from then on, people are added from the Employees screen.
  */
+import { ensureSystemRoles, systemRoleKey } from '../auth/permissions';
 import bcrypt from 'bcryptjs';
 import { AuditAction, EmploymentStatus, Role } from '@prisma/client';
 import { z } from 'zod';
@@ -36,8 +37,9 @@ export async function createFirstAdmin(db: DbClient & { $transaction: <T>(fn: (t
   const employee = await db.$transaction(async (tx) => {
     await tx.department.upsert({ where: { name: input.department }, create: { name: input.department }, update: {} });
     await tx.position.upsert({ where: { name: input.position }, create: { name: input.position }, update: {} });
+    await ensureSystemRoles(tx);
     const user = await tx.user.create({
-      data: { email: input.email, passwordHash, role: Role.CEO_ADMIN, mustChangePassword: true },
+      data: { email: input.email, passwordHash, role: Role.CEO_ADMIN, appRole: { connect: { key: systemRoleKey(Role.CEO_ADMIN) } }, mustChangePassword: true },
     });
     const created = await tx.employee.create({
       data: {

@@ -8,6 +8,7 @@ import {
   UpdateCompensationInput,
   QueryEmployeesInput,
 } from './employee.schema';
+import { systemRoleKey } from '../../auth/permissions';
 import { generateTemporaryPassword } from '../../utils/password';
 import { CURRENT_RATE, dayBefore } from './compensation';
 
@@ -195,6 +196,7 @@ export class EmployeeService {
           email: input.email,
           passwordHash,
           role: input.role,
+          appRole: { connect: { key: systemRoleKey(input.role) } },
           mustChangePassword: true,
         },
       });

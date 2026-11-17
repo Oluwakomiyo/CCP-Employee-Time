@@ -19,6 +19,6 @@ ALTER TABLE "Employee" ADD CONSTRAINT "Employee_position_fkey"
 
 -- Employee numbers (EMP-001, EMP-002, ...) are issued by the system from this sequence,
 -- so two admins creating people at once never get the same number. Starts after any EMP-n already used.
-CREATE SEQUENCE "employee_code_seq" START 1;
+CREATE SEQUENCE IF NOT EXISTS "employee_code_seq" START 1;
 SELECT setval('employee_code_seq',
   COALESCE((SELECT MAX(substring("employeeCode" FROM '^EMP-(\d+)$')::int) FROM "Employee"), 0) + 1, false);

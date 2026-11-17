@@ -6,6 +6,7 @@ assertRequiredEnv();
 
 import { createApp } from './app';
 import { prisma } from './config/prisma';
+import { ensureSystemRoles } from './auth/permissions';
 import { startStaleSessionWorker } from './jobs/staleSessionWorker';
 
 const app = createApp();
@@ -16,6 +17,8 @@ async function bootstrap() {
     // Verify database connection
     await prisma.$connect();
     console.log('✅ Connected to PostgreSQL database via Prisma');
+    // System roles get their preset permissions the first time (and after a wipe).
+    await ensureSystemRoles(prisma);
 
     // The missing clock-out job runs here unless a separate worker process owns it
     // (docker-compose sets RUN_STALE_WORKER=false on the api and runs src/worker.ts).
